@@ -246,8 +246,40 @@ pub enum PermissionOutcome {
     AllowOnce,
     /// Reject this tool once.
     RejectOnce,
-    /// Ask the user in the Assistant popup.
+    /// Ask the user in the Assistant tab.
     Prompt,
+}
+
+/// Live or last ACP session counters for the Dashboard. No prompt text.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentSessionStats {
+    /// Whether a subprocess is running.
+    pub live: bool,
+    /// Configured agent name, empty when no session has started.
+    pub agent_name: String,
+    /// Short status such as Ready, Streaming, or Stopped.
+    pub status: String,
+    /// User prompts sent in this session.
+    pub prompts: u32,
+    /// Tool-call updates received in this session.
+    pub tools: u32,
+    /// Permission prompts shown to the user.
+    pub permission_asks: u32,
+}
+
+impl AgentSessionStats {
+    /// Idle session for a named agent.
+    pub fn started(agent_name: impl Into<String>) -> Self {
+        Self {
+            live: true,
+            agent_name: agent_name.into(),
+            status: "Ready".into(),
+            prompts: 0,
+            tools: 0,
+            permission_asks: 0,
+        }
+    }
 }
 
 /// One stored user prompt. Agent replies are not saved here.

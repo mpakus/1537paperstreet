@@ -36,5 +36,6 @@ later task; the subprocess still uses the open project as `cwd`.
 ## Consequences
 
 Billing, auth, and model catalogs stay with the CLI. Full permission can still
-let that CLI change files in the project. Settings must say so. Check for
+let that CLI change files in the project. Settings must say so. The Assistant and Dashboard workspace tabs show the
+chat and local counts; they do not add telemetry. Check for
 Updates remains the only network call the **app** makes.

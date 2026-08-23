@@ -11,9 +11,10 @@ Versions follow [Semantic Versioning](https://semver.org/).
   Preview or Edit. Reloading discards unsaved edits only after you confirm.
 - Drag a file from the tree onto another project in the list to move it.
   Hold ⌥ to copy.
-- Settings → External Agents and the Assistant popup (⌘⌥A) talk to local ACP
-  CLIs (OpenCode, Claude, Codex on PATH, or a custom command). The app does
-  not call a model API or the ACP Registry.
+- Settings → External Agents and the Assistant **tab** (⌘⌥A) talk to local ACP
+  CLIs (OpenCode, Claude, Codex on PATH, or a custom command). The Dashboard
+  tab shows local library and agent counts. The app does not call a model API
+  or the ACP Registry.
 
 ### Fixed
 

@@ -10,8 +10,8 @@ use std::thread;
 use std::time::Duration;
 
 use ps_core::agents::{
-    AgentChoice, AgentClientEvent, AgentPermission, AgentServer, PermissionOutcome,
-    permission_outcome, preferred_plan_mode,
+    AgentChoice, AgentClientEvent, AgentPermission, AgentServer, AgentSessionStats,
+    PermissionOutcome, permission_outcome, preferred_plan_mode,
 };
 use ps_core::{Error, Result};
 use serde_json::{Value, json};
@@ -37,6 +37,7 @@ enum SessionCommand {
 #[derive(Clone)]
 pub(crate) struct AgentHub {
     inner: Arc<Mutex<Option<LiveSession>>>,
+    stats: Arc<Mutex<AgentSessionStats>>,
 }
 
 struct LiveSession {
@@ -50,7 +51,20 @@ impl AgentHub {
     pub(crate) fn new() -> Self {
         Self {
             inner: Arc::new(Mutex::new(None)),
+            stats: Arc::new(Mutex::new(AgentSessionStats::default())),
         }
+    }
+
+    pub(crate) fn session_stats(&self) -> AgentSessionStats {
+        self.stats
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone()
+    }
+
+    fn patch_stats(&self, patch: impl FnOnce(&mut AgentSessionStats)) {
+        let mut stats = self.stats.lock().unwrap_or_else(|error| error.into_inner());
+        patch(&mut stats);
     }
 
     pub(crate) fn stop(&self) {
@@ -62,6 +76,12 @@ impl AgentHub {
             let _ = live.pump.join();
             let _ = live.stdout.join();
         }
+        self.patch_stats(|stats| {
+            stats.live = false;
+            if stats.status != "No session" && !stats.status.is_empty() {
+                stats.status = "Stopped".into();
+            }
+        });
     }
 
     pub(crate) fn start(
@@ -183,12 +203,19 @@ impl AgentHub {
         };
         let _ = app.emit(AGENT_EVENT, &ready);
 
+        {
+            let mut stats = self.stats.lock().unwrap_or_else(|error| error.into_inner());
+            *stats = AgentSessionStats::started(&server.name);
+        }
+
         let (commands, command_rx) = mpsc::channel();
+        let stats = Arc::clone(&self.stats);
         let pump = thread::Builder::new()
             .name("paperstreet-acp-pump".into())
             .spawn(move || {
                 pump_loop(
                     app, events_rx, command_rx, stdin, pending, next_id, session_id, permission,
+                    stats,
                 );
             })
             .map_err(|_source| Error::Agent {
@@ -206,6 +233,10 @@ impl AgentHub {
     }
 
     pub(crate) fn prompt(&self, text: &str) -> Result<()> {
+        self.patch_stats(|stats| {
+            stats.prompts = stats.prompts.saturating_add(1);
+            stats.status = "Streaming".into();
+        });
         self.send(SessionCommand::Prompt(text.to_owned()))
     }
 
@@ -242,6 +273,7 @@ fn pump_loop(
     mut next_id: u64,
     session_id: String,
     permission: AgentPermission,
+    stats: Arc<Mutex<AgentSessionStats>>,
 ) {
     loop {
         if let Ok(command) = commands.try_recv() {
@@ -301,6 +333,7 @@ fn pump_loop(
             Ok(Incoming::Line(line)) => {
                 if let Some(event) = handle_line(&line, &mut pending, &mut stdin, permission, &app)
                 {
+                    record_event(&stats, &event);
                     let _ = app.emit(AGENT_EVENT, &event);
                     if matches!(event, AgentClientEvent::Error { .. }) {
                         break;
@@ -310,6 +343,28 @@ fn pump_loop(
             Err(RecvTimeoutError::Timeout) => {}
             Err(RecvTimeoutError::Disconnected) => break,
         }
+    }
+}
+
+fn record_event(stats: &Mutex<AgentSessionStats>, event: &AgentClientEvent) {
+    let mut stats = stats.lock().unwrap_or_else(|error| error.into_inner());
+    match event {
+        AgentClientEvent::Tool { .. } => {
+            stats.tools = stats.tools.saturating_add(1);
+            stats.status = "Using a tool".into();
+        }
+        AgentClientEvent::Permission { .. } => {
+            stats.permission_asks = stats.permission_asks.saturating_add(1);
+            stats.status = "Waiting for permission".into();
+        }
+        AgentClientEvent::Done { .. } => {
+            stats.status = "Idle".into();
+        }
+        AgentClientEvent::Error { .. } => {
+            stats.live = false;
+            stats.status = "Error".into();
+        }
+        AgentClientEvent::Message { .. } | AgentClientEvent::Ready { .. } => {}
     }
 }
 

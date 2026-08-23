@@ -51,6 +51,8 @@
     agentPromptHistory,
     agentSetModel,
     agentStart,
+    dashboardGet,
+    type DashboardSnapshot,
   } from './lib/ipc'
   import type { MarkdownEditor } from './editor/types'
   import { applyMarkdownCommand } from './lib/markdown'
@@ -63,6 +65,7 @@
     tabTitle,
     upsertTab,
     type DocTab,
+    type WorkspacePage,
   } from './lib/tabs'
   import { exportDocumentPdf } from './lib/print'
   import { windowTitle } from './lib/text'
@@ -85,6 +88,7 @@
   import Assistant from './panes/Assistant.svelte'
   import ChromeToolbar from './panes/ChromeToolbar.svelte'
   import Conflict from './panes/Conflict.svelte'
+  import Dashboard from './panes/Dashboard.svelte'
   import DocTabs from './panes/DocTabs.svelte'
   import Editor from './panes/Editor.svelte'
   import FindBar from './panes/FindBar.svelte'
@@ -151,7 +155,9 @@
   let settingsOpen = $state(false)
   let settingsFocusAgents = $state(false)
   let aboutOpen = $state(false)
-  let assistantOpen = $state(false)
+  let workspacePage = $state<WorkspacePage>('document')
+  let dashboardSnapshot = $state<DashboardSnapshot | null>(null)
+  let dashboardError = $state('')
   let assistantBusy = $state(false)
   let assistantError = $state('')
   let assistantTranscript = $state('')
@@ -190,7 +196,13 @@
     width: number
   } | null>(null)
 
-  const documentTitle = $derived(windowTitle(active?.path, openMeta?.relPath))
+  const documentTitle = $derived(
+    workspacePage === 'assistant'
+      ? 'Assistant'
+      : workspacePage === 'dashboard'
+        ? 'Dashboard'
+        : windowTitle(active?.path, openMeta?.relPath),
+  )
 
   $effect(() => {
     const title = documentTitle
@@ -281,7 +293,7 @@
   }
 
   async function openAssistant() {
-    assistantOpen = true
+    workspacePage = 'assistant'
     assistantError = ''
     try {
       assistantHistory = await agentPromptHistory()
@@ -293,39 +305,47 @@
     }
   }
 
+  async function openDashboard() {
+    workspacePage = 'dashboard'
+    dashboardError = ''
+    try {
+      dashboardSnapshot = await dashboardGet(active?.id ?? null)
+    } catch (cause) {
+      dashboardError = errorMessage(cause)
+    }
+  }
+
   function applyAgentEvent(event: AgentClientEvent) {
-    if (event.kind === 'ready') {
-      assistantModels = event.models
-      assistantModelId = event.models[0]?.id ?? ''
-      assistantBusy = false
-      return
+    switch (event.kind) {
+      case 'ready':
+        assistantModels = event.models
+        assistantModelId = event.models[0]?.id ?? ''
+        assistantBusy = false
+        break
+      case 'message':
+        assistantTranscript += event.text
+        break
+      case 'tool':
+        assistantTranscript += `\n[${event.title}: ${event.status}]`
+        break
+      case 'permission':
+        assistantPermit = {
+          id: event.id,
+          title: event.title,
+          options: event.options,
+        }
+        break
+      case 'done':
+        assistantBusy = false
+        assistantTranscript += assistantTranscript.endsWith('\n') ? '' : '\n'
+        break
+      case 'error':
+        assistantBusy = false
+        assistantError = event.message
+        break
     }
-    if (event.kind === 'message') {
-      assistantTranscript += event.text
-      return
-    }
-    if (event.kind === 'tool') {
-      assistantTranscript += `\n[${event.title}: ${event.status}]`
-      return
-    }
-    if (event.kind === 'permission') {
-      assistantPermit = {
-        id: event.id,
-        title: event.title,
-        options: event.options,
-      }
-      return
-    }
-    if (event.kind === 'done') {
-      assistantBusy = false
-      assistantTranscript += assistantTranscript.endsWith('\n')
-        ? ''
-        : '\n'
-      return
-    }
-    if (event.kind === 'error') {
-      assistantBusy = false
-      assistantError = event.message
+    if (event.kind !== 'message' && workspacePage === 'dashboard') {
+      void openDashboard()
     }
   }
 
@@ -598,6 +618,10 @@
       }
       if (id === 'view-assistant') {
         await openAssistant()
+        return
+      }
+      if (id === 'view-dashboard') {
+        await openDashboard()
         return
       }
       if (id === 'app-about' || id === 'file-about') {
@@ -1066,6 +1090,7 @@
     if (!active) {
       return
     }
+    workspacePage = 'document'
     const leaving = snapshotCurrentTab()
     if (leaving && leaving.relPath !== relPath) {
       tabs = upsertTab(tabs, leaving)
@@ -1128,6 +1153,7 @@
     if (!active) {
       return
     }
+    workspacePage = 'document'
     openMeta = { projectId: active.id, relPath: tab.relPath }
     html = tab.html
     docMeta = tab.docMeta
@@ -1646,7 +1672,21 @@
     <main>
       <DocTabs
         {tabs}
+        page={workspacePage}
         activeRelPath={openMeta?.relPath ?? null}
+        onpage={(page) => {
+          if (page === 'assistant') {
+            void openAssistant().catch((cause) => {
+              error = errorMessage(cause)
+            })
+            return
+          }
+          if (page === 'dashboard') {
+            void openDashboard().catch((cause) => {
+              error = errorMessage(cause)
+            })
+          }
+        }}
         onselect={(relPath) => {
           void openDocument(relPath).catch((cause) => {
             error = errorMessage(cause)
@@ -1654,6 +1694,94 @@
         }}
         onclose={closeTab}
       />
+      {#if workspacePage === 'assistant'}
+        <Assistant
+          servers={appConfig?.agents.servers ?? []}
+          history={assistantHistory}
+          projectOpen={Boolean(active)}
+          busy={assistantBusy}
+          models={assistantModels}
+          transcript={assistantTranscript}
+          permissionPrompt={assistantPermit}
+          selectedServerId={assistantServerId}
+          permission={assistantPermission}
+          selectedModelId={assistantModelId}
+          bind:composer={assistantComposer}
+          error={assistantError}
+          onconfigure={() => {
+            void openSettings({ agents: true })
+          }}
+          onserver={(id) => {
+            assistantServerId = id
+            if (!appConfig) {
+              return
+            }
+            appConfig.agents.default_server_id = id
+            void configSet(appConfig).catch((cause) => {
+              error = errorMessage(cause)
+            })
+          }}
+          onpermission={(value) => {
+            assistantPermission = value
+            if (!appConfig) {
+              return
+            }
+            appConfig.agents.permission = value
+            void configSet(appConfig).catch((cause) => {
+              error = errorMessage(cause)
+            })
+          }}
+          onmodel={(id) => {
+            assistantModelId = id
+            void agentSetModel(id).catch((cause) => {
+              assistantError = errorMessage(cause)
+            })
+          }}
+          onnewchat={() => {
+            void startAssistantChat()
+          }}
+          onsend={(text) => {
+            void (async () => {
+              if (!assistantTranscript) {
+                const ok = await startAssistantChat()
+                if (!ok) {
+                  return
+                }
+              }
+              await sendAssistantPrompt(text)
+            })()
+          }}
+          oncancel={() => {
+            void agentCancel().catch((cause) => {
+              assistantError = errorMessage(cause)
+            })
+            assistantBusy = false
+          }}
+          onhistory={(text) => {
+            assistantComposer = text
+          }}
+          onpermit={(id, optionId) => {
+            assistantPermit = null
+            void agentPermissionReply(id, optionId).catch((cause) => {
+              assistantError = errorMessage(cause)
+            })
+          }}
+        />
+      {:else if workspacePage === 'dashboard'}
+        <Dashboard
+          snapshot={dashboardSnapshot}
+          error={dashboardError}
+          onrefresh={() => {
+            void openDashboard()
+          }}
+          onassistant={() => {
+            void openAssistant()
+          }}
+          onconfigure={() => {
+            void openSettings({ agents: true })
+          }}
+        />
+      {:else}
       <div
         class="workspace"
         class:split={viewMode === 'split'}
@@ -1724,6 +1852,7 @@
           />
         {/if}
       </div>
+      {/if}
     </main>
   </div>
 
@@ -1818,85 +1947,6 @@
     {:else}
       <div class="settings-loading" role="status">Loading settings…</div>
     {/if}
-  {/if}
-
-  {#if assistantOpen}
-    <Assistant
-      servers={appConfig?.agents.servers ?? []}
-      history={assistantHistory}
-      projectOpen={Boolean(active)}
-      busy={assistantBusy}
-      models={assistantModels}
-      transcript={assistantTranscript}
-      permissionPrompt={assistantPermit}
-      selectedServerId={assistantServerId}
-      permission={assistantPermission}
-      selectedModelId={assistantModelId}
-      bind:composer={assistantComposer}
-      error={assistantError}
-      onconfigure={() => {
-        assistantOpen = false
-        void openSettings({ agents: true })
-      }}
-      onclose={() => {
-        assistantOpen = false
-      }}
-      onserver={(id) => {
-        assistantServerId = id
-        if (!appConfig) {
-          return
-        }
-        appConfig.agents.default_server_id = id
-        void configSet(appConfig).catch((cause) => {
-          error = errorMessage(cause)
-        })
-      }}
-      onpermission={(value) => {
-        assistantPermission = value
-        if (!appConfig) {
-          return
-        }
-        appConfig.agents.permission = value
-        void configSet(appConfig).catch((cause) => {
-          error = errorMessage(cause)
-        })
-      }}
-      onmodel={(id) => {
-        assistantModelId = id
-        void agentSetModel(id).catch((cause) => {
-          assistantError = errorMessage(cause)
-        })
-      }}
-      onnewchat={() => {
-        void startAssistantChat()
-      }}
-      onsend={(text) => {
-        void (async () => {
-          if (!assistantTranscript) {
-            const ok = await startAssistantChat()
-            if (!ok) {
-              return
-            }
-          }
-          await sendAssistantPrompt(text)
-        })()
-      }}
-      oncancel={() => {
-        void agentCancel().catch((cause) => {
-          assistantError = errorMessage(cause)
-        })
-        assistantBusy = false
-      }}
-      onhistory={(text) => {
-        assistantComposer = text
-      }}
-      onpermit={(id, optionId) => {
-        assistantPermit = null
-        void agentPermissionReply(id, optionId).catch((cause) => {
-          assistantError = errorMessage(cause)
-        })
-      }}
-    />
   {/if}
 
   {#if aboutOpen}
@@ -2141,6 +2191,11 @@
     min-width: 0;
     overflow: hidden;
     background: var(--bg);
+  }
+
+  main > :global([role='tabpanel']) {
+    flex: 1;
+    min-height: 0;
   }
 
   .workspace {

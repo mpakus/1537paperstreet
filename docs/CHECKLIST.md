@@ -352,6 +352,7 @@
 - [x] **T-212** 🔒 Хост ACP в `ps-app`: spawn stdio, initialize, session/new, prompt, cancel, permission policy; события `agent://event`. Без `fs` и terminal. Тесты на поддельном JSON-RPC, не на реальных CLI. (← T-210)
 - [x] **T-213** Assistant popup: Configure, модель, Full/Plan/Allowance, история промптов, New chat, ⌘⌥A. (← T-211, T-212)
 - [x] **T-214** Документация: privacy, user guide, README, CHANGELOG, shortcuts. (← T-213)
+- [x] **T-215** Assistant и Dashboard — вкладки workspace (не popup); Dashboard считает проекты, Markdown, агентов и сессию в Rust. (← T-213)
 
 ---
 

@@ -17,7 +17,7 @@ Working in the reader:
 | ⌘, | Settings |
 | ⌘⌥E | Export the open document to PDF |
 | ⌘⌥T | Light / dark theme |
-| ⌘⌥A | Assistant |
+| ⌘⌥A | Assistant tab |
 | ⌘+ / ⌘− / ⌘0 | Larger / smaller / reset type |
 | ⌘⇧R | Reveal in Finder |
 | ⌘⇧O | Open in External Editor |

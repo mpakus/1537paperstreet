@@ -1,7 +1,10 @@
 # Privacy
 
-Documents do not leave the computer. There is no account, no analytics, and
-no CDN for themes, fonts, Mermaid, or KaTeX.
+Documents do not leave the computer. There is no account, no outbound
+analytics, and no CDN for themes, fonts, Mermaid, or KaTeX.
+
+The Dashboard tab shows local counts only (projects, files, agents, session).
+Those numbers stay on this Mac.
 
 The only outgoing request from the **app** is an update check from the button or
 File → Check for Updates…. It talks to GitHub Releases and does not include

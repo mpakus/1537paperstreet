@@ -636,6 +636,19 @@ pub(crate) fn agent_permission_reply(
         .map_err(to_command_error)
 }
 
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn dashboard_get(
+    state: State<'_, AppState>,
+    hub: State<'_, crate::agent::AgentHub>,
+    project_id: Option<String>,
+) -> Result<ps_core::dashboard::DashboardSnapshot, String> {
+    let state = state.inner().clone();
+    let session = hub.session_stats();
+    tauri::async_runtime::spawn_blocking(move || state.dashboard(project_id.as_deref(), session))
+        .await
+        .map_err(|error| error.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

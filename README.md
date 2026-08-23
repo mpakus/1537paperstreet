@@ -142,11 +142,16 @@ Custom themes are JSON in `~/.1537paperstreet/themes/`.
 
 ### Assistant
 
-⌘⌥A (View → Assistant, or the title-bar control) opens a popup: Configure
-(Settings), agent, model when the CLI lists one, permissions (Allowance /
-Plan / Full), prompt history, and New chat. The session uses the open
-project as its working directory. This app does not implement ACP file
-methods; Full permission can still let the CLI change files.
+⌘⌥A (View → Assistant, the Assistant tab, or the title-bar control) opens
+the Assistant **tab**: Configure (Settings), agent, model when the CLI lists
+one, permissions (Allowance / Plan / Full), prompt history, and New chat.
+The session uses the open project as its working directory. This app does
+not implement ACP file methods; Full permission can still let the CLI change
+files.
+
+The **Dashboard** tab (View → Dashboard) is a local analytics page: project
+and Markdown counts, configured agents, the live ACP session, and recent
+prompts. It does not send telemetry.
 
 ![Settings: theme palettes, typography, preview colors, Dock, and render toggles](docs/screen-settings.png)
 

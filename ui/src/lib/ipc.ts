@@ -26,6 +26,7 @@ import type {
   AgentPresetInfo,
   AgentServer,
   PromptHistoryEntry,
+  DashboardSnapshot,
   UpdateCheck,
 } from './generated/core'
 
@@ -488,6 +489,13 @@ export function agentPermissionReply(
   return invokeIpc('agent_permission_reply', { id, option_id: optionId })
 }
 
+/** Local library and agent counts for the Dashboard tab. */
+export function dashboardGet(
+  projectId: string | null,
+): Promise<DashboardSnapshot> {
+  return invokeIpc('dashboard_get', { project_id: projectId })
+}
+
 export type {
   AgentChoice,
   AgentClientEvent,
@@ -495,6 +503,7 @@ export type {
   AgentPreset,
   AgentPresetInfo,
   AgentServer,
+  DashboardSnapshot,
   PromptHistoryEntry,
   Config,
   ConflictStrategy,

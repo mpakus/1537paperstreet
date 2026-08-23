@@ -1,8 +1,13 @@
 # Assistant
 
 The Assistant talks to **local** coding agents through the
-[Agent Client Protocol](https://agentclientprotocol.com). Open it with
-**⌘⌥A**, View → Assistant, or the Assistant control in the title bar.
+[Agent Client Protocol](https://agentclientprotocol.com). It lives in its
+**own tab** in the workspace strip (next to Dashboard). Open it with
+**⌘⌥A**, View → Assistant, the Assistant tab, or the title-bar control.
+
+The **Dashboard** tab (View → Dashboard) shows local library and agent
+counts: projects, Markdown files in the open folder, configured agents, the
+live session, and recent prompts. Nothing on that page is sent off the Mac.
 
 This app does not call a model API and does not install agents from a
 registry. You add a CLI that is already on your Mac.

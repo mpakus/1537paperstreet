@@ -16,20 +16,38 @@ function tab(relPath: string): DocTab {
 }
 
 describe('DocTabs', () => {
-  it('renders open document tabs', () => {
+  it('pins Dashboard and Assistant beside document tabs', () => {
     const { body } = render(DocTabs, {
       props: {
         tabs: [tab('notes/guide.md'), tab('todo.md')],
+        page: 'document',
         activeRelPath: 'todo.md',
+        onpage() {},
         onselect() {},
         onclose() {},
       },
     })
 
-    expect(body).toContain('aria-label="Open documents"')
+    expect(body).toContain('aria-label="Workspace"')
+    expect(body).toContain('Dashboard')
+    expect(body).toContain('Assistant')
     expect(body).toContain('guide.md')
     expect(body).toContain('todo.md')
     expect(body).toContain('aria-selected="true"')
     expect(body).toContain('Close todo.md')
+  })
+
+  it('selects the Assistant workspace tab', () => {
+    const { body } = render(DocTabs, {
+      props: {
+        tabs: [],
+        page: 'assistant',
+        onpage() {},
+        onselect() {},
+        onclose() {},
+      },
+    })
+    expect(body).toContain('Assistant')
+    expect(body).toContain('aria-selected="true"')
   })
 })

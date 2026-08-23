@@ -1,43 +1,61 @@
 <script lang="ts">
-  import { tabTitle, type DocTab } from '../lib/tabs'
+  import { tabTitle, type DocTab, type WorkspacePage } from '../lib/tabs'
 
   let {
     tabs,
+    page = 'document',
     activeRelPath = null,
+    onpage,
     onselect,
     onclose,
   }: {
     tabs: DocTab[]
+    page?: WorkspacePage
     activeRelPath?: string | null
+    onpage: (page: WorkspacePage) => void
     onselect: (relPath: string) => void
     onclose: (relPath: string) => void
   } = $props()
 </script>
 
-{#if tabs.length > 0}
-  <div class="tabs" role="tablist" aria-label="Open documents">
-    {#each tabs as tab (tab.relPath)}
-      {@const selected = tab.relPath === activeRelPath}
-      <div class="tab" class:selected>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={selected}
-          title={tab.relPath}
-          onclick={() => onselect(tab.relPath)}
-          >{tab.title || tabTitle(tab.relPath)}</button
-        >
-        <button
-          type="button"
-          class="close"
-          title="Close"
-          aria-label="Close {tab.title}"
-          onclick={() => onclose(tab.relPath)}>×</button
-        >
-      </div>
-    {/each}
+<div class="tabs" role="tablist" aria-label="Workspace">
+  <div class="tab" class:selected={page === 'dashboard'}>
+    <button
+      type="button"
+      role="tab"
+      aria-selected={page === 'dashboard'}
+      onclick={() => onpage('dashboard')}>Dashboard</button
+    >
   </div>
-{/if}
+  <div class="tab" class:selected={page === 'assistant'}>
+    <button
+      type="button"
+      role="tab"
+      aria-selected={page === 'assistant'}
+      onclick={() => onpage('assistant')}>Assistant</button
+    >
+  </div>
+  {#each tabs as tab (tab.relPath)}
+    {@const selected = page === 'document' && tab.relPath === activeRelPath}
+    <div class="tab" class:selected>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={selected}
+        title={tab.relPath}
+        onclick={() => onselect(tab.relPath)}
+        >{tab.title || tabTitle(tab.relPath)}</button
+      >
+      <button
+        type="button"
+        class="close"
+        title="Close"
+        aria-label="Close {tab.title}"
+        onclick={() => onclose(tab.relPath)}>×</button
+      >
+    </div>
+  {/each}
+</div>
 
 <style>
   .tabs {

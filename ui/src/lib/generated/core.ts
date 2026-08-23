@@ -339,6 +339,32 @@ stop_reason: string, } | { "kind": "error",
  */
 message: string, };
 
+export type AgentSessionStats = { 
+/**
+ * Whether a subprocess is running.
+ */
+live: boolean, 
+/**
+ * Configured agent name, empty when no session has started.
+ */
+agentName: string, 
+/**
+ * Short status such as Ready, Streaming, or Stopped.
+ */
+status: string, 
+/**
+ * User prompts sent in this session.
+ */
+prompts: number, 
+/**
+ * Tool-call updates received in this session.
+ */
+tools: number, 
+/**
+ * Permission prompts shown to the user.
+ */
+permissionAsks: number, };
+
 export type PromptHistoryEntry = { 
 /**
  * Stable ULID.
@@ -356,6 +382,54 @@ text: string,
  * Agent that received the prompt.
  */
 server_id: string, };
+
+export type DashboardMetric = { 
+/**
+ * User-visible label.
+ */
+label: string, 
+/**
+ * Already formatted for display.
+ */
+value: string, };
+
+export type DashboardRow = { 
+/**
+ * Primary text.
+ */
+title: string, 
+/**
+ * Secondary text.
+ */
+detail: string, };
+
+export type DashboardSection = { 
+/**
+ * Section heading.
+ */
+title: string, 
+/**
+ * KPI cards.
+ */
+metrics: Array<DashboardMetric>, 
+/**
+ * Detail rows under the cards.
+ */
+rows: Array<DashboardRow>, };
+
+export type DashboardSnapshot = { 
+/**
+ * Page heading.
+ */
+title: string, 
+/**
+ * One-line explanation.
+ */
+lede: string, 
+/**
+ * Ordered sections.
+ */
+sections: Array<DashboardSection>, };
 
 export type Config = { 
 /**

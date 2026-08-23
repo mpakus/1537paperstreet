@@ -149,9 +149,9 @@
 
 ## 10. Карта кода
 
-- `ps-core`: `config`, `agents`, `projects`, `fsops`, `tree`, `watch`, `docio`, `log`, `themes`, `mermaid_cache`, `ui_state`, `search`, `store`, `paths`, `updates`
+- `ps-core`: `config`, `agents`, `dashboard`, `projects`, `fsops`, `tree`, `watch`, `docio`, `log`, `themes`, `mermaid_cache`, `ui_state`, `search`, `store`, `paths`, `updates`
 - `ps-app`: тонкие IPC-команды, overlay-окно, нативное меню, `asset://`, `WatchHub`, `save_user_file`, ACP-хост
-- `ui`: панели Svelte 5 (`Projects`, `Tree`, `Preview`, `Settings`, `QuickOpen`, `QuickSwitch`, `FindBar`, `Conflict`, `About`, `Assistant`)
+- `ui`: панели Svelte 5 (`Projects`, `Tree`, `Preview`, `Settings`, `QuickOpen`, `QuickSwitch`, `FindBar`, `Conflict`, `About`, `Assistant`, `Dashboard`)
 - Темы: `crates/ps-core/themes/*.json` плюс `~/.1537paperstreet/themes/`
 - Кэш диаграмм: `~/.1537paperstreet/cache/mermaid/`
 - Состояние UI: `ui-state.json` (раскрытые узлы, ширины панелей)

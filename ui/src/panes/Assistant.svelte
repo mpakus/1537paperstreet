@@ -20,7 +20,6 @@
     composer = $bindable(''),
     error = '',
     onconfigure,
-    onclose,
     onserver,
     onpermission,
     onmodel,
@@ -43,7 +42,6 @@
     composer?: string
     error?: string
     onconfigure: () => void
-    onclose: () => void
     onserver: (id: string) => void
     onpermission: (value: AgentPermission) => void
     onmodel: (id: string) => void
@@ -55,175 +53,146 @@
   } = $props()
 </script>
 
-<svelte:window
-  onkeydown={(event) => {
-    if (event.key === 'Escape') {
-      onclose()
-    }
-  }}
-/>
-
-<div class="scrim" role="presentation" onclick={onclose}>
-  <div
-    class="sheet"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    aria-label="Assistant"
-    onpointerdown={(event) => event.stopPropagation()}
-  >
-    <header>
+<div class="pane" role="tabpanel" aria-label="Assistant">
+  <header>
+    <div>
       <h2>Assistant</h2>
-      <div class="header-actions">
-        <button type="button" onclick={onconfigure}>Configure</button>
-        <button type="button" onclick={onclose}>Close</button>
-      </div>
-    </header>
-    <p class="lede">
-      Talk to a local agent over ACP. Configure adds or edits agents in
-      Settings. Default permission asks before tools.
-    </p>
-    {#if servers.length === 0}
-      <p class="empty">
-        No agents yet. Configure opens Settings so you can add OpenCode,
-        Claude, Codex, or a custom command.
+      <p class="lede">
+        Talk to a local agent over ACP in this tab. Configure adds or edits
+        agents in Settings. Default permission asks before tools.
       </p>
-    {:else}
-      <div class="controls">
+    </div>
+    <button type="button" onclick={onconfigure}>Configure</button>
+  </header>
+  {#if servers.length === 0}
+    <p class="empty">
+      No agents yet. Configure opens Settings so you can add OpenCode, Claude,
+      Codex, or a custom command.
+    </p>
+  {:else}
+    <div class="controls">
+      <label>
+        Agent
+        <select
+          value={selectedServerId}
+          onchange={(event) => onserver(event.currentTarget.value)}
+        >
+          {#each servers.filter((server) => server.enabled) as server (server.id)}
+            <option value={server.id}>{server.name}</option>
+          {/each}
+        </select>
+      </label>
+      {#if models.length > 0}
         <label>
-          Agent
+          Model
           <select
-            value={selectedServerId}
-            onchange={(event) => onserver(event.currentTarget.value)}
+            value={selectedModelId}
+            onchange={(event) => onmodel(event.currentTarget.value)}
           >
-            {#each servers.filter((server) => server.enabled) as server (server.id)}
-              <option value={server.id}>{server.name}</option>
+            {#each models as model (model.id)}
+              <option value={model.id}>{model.name}</option>
             {/each}
           </select>
         </label>
-        {#if models.length > 0}
-          <label>
-            Model
-            <select
-              value={selectedModelId}
-              onchange={(event) => onmodel(event.currentTarget.value)}
-            >
-              {#each models as model (model.id)}
-                <option value={model.id}>{model.name}</option>
-              {/each}
-            </select>
-          </label>
-        {/if}
-        <label>
-          Permissions
-          <select
-            value={permission}
-            onchange={(event) =>
-              onpermission(event.currentTarget.value as AgentPermission)}
-          >
-            <option value="allowance">Allowance — ask each time</option>
-            <option value="plan">Plan — no writes</option>
-            <option value="full">Full — auto-allow tools</option>
-          </select>
-        </label>
-      </div>
-      {#if history.length > 0}
-        <section class="history" aria-label="Prompt history">
-          <h3>History</h3>
-          <ul>
-            {#each history.slice(0, 12) as entry (entry.id)}
-              <li>
-                <button type="button" onclick={() => onhistory(entry.text)}>
-                  {entry.text}
-                </button>
-              </li>
-            {/each}
-          </ul>
-        </section>
       {/if}
-      <div class="chat" aria-live="polite">{transcript}</div>
-      {#if permissionPrompt}
-        <div class="permit" role="alertdialog" tabindex="-1" aria-label="Tool permission">
-          <p>{permissionPrompt.title}</p>
-          <div class="actions">
-            {#each permissionPrompt.options as option (option.id)}
-              <button
-                type="button"
-                onclick={() => onpermit(permissionPrompt.id, option.id)}
-                >{option.name}</button
-              >
-            {/each}
-          </div>
-        </div>
-      {/if}
-      {#if error}
-        <p class="status" role="status">{error}</p>
-      {/if}
-      {#if !projectOpen}
-        <p class="status">Open a folder before starting a chat.</p>
-      {/if}
-      <form
-        class="composer"
-        onsubmit={(event) => {
-          event.preventDefault()
-          const text = composer.trim()
-          if (!text || busy) {
-            return
-          }
-          onsend(text)
-          composer = ''
-        }}
-      >
-        <textarea
-          rows="3"
-          bind:value={composer}
-          placeholder="Ask the agent…"
-          disabled={!projectOpen || !selectedServerId}
-        ></textarea>
-        <div class="actions">
-          <button type="button" onclick={onnewchat}>New chat</button>
-          {#if busy}
-            <button type="button" onclick={oncancel}>Stop</button>
-          {:else}
-            <button
-              type="submit"
-              disabled={!projectOpen || !selectedServerId || !composer.trim()}
-              >Send</button
-            >
-          {/if}
-        </div>
-      </form>
+      <label>
+        Permissions
+        <select
+          value={permission}
+          onchange={(event) =>
+            onpermission(event.currentTarget.value as AgentPermission)}
+        >
+          <option value="allowance">Allowance — ask each time</option>
+          <option value="plan">Plan — no writes</option>
+          <option value="full">Full — auto-allow tools</option>
+        </select>
+      </label>
+    </div>
+    {#if history.length > 0}
+      <section class="history" aria-label="Prompt history">
+        <h3>History</h3>
+        <ul>
+          {#each history as entry (entry.id)}
+            <li>
+              <button type="button" onclick={() => onhistory(entry.text)}>
+                {entry.text}
+              </button>
+            </li>
+          {/each}
+        </ul>
+      </section>
     {/if}
-  </div>
+    <div class="chat" aria-live="polite">{transcript}</div>
+    {#if permissionPrompt}
+      <div class="permit" role="alertdialog" tabindex="-1" aria-label="Tool permission">
+        <p>{permissionPrompt.title}</p>
+        <div class="actions">
+          {#each permissionPrompt.options as option (option.id)}
+            <button
+              type="button"
+              onclick={() => onpermit(permissionPrompt.id, option.id)}
+              >{option.name}</button
+            >
+          {/each}
+        </div>
+      </div>
+    {/if}
+    {#if error}
+      <p class="status" role="status">{error}</p>
+    {/if}
+    {#if !projectOpen}
+      <p class="status">Open a folder before starting a chat.</p>
+    {/if}
+    <form
+      class="composer"
+      onsubmit={(event) => {
+        event.preventDefault()
+        const text = composer.trim()
+        if (!text || busy) {
+          return
+        }
+        onsend(text)
+        composer = ''
+      }}
+    >
+      <textarea
+        rows="4"
+        bind:value={composer}
+        placeholder="Ask the agent…"
+        disabled={!projectOpen || !selectedServerId}
+      ></textarea>
+      <div class="actions">
+        <button type="button" onclick={onnewchat}>New chat</button>
+        {#if busy}
+          <button type="button" onclick={oncancel}>Stop</button>
+        {:else}
+          <button
+            type="submit"
+            disabled={!projectOpen || !selectedServerId || !composer.trim()}
+            >Send</button
+          >
+        {/if}
+      </div>
+    </form>
+  {/if}
 </div>
 
 <style>
-  .scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
+  .pane {
     display: grid;
-    place-items: center;
-    padding: var(--space-4);
-    background: color-mix(in srgb, var(--fg) 20%, transparent);
-  }
-
-  .sheet {
-    display: grid;
+    grid-template-rows: auto auto auto 1fr auto auto auto;
     gap: var(--space-3);
-    width: min(36rem, 100%);
-    max-height: min(40rem, 90vh);
+    flex: 1;
+    min-height: 0;
     overflow: auto;
     padding: var(--space-5);
-    background: var(--bg-elev);
     color: var(--fg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+    background: var(--bg);
   }
 
   header {
     display: flex;
-    align-items: center;
+    align-items: start;
     justify-content: space-between;
     gap: var(--space-3);
   }
@@ -249,8 +218,12 @@
     line-height: 1.45;
   }
 
+  .lede {
+    max-width: 40rem;
+    margin-top: var(--space-2);
+  }
+
   .controls,
-  .header-actions,
   .actions {
     display: flex;
     flex-wrap: wrap;
@@ -268,7 +241,7 @@
   button {
     font: inherit;
     color: var(--fg);
-    background: var(--bg);
+    background: var(--bg-elev);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
   }
@@ -305,13 +278,12 @@
   }
 
   .chat {
-    min-height: 8rem;
-    max-height: 14rem;
+    min-height: 12rem;
     overflow: auto;
     padding: var(--space-3);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    background: var(--bg);
+    background: var(--bg-elev);
     white-space: pre-wrap;
     font-size: 0.875rem;
   }

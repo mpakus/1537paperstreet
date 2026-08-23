@@ -179,6 +179,11 @@ const VIEW_ASSISTANT: MenuCommand = MenuCommand {
     title: "Assistant",
     accelerator: Some("CmdOrCtrl+Alt+A"),
 };
+const VIEW_DASHBOARD: MenuCommand = MenuCommand {
+    id: "view-dashboard",
+    title: "Dashboard",
+    accelerator: None,
+};
 
 const GO_SWITCH_PROJECT: MenuCommand = MenuCommand {
     id: "go-switch-project",
@@ -263,6 +268,7 @@ pub(crate) fn plan_commands() -> &'static [MenuCommand] {
         VIEW_TOGGLE_TREE,
         VIEW_TOGGLE_THEME,
         VIEW_ASSISTANT,
+        VIEW_DASHBOARD,
         GO_SWITCH_PROJECT,
         GO_OPEN_FILE,
         GO_REVEAL,
@@ -406,6 +412,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let toggle_tree = item(app, VIEW_TOGGLE_TREE)?;
     let toggle_theme = item(app, VIEW_TOGGLE_THEME)?;
     let assistant = item(app, VIEW_ASSISTANT)?;
+    let dashboard = item(app, VIEW_DASHBOARD)?;
     let view_menu = Submenu::with_items(
         app,
         "View",
@@ -423,6 +430,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &PredefinedMenuItem::separator(app)?,
             &toggle_theme,
             &assistant,
+            &dashboard,
         ],
     )?;
 

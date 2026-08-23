@@ -4,9 +4,11 @@ use std::process::Command;
 use std::sync::{Arc, Mutex};
 
 use ps_core::agents::{
-    AgentPresetInfo, PromptHistory, PromptHistoryEntry, detect_presets, open_prompt_history,
+    AgentPresetInfo, AgentSessionStats, PromptHistory, PromptHistoryEntry, detect_presets,
+    open_prompt_history,
 };
 use ps_core::config::Config;
+use ps_core::dashboard::DashboardSnapshot;
 use ps_core::docio::{
     self, DocOpenResult, DocumentMeta, DocumentSource, DocumentStat, LoadedDocument, RestoreTraits,
     TocEntry, WrittenDocument,
@@ -690,6 +692,36 @@ impl AppState {
         store.replace(history);
         store.flush()?;
         Ok(entry)
+    }
+
+    pub(crate) fn dashboard(
+        &self,
+        project_id: Option<&str>,
+        session: AgentSessionStats,
+    ) -> DashboardSnapshot {
+        let config = self.config_get();
+        let projects = {
+            let store = self
+                .projects
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            store.list().to_vec()
+        };
+        let active =
+            project_id.and_then(|id| projects.iter().find(|project| project.id == id).cloned());
+        let markdown = active
+            .as_ref()
+            .and_then(|project| tree::count_markdown(&project.path, config.files.show_hidden).ok())
+            .unwrap_or_default();
+        let history = self.prompt_history_list();
+        ps_core::dashboard::snapshot(
+            &projects,
+            &config.agents,
+            &history,
+            active.as_ref(),
+            markdown,
+            &session,
+        )
     }
 
     fn absolute_in_project(&self, project_id: &str, rel_path: &Path) -> Result<PathBuf> {
