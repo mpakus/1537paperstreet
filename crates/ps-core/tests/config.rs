@@ -26,6 +26,11 @@ fn defaults_match_the_product_plan() {
     assert!(config.viewer.preview_bg.is_empty());
     assert!(config.viewer.preview_fg.is_empty());
     assert!(config.updates.check_on_launch);
+    assert!(config.agents.servers.is_empty());
+    assert_eq!(
+        config.agents.permission,
+        ps_core::agents::AgentPermission::Allowance
+    );
     config.validate().expect("valid defaults");
 }
 

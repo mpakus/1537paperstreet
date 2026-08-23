@@ -20,6 +20,7 @@ describe('App', () => {
     expect(body).toContain('Save')
     expect(body).toContain('Export')
     expect(body).not.toContain('title="Settings (⌘,)"')
+    expect(body).toContain('title="Assistant (⌘⌥A)"')
     expect(body).toContain('aria-label="Hide projects"')
     expect(body).toContain('Open a Markdown file to preview, edit, or export.')
     expect(body).toContain('Open Folder…')

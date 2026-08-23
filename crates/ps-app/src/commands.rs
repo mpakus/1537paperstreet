@@ -549,6 +549,93 @@ pub(crate) async fn export_pdf(
         .and_then(|result| result.map_err(to_command_error))
 }
 
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) fn agent_presets() -> Vec<ps_core::agents::AgentPresetInfo> {
+    AppState::agent_presets()
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) fn agent_make_server(
+    preset: ps_core::agents::AgentPreset,
+    name: String,
+    command: String,
+    args: Vec<String>,
+) -> ps_core::agents::AgentServer {
+    match preset {
+        ps_core::agents::AgentPreset::Custom => {
+            ps_core::agents::AgentServer::custom(name, command, args)
+        }
+        named => ps_core::agents::AgentServer::from_preset(named),
+    }
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) fn agent_prompt_history(
+    state: State<'_, AppState>,
+) -> Vec<ps_core::agents::PromptHistoryEntry> {
+    state.prompt_history_list()
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn agent_start(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    hub: State<'_, crate::agent::AgentHub>,
+    server_id: String,
+    project_id: String,
+    permission: ps_core::agents::AgentPermission,
+) -> Result<ps_core::agents::AgentClientEvent, String> {
+    let state = state.inner().clone();
+    let server = state.agent_server(&server_id).map_err(to_command_error)?;
+    let cwd = state.project_root(&project_id).map_err(to_command_error)?;
+    let hub = hub.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || hub.start(app, &server, &cwd, permission))
+        .await
+        .map_err(|error| error.to_string())
+        .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) fn agent_stop(hub: State<'_, crate::agent::AgentHub>) {
+    hub.stop();
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) fn agent_prompt(
+    state: State<'_, AppState>,
+    hub: State<'_, crate::agent::AgentHub>,
+    server_id: String,
+    text: String,
+) -> Result<(), String> {
+    state
+        .prompt_history_push(server_id, &text)
+        .map_err(to_command_error)?;
+    hub.prompt(&text).map_err(to_command_error)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) fn agent_cancel(hub: State<'_, crate::agent::AgentHub>) -> Result<(), String> {
+    hub.cancel().map_err(to_command_error)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) fn agent_set_model(
+    hub: State<'_, crate::agent::AgentHub>,
+    model_id: String,
+) -> Result<(), String> {
+    hub.set_model(model_id).map_err(to_command_error)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) fn agent_permission_reply(
+    hub: State<'_, crate::agent::AgentHub>,
+    id: u64,
+    option_id: String,
+) -> Result<(), String> {
+    hub.permission_reply(id, option_id)
+        .map_err(to_command_error)
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

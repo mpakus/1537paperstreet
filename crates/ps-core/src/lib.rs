@@ -2,6 +2,7 @@
 
 #![warn(missing_docs)]
 
+pub mod agents;
 pub mod config;
 pub mod docio;
 pub mod error;

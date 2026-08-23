@@ -2,6 +2,10 @@
 
 use ts_rs::{Config as TsConfig, TS};
 
+use crate::agents::{
+    AgentChoice, AgentClientEvent, AgentEnvVar, AgentPermission, AgentPreset, AgentPresetInfo,
+    AgentServer, Agents, PromptHistoryEntry,
+};
 use crate::config::{
     Appearance, Config, Editor, Files, History, Typography, Updates, ViewMode, Viewer, Window,
 };
@@ -35,6 +39,15 @@ pub fn ipc_typescript() -> String {
         Files::decl(&ts),
         Window::decl(&ts),
         Updates::decl(&ts),
+        AgentPermission::decl(&ts),
+        AgentPreset::decl(&ts),
+        AgentEnvVar::decl(&ts),
+        AgentServer::decl(&ts),
+        Agents::decl(&ts),
+        AgentPresetInfo::decl(&ts),
+        AgentChoice::decl(&ts),
+        AgentClientEvent::decl(&ts),
+        PromptHistoryEntry::decl(&ts),
         Config::decl(&ts),
         Project::decl(&ts),
         ProjectsListQuery::decl(&ts),

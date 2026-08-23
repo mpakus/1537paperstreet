@@ -41,6 +41,16 @@
     type TreeNode,
     type UntitledKind,
     type ViewMode,
+    type AgentClientEvent,
+    type AgentChoice,
+    type AgentPermission,
+    type PromptHistoryEntry,
+    agentCancel,
+    agentPermissionReply,
+    agentPrompt,
+    agentPromptHistory,
+    agentSetModel,
+    agentStart,
   } from './lib/ipc'
   import type { MarkdownEditor } from './editor/types'
   import { applyMarkdownCommand } from './lib/markdown'
@@ -72,6 +82,7 @@
     watchTouchesOpenFile,
   } from './lib/tree'
   import About from './panes/About.svelte'
+  import Assistant from './panes/Assistant.svelte'
   import ChromeToolbar from './panes/ChromeToolbar.svelte'
   import Conflict from './panes/Conflict.svelte'
   import DocTabs from './panes/DocTabs.svelte'
@@ -138,7 +149,23 @@
   } | null>(null)
   let ignoredExternal = $state<{ relPath: string; hash: string } | null>(null)
   let settingsOpen = $state(false)
+  let settingsFocusAgents = $state(false)
   let aboutOpen = $state(false)
+  let assistantOpen = $state(false)
+  let assistantBusy = $state(false)
+  let assistantError = $state('')
+  let assistantTranscript = $state('')
+  let assistantModels = $state<AgentChoice[]>([])
+  let assistantModelId = $state('')
+  let assistantComposer = $state('')
+  let assistantHistory = $state<PromptHistoryEntry[]>([])
+  let assistantPermission = $state<AgentPermission>('allowance')
+  let assistantServerId = $state('')
+  let assistantPermit = $state<{
+    id: number
+    title: string
+    options: AgentChoice[]
+  } | null>(null)
   let aboutAutocheck = $state(false)
   let aboutCheckSeq = $state(0)
   let projectsReload = $state(0)
@@ -199,6 +226,15 @@
     monoFont = config.typography.mono_font
     confirmDelete = config.files.confirm_delete
     showToc = config.viewer.show_toc
+    assistantPermission = config.agents?.permission ?? 'allowance'
+    const servers = config.agents?.servers ?? []
+    if (
+      !assistantServerId ||
+      !servers.some((server) => server.id === assistantServerId)
+    ) {
+      assistantServerId =
+        config.agents?.default_server_id ?? servers[0]?.id ?? ''
+    }
     applyTheme(config)
   }
 
@@ -231,7 +267,8 @@
     return ''
   }
 
-  async function openSettings() {
+  async function openSettings(opts?: { agents?: boolean }) {
+    settingsFocusAgents = opts?.agents ?? false
     settingsOpen = true
     if (appConfig) {
       return
@@ -240,6 +277,97 @@
       applyConfig(await configGet())
     } catch (cause) {
       error = errorMessage(cause)
+    }
+  }
+
+  async function openAssistant() {
+    assistantOpen = true
+    assistantError = ''
+    try {
+      assistantHistory = await agentPromptHistory()
+      if (appConfig) {
+        applyConfig(appConfig)
+      }
+    } catch (cause) {
+      assistantError = errorMessage(cause)
+    }
+  }
+
+  function applyAgentEvent(event: AgentClientEvent) {
+    if (event.kind === 'ready') {
+      assistantModels = event.models
+      assistantModelId = event.models[0]?.id ?? ''
+      assistantBusy = false
+      return
+    }
+    if (event.kind === 'message') {
+      assistantTranscript += event.text
+      return
+    }
+    if (event.kind === 'tool') {
+      assistantTranscript += `\n[${event.title}: ${event.status}]`
+      return
+    }
+    if (event.kind === 'permission') {
+      assistantPermit = {
+        id: event.id,
+        title: event.title,
+        options: event.options,
+      }
+      return
+    }
+    if (event.kind === 'done') {
+      assistantBusy = false
+      assistantTranscript += assistantTranscript.endsWith('\n')
+        ? ''
+        : '\n'
+      return
+    }
+    if (event.kind === 'error') {
+      assistantBusy = false
+      assistantError = event.message
+    }
+  }
+
+  async function startAssistantChat(): Promise<boolean> {
+    if (!active) {
+      assistantError = 'Open a folder first.'
+      return false
+    }
+    if (!assistantServerId) {
+      assistantError = 'Add an agent in Settings.'
+      return false
+    }
+    assistantError = ''
+    assistantTranscript = ''
+    assistantPermit = null
+    assistantBusy = true
+    try {
+      const ready = await agentStart(
+        assistantServerId,
+        active.id,
+        assistantPermission,
+      )
+      applyAgentEvent(ready)
+      return true
+    } catch (cause) {
+      assistantBusy = false
+      assistantError = errorMessage(cause)
+      return false
+    }
+  }
+
+  async function sendAssistantPrompt(text: string) {
+    assistantComposer = ''
+    assistantTranscript += (assistantTranscript ? '\n\n' : '') + `You: ${text}\n\n`
+    assistantBusy = true
+    assistantError = ''
+    try {
+      await agentPrompt(assistantServerId, text)
+      assistantHistory = await agentPromptHistory()
+    } catch (cause) {
+      assistantBusy = false
+      assistantError = errorMessage(cause)
     }
   }
 
@@ -466,6 +594,10 @@
       }
       if (id === 'app-settings' || id === 'file-settings') {
         await openSettings()
+        return
+      }
+      if (id === 'view-assistant') {
+        await openAssistant()
         return
       }
       if (id === 'app-about' || id === 'file-about') {
@@ -1144,6 +1276,10 @@
         void listen<FsChangedEvent>('fs://changed', (event) => {
           applyWatch(event.payload)
         }).then((unlisten) => stops.push(unlisten))
+
+        void listen<AgentClientEvent>('agent://event', (event) => {
+          applyAgentEvent(event.payload)
+        }).then((unlisten) => stops.push(unlisten))
       })
       .catch((cause) => {
         error = errorMessage(cause)
@@ -1318,6 +1454,16 @@
     }}
   >
     <p class="window-title">{documentTitle}</p>
+    <button
+      type="button"
+      class="titlebar-assistant"
+      title="Assistant (⌘⌥A)"
+      onclick={() => {
+        void openAssistant().catch((cause) => {
+          error = errorMessage(cause)
+        })
+      }}>Assistant</button
+    >
   </header>
   <ChromeToolbar
     mode={viewMode}
@@ -1667,10 +1813,90 @@
               error = errorMessage(cause)
             })
         }}
+        focusAgents={settingsFocusAgents}
       />
     {:else}
       <div class="settings-loading" role="status">Loading settings…</div>
     {/if}
+  {/if}
+
+  {#if assistantOpen}
+    <Assistant
+      servers={appConfig?.agents.servers ?? []}
+      history={assistantHistory}
+      projectOpen={Boolean(active)}
+      busy={assistantBusy}
+      models={assistantModels}
+      transcript={assistantTranscript}
+      permissionPrompt={assistantPermit}
+      selectedServerId={assistantServerId}
+      permission={assistantPermission}
+      selectedModelId={assistantModelId}
+      bind:composer={assistantComposer}
+      error={assistantError}
+      onconfigure={() => {
+        assistantOpen = false
+        void openSettings({ agents: true })
+      }}
+      onclose={() => {
+        assistantOpen = false
+      }}
+      onserver={(id) => {
+        assistantServerId = id
+        if (!appConfig) {
+          return
+        }
+        appConfig.agents.default_server_id = id
+        void configSet(appConfig).catch((cause) => {
+          error = errorMessage(cause)
+        })
+      }}
+      onpermission={(value) => {
+        assistantPermission = value
+        if (!appConfig) {
+          return
+        }
+        appConfig.agents.permission = value
+        void configSet(appConfig).catch((cause) => {
+          error = errorMessage(cause)
+        })
+      }}
+      onmodel={(id) => {
+        assistantModelId = id
+        void agentSetModel(id).catch((cause) => {
+          assistantError = errorMessage(cause)
+        })
+      }}
+      onnewchat={() => {
+        void startAssistantChat()
+      }}
+      onsend={(text) => {
+        void (async () => {
+          if (!assistantTranscript) {
+            const ok = await startAssistantChat()
+            if (!ok) {
+              return
+            }
+          }
+          await sendAssistantPrompt(text)
+        })()
+      }}
+      oncancel={() => {
+        void agentCancel().catch((cause) => {
+          assistantError = errorMessage(cause)
+        })
+        assistantBusy = false
+      }}
+      onhistory={(text) => {
+        assistantComposer = text
+      }}
+      onpermit={(id, optionId) => {
+        assistantPermit = null
+        void agentPermissionReply(id, optionId).catch((cause) => {
+          assistantError = errorMessage(cause)
+        })
+      }}
+    />
   {/if}
 
   {#if aboutOpen}
@@ -1764,6 +1990,7 @@
   .window-title {
     margin: 0;
     min-width: 0;
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1772,6 +1999,19 @@
     color: var(--fg-muted);
     user-select: none;
     pointer-events: none;
+  }
+
+  .titlebar-assistant {
+    flex: none;
+    min-height: 22px;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    -webkit-app-region: no-drag;
   }
 
   .titlebar :global(button) {

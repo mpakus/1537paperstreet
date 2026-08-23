@@ -36,7 +36,8 @@ const config = {
     show_in_dock: true,
   },
   editor: { spellcheck: true },
-} as Config
+  agents: { servers: [], default_server_id: null, permission: 'allowance' },
+} as unknown as Config
 
 const themes: ThemeInfo[] = [
   {
@@ -70,5 +71,7 @@ describe('Settings', () => {
     expect(body).toContain('Keep icon in Dock when the window is hidden')
     expect(body).toContain('Custom reading colors')
     expect(body).toContain('Done')
+    expect(body).toContain('External Agents')
+    expect(body).toContain('Add Custom Agent')
   })
 })

@@ -203,6 +203,160 @@ export type Updates = {
  */
 check_on_launch: boolean, };
 
+export type AgentPermission = "full" | "plan" | "allowance";
+
+export type AgentPreset = "opencode" | "claude" | "codex" | "custom";
+
+export type AgentEnvVar = { 
+/**
+ * Environment variable name.
+ */
+name: string, 
+/**
+ * Environment variable value. Never written to application logs.
+ */
+value: string, };
+
+export type AgentServer = { 
+/**
+ * Stable ULID.
+ */
+id: string, 
+/**
+ * User-visible name.
+ */
+name: string, 
+/**
+ * Built-in preset, or custom.
+ */
+preset: AgentPreset, 
+/**
+ * Program name on `PATH`, or an absolute path.
+ */
+command: string, 
+/**
+ * Arguments passed without a shell.
+ */
+args: Array<string>, 
+/**
+ * Extra environment variables for the process.
+ */
+env: Array<AgentEnvVar>, 
+/**
+ * Whether the Assistant may start this agent.
+ */
+enabled: boolean, };
+
+export type Agents = { 
+/**
+ * Configured ACP servers.
+ */
+servers: Array<AgentServer>, 
+/**
+ * Last selected server, when it still exists.
+ */
+default_server_id: string | null, 
+/**
+ * Default tool-permission policy for new chats.
+ */
+permission: AgentPermission, };
+
+export type AgentPresetInfo = { 
+/**
+ * Preset identifier.
+ */
+preset: AgentPreset, 
+/**
+ * User-visible name.
+ */
+name: string, 
+/**
+ * Command to store if the user adds this preset.
+ */
+command: string, 
+/**
+ * Arguments to store if the user adds this preset.
+ */
+args: Array<string>, 
+/**
+ * Whether the command exists on `PATH`.
+ */
+available: boolean, };
+
+export type AgentChoice = { 
+/**
+ * Agent-defined identifier.
+ */
+id: string, 
+/**
+ * User-visible label.
+ */
+name: string, };
+
+export type AgentClientEvent = { "kind": "ready", 
+/**
+ * ACP session identifier.
+ */
+session_id: string, 
+/**
+ * Models advertised by the agent, if any.
+ */
+models: Array<AgentChoice>, 
+/**
+ * Session modes advertised by the agent, if any.
+ */
+modes: Array<AgentChoice>, } | { "kind": "message", 
+/**
+ * Markdown or plain text chunk.
+ */
+text: string, } | { "kind": "tool", 
+/**
+ * Short tool title from the agent.
+ */
+title: string, 
+/**
+ * pending, in_progress, completed, or failed.
+ */
+status: string, } | { "kind": "permission", 
+/**
+ * JSON-RPC request id to answer.
+ */
+id: number, 
+/**
+ * Tool title shown in the dialog.
+ */
+title: string, 
+/**
+ * Options supplied by the agent.
+ */
+options: Array<AgentChoice>, } | { "kind": "done", 
+/**
+ * ACP stop reason.
+ */
+stop_reason: string, } | { "kind": "error", 
+/**
+ * User-visible explanation.
+ */
+message: string, };
+
+export type PromptHistoryEntry = { 
+/**
+ * Stable ULID.
+ */
+id: string, 
+/**
+ * RFC 3339 timestamp.
+ */
+ts: string, 
+/**
+ * Prompt text shown in history.
+ */
+text: string, 
+/**
+ * Agent that received the prompt.
+ */
+server_id: string, };
+
 export type Config = { 
 /**
  * On-disk schema version.
@@ -239,7 +393,11 @@ window: Window,
 /**
  * Update-check behavior.
  */
-updates: Updates, };
+updates: Updates, 
+/**
+ * External ACP agents. Missing in older files; default is empty.
+ */
+agents: Agents, };
 
 export type Project = { 
 /**

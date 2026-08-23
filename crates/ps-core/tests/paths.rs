@@ -17,6 +17,11 @@ fn ensure_creates_the_application_directory_tree() {
     assert!(paths.mermaid_cache().is_dir());
     assert_eq!(paths.mermaid_cache(), paths.root().join("cache/mermaid"));
     assert_eq!(paths.log_file(), paths.root().join("logs/app.log"));
+    assert!(paths.agents().is_dir());
+    assert_eq!(
+        paths.agent_prompts_file(),
+        paths.root().join("agents/prompts.json")
+    );
     assert_eq!(
         paths.instance_lock_file(),
         paths.root().join("instance.lock")

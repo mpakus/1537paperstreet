@@ -3,6 +3,9 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 
+use ps_core::agents::{
+    AgentPresetInfo, PromptHistory, PromptHistoryEntry, detect_presets, open_prompt_history,
+};
 use ps_core::config::Config;
 use ps_core::docio::{
     self, DocOpenResult, DocumentMeta, DocumentSource, DocumentStat, LoadedDocument, RestoreTraits,
@@ -33,6 +36,7 @@ pub(crate) struct AppState {
     themes: Arc<ThemeCatalog>,
     log: Arc<FileLog>,
     mermaid_cache: Arc<MermaidSvgCache>,
+    prompt_history: Arc<Mutex<JsonStore<PromptHistory>>>,
 }
 
 impl AppState {
@@ -54,6 +58,7 @@ impl AppState {
         }
 
         let mermaid_cache = MermaidSvgCache::open(paths.mermaid_cache())?;
+        let prompt_history = open_prompt_history(paths.agent_prompts_file())?;
 
         Ok(Self {
             paths,
@@ -64,6 +69,7 @@ impl AppState {
             themes: Arc::new(themes),
             log: Arc::new(log),
             mermaid_cache: Arc::new(mermaid_cache),
+            prompt_history: Arc::new(Mutex::new(prompt_history)),
         })
     }
 
@@ -644,6 +650,46 @@ impl AppState {
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         Ok(projects.get(id)?.path.clone())
+    }
+
+    pub(crate) fn agent_presets() -> Vec<AgentPresetInfo> {
+        detect_presets(None)
+    }
+
+    pub(crate) fn agent_server(&self, id: &str) -> Result<ps_core::agents::AgentServer> {
+        self.config_get()
+            .agents
+            .servers
+            .into_iter()
+            .find(|server| server.id == id)
+            .ok_or_else(|| Error::Agent {
+                message: "That agent is not in Settings.".into(),
+            })
+    }
+
+    pub(crate) fn prompt_history_list(&self) -> Vec<PromptHistoryEntry> {
+        self.prompt_history
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .value()
+            .entries
+            .clone()
+    }
+
+    pub(crate) fn prompt_history_push(
+        &self,
+        server_id: String,
+        text: &str,
+    ) -> Result<PromptHistoryEntry> {
+        let mut store = self
+            .prompt_history
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let mut history = store.value().clone();
+        let entry = history.push(server_id, text)?;
+        store.replace(history);
+        store.flush()?;
+        Ok(entry)
     }
 
     fn absolute_in_project(&self, project_id: &str, rel_path: &Path) -> Result<PathBuf> {

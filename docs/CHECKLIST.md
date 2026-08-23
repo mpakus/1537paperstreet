@@ -343,6 +343,18 @@
 
 ---
 
+## P16 — Внешние ACP-агенты
+
+> Чат с локальным CLI по Agent Client Protocol. Реестр ACP и клиентские `fs/*` не входят в эти задачи. ADR-010.
+
+- [x] **T-210** `config.agents` без bump `schema_version`, `AppPaths::agents`, валидация command/args/env, PATH-пресеты OpenCode/Claude/Codex, история промптов, ADR-010. (← T-015)
+- [x] **T-211** Settings: секция External Agents, список, Add preset / Custom, удаление. (← T-210, T-099)
+- [x] **T-212** 🔒 Хост ACP в `ps-app`: spawn stdio, initialize, session/new, prompt, cancel, permission policy; события `agent://event`. Без `fs` и terminal. Тесты на поддельном JSON-RPC, не на реальных CLI. (← T-210)
+- [x] **T-213** Assistant popup: Configure, модель, Full/Plan/Allowance, история промптов, New chat, ⌘⌥A. (← T-211, T-212)
+- [x] **T-214** Документация: privacy, user guide, README, CHANGELOG, shortcuts. (← T-213)
+
+---
+
 ## Бэклог после v1
 
 - [ ] WYSIWYG-режим редактирования
