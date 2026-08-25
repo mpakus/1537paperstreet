@@ -368,6 +368,31 @@ impl AppState {
         copy: bool,
         conflict: ConflictStrategy,
     ) -> Result<Vec<TreeNode>> {
+        self.fs_transfer_with(
+            from_project_id,
+            from,
+            to_project_id,
+            to_dir,
+            copy,
+            conflict,
+            |root, paths| fsops::trash(root, paths, pending_history_snapshot),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn fs_transfer_with<D>(
+        &self,
+        from_project_id: String,
+        from: Vec<PathBuf>,
+        to_project_id: String,
+        to_dir: PathBuf,
+        copy: bool,
+        conflict: ConflictStrategy,
+        delete_source: D,
+    ) -> Result<Vec<TreeNode>>
+    where
+        D: FnOnce(&Path, &[PathBuf]) -> Result<()>,
+    {
         let from_root = self.project_root(&from_project_id)?;
         let to_root = self.project_root(&to_project_id)?;
         let from_canonical = from_root.canonicalize().map_err(|source| Error::Io {
@@ -415,7 +440,7 @@ impl AppState {
             nodes.push(tree::node_at(&to_root, &absolute)?);
         }
         if !copy && !copied.is_empty() {
-            fsops::trash(&from_root, &copied, pending_history_snapshot)?;
+            delete_source(&from_root, &copied)?;
         }
         Ok(nodes)
     }
@@ -473,8 +498,17 @@ impl AppState {
     }
 
     pub(crate) fn fs_trash(&self, project_id: String, rel_paths: Vec<PathBuf>) -> Result<()> {
+        self.fs_trash_with(project_id, rel_paths, |root, paths| {
+            fsops::trash(root, paths, pending_history_snapshot)
+        })
+    }
+
+    fn fs_trash_with<D>(&self, project_id: String, rel_paths: Vec<PathBuf>, delete: D) -> Result<()>
+    where
+        D: FnOnce(&Path, &[PathBuf]) -> Result<()>,
+    {
         let root = self.project_root(&project_id)?;
-        fsops::trash(&root, &rel_paths, pending_history_snapshot)
+        delete(&root, &rel_paths)
     }
 
     pub(crate) fn files_search(
@@ -1355,7 +1389,11 @@ mod tests {
         );
 
         state
-            .fs_trash(project.id.clone(), vec![PathBuf::from("inbox/note.md")])
+            .fs_trash_with(
+                project.id.clone(),
+                vec![PathBuf::from("inbox/note.md")],
+                |root, paths| ps_core::fsops::permanently_delete(root, paths, |_| Ok(())),
+            )
             .expect("trash");
         assert!(!project_root.join("inbox/note.md").exists());
         assert!(project_root.join("inbox/note 2.md").exists());
@@ -1419,13 +1457,14 @@ mod tests {
         );
 
         let moved = state
-            .fs_transfer(
+            .fs_transfer_with(
                 alpha.id.clone(),
                 vec![PathBuf::from("note.md")],
                 beta.id.clone(),
                 PathBuf::new(),
                 false,
                 ConflictStrategy::KeepBoth,
+                |root, paths| ps_core::fsops::permanently_delete(root, paths, |_| Ok(())),
             )
             .expect("move across");
         assert_eq!(moved[0].name, "note 2.md");
