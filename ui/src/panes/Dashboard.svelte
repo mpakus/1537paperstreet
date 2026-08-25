@@ -37,7 +37,7 @@
         <h3>{section.title}</h3>
         {#if section.metrics.length > 0}
           <div class="metrics">
-            {#each section.metrics as metric (metric.label)}
+            {#each section.metrics as metric, metricIndex (`${section.title}-m-${metricIndex}`)}
               <article>
                 <p class="label">{metric.label}</p>
                 <p class="value">{metric.value}</p>
@@ -47,7 +47,7 @@
         {/if}
         {#if section.rows.length > 0}
           <ul>
-            {#each section.rows as row (section.title + row.title + row.detail)}
+            {#each section.rows as row, rowIndex (`${section.title}-r-${rowIndex}`)}
               <li>
                 <span>{row.title}</span>
                 <span class="detail">{row.detail}</span>
