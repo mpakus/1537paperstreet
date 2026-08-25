@@ -869,6 +869,7 @@ mod tests {
     use std::fs;
     use std::path::{Path, PathBuf};
 
+    use ps_core::agents::{AgentServer, AgentSessionStats};
     use ps_core::config::Config;
     use ps_core::docio::RestoreTraits;
     use ps_core::fsops::ConflictStrategy;
@@ -909,6 +910,52 @@ mod tests {
         let text = fs::read_to_string(state.paths().log_file()).expect("log");
         assert!(text.contains("warn sidebar vibrancy could not be applied"));
         assert!(!text.contains("# Heading"));
+    }
+
+    #[test]
+    fn agent_history_and_dashboard_share_persisted_application_state() {
+        let (temporary, state) = open_state();
+        let notes = temporary.path().join("notes");
+        fs::create_dir(&notes).expect("project directory");
+        fs::write(notes.join("readme.md"), b"# Notes\n").expect("document");
+        let project = state
+            .projects_add("Notes".into(), notes)
+            .expect("add project");
+
+        let server = AgentServer::custom("Local", "/usr/bin/true", Vec::new());
+        let mut config = state.config_get();
+        config.agents.default_server_id = Some(server.id.clone());
+        config.agents.servers.push(server.clone());
+        state.config_set(config).expect("save agent");
+
+        assert_eq!(state.agent_server(&server.id).expect("server"), server);
+        assert!(state.agent_server("missing").is_err());
+        assert_eq!(AppState::agent_presets().len(), 3);
+
+        let entry = state
+            .prompt_history_push(server.id.clone(), "Summarize these notes")
+            .expect("save prompt");
+        assert_eq!(entry.text, "Summarize these notes");
+        assert_eq!(state.prompt_history_list(), vec![entry.clone()]);
+
+        let session = AgentSessionStats::started(&server.name);
+        let dashboard = state.dashboard(Some(&project.id), session);
+        assert_eq!(dashboard.title, "Dashboard");
+        assert!(dashboard.sections.iter().any(|section| {
+            section.title == "Recent prompts"
+                && section.rows.iter().any(|row| row.title == entry.text)
+        }));
+
+        let reopened = AppState::open(AppPaths::from_root(temporary.path())).expect("reopen");
+        assert_eq!(reopened.prompt_history_list(), vec![entry]);
+        let empty = reopened.dashboard(Some("missing"), AgentSessionStats::default());
+        assert!(empty.sections.iter().any(|section| {
+            section.title == "Open project"
+                && section
+                    .metrics
+                    .iter()
+                    .any(|metric| metric.label == "Folder" && metric.value == "None")
+        }));
     }
 
     #[test]
