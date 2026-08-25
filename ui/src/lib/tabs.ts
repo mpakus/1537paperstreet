@@ -3,6 +3,25 @@ import type { DocumentMeta, DocumentSource } from './generated/core'
 /** Workspace page shown in the main tab strip. */
 export type WorkspacePage = 'document' | 'assistant' | 'dashboard'
 
+/** Optional non-document tab in the workspace strip. */
+export type WorkspaceTab = Exclude<WorkspacePage, 'document'>
+
+/** Opens one workspace tab without duplicating it. */
+export function openWorkspaceTab(
+  tabs: WorkspaceTab[],
+  tab: WorkspaceTab,
+): WorkspaceTab[] {
+  return tabs.includes(tab) ? tabs : [...tabs, tab]
+}
+
+/** Closes one workspace tab. */
+export function closeWorkspaceTab(
+  tabs: WorkspaceTab[],
+  tab: WorkspaceTab,
+): WorkspaceTab[] {
+  return tabs.filter((item) => item !== tab)
+}
+
 /** One open document in the tab strip. */
 export type DocTab = {
   relPath: string

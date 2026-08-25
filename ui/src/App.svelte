@@ -59,13 +59,16 @@
   import { pathsFromDataTransfer, recentProjects, isExternalFileDrag } from './lib/open'
   import { clampPanelWidth } from './lib/panel-width'
   import {
+    closeWorkspaceTab,
     nextAfterClose,
+    openWorkspaceTab,
     removeTab,
     retitleTab,
     tabTitle,
     upsertTab,
     type DocTab,
     type WorkspacePage,
+    type WorkspaceTab,
   } from './lib/tabs'
   import { exportDocumentPdf } from './lib/print'
   import { windowTitle } from './lib/text'
@@ -156,6 +159,7 @@
   let settingsFocusAgents = $state(false)
   let aboutOpen = $state(false)
   let workspacePage = $state<WorkspacePage>('document')
+  let workspaceTabs = $state<WorkspaceTab[]>([])
   let dashboardSnapshot = $state<DashboardSnapshot | null>(null)
   let dashboardError = $state('')
   let assistantBusy = $state(false)
@@ -293,6 +297,7 @@
   }
 
   async function openAssistant() {
+    workspaceTabs = openWorkspaceTab(workspaceTabs, 'assistant')
     workspacePage = 'assistant'
     assistantError = ''
     try {
@@ -306,6 +311,7 @@
   }
 
   async function openDashboard() {
+    workspaceTabs = openWorkspaceTab(workspaceTabs, 'dashboard')
     workspacePage = 'dashboard'
     dashboardError = ''
     try {
@@ -1184,6 +1190,13 @@
     docMissing = false
   }
 
+  function closeWorkspacePage(page: WorkspaceTab) {
+    workspaceTabs = closeWorkspaceTab(workspaceTabs, page)
+    if (workspacePage === page) {
+      workspacePage = workspaceTabs.at(-1) ?? 'document'
+    }
+  }
+
   async function handleDrop(
     paths: string[],
     position?: { x: number; y: number },
@@ -1672,6 +1685,7 @@
     <main>
       <DocTabs
         {tabs}
+        {workspaceTabs}
         page={workspacePage}
         activeRelPath={openMeta?.relPath ?? null}
         onpage={(page) => {
@@ -1687,6 +1701,7 @@
             })
           }
         }}
+        onclosepage={closeWorkspacePage}
         onselect={(relPath) => {
           void openDocument(relPath).catch((cause) => {
             error = errorMessage(cause)

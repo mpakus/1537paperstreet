@@ -22,7 +22,7 @@ describe('App', () => {
     expect(body).not.toContain('title="Settings (⌘,)"')
     expect(body).toContain('title="Assistant (⌘⌥A)"')
     expect(body).toContain('aria-label="Workspace"')
-    expect(body).toContain('Dashboard')
+    expect(body).not.toContain('Dashboard')
     expect(body).toContain('>Assistant</button')
     expect(body).toContain('aria-label="Hide projects"')
     expect(body).toContain('Open a Markdown file to preview, edit, or export.')

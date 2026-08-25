@@ -18,6 +18,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Dashboard and Assistant are optional workspace tabs: they appear when opened
+  and can be closed like document tabs instead of remaining pinned.
 - Dragging a tree file onto a project no longer shows the Finder drop overlay
   or re-opens the same file. The drop is applied to the project under the
   pointer.
