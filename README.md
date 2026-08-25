@@ -1,14 +1,41 @@
 # 1537paperstreet
 
-A local Markdown reader and editor for macOS. Open the folders you already
-keep on disk. There is no account, no cloud, and no network call when you
-read a document.
+**Your Markdown. Your folders. A quieter way to work.**
+
+1537paperstreet turns ordinary folders of Markdown into a focused macOS
+workspace. Browse a project, read beautifully rendered documents, edit the
+source, preview diagrams and math, export a PDF, or work with a local AI agent —
+without importing files into a vault or signing in to a service.
 
 Made in Austin ✩ Texas · [aomega.co](https://aomega.co)
 
 [Download the latest release](https://github.com/mpakus/1537paperstreet/releases/latest)
 
 ![Preview of a Markdown document with Projects, file tree, table of contents, and rendered headings](docs/screen-preview.png)
+
+## Plain-text knowledge, with a real workspace around it
+
+Your notes, specifications, READMEs, and wikis already belong beside your
+projects. 1537paperstreet makes those files comfortable to navigate and read
+without changing where they live or how they are stored.
+
+- **Open any folder.** There is no migration, database, or proprietary vault.
+  Add an existing folder and keep using the same files with Git, Finder, your
+  editor, and every other tool you trust.
+- **Read more than basic Markdown.** GitHub Flavored Markdown, syntax-highlighted
+  code, tables, alerts, footnotes, wiki links, Mermaid diagrams, and KaTeX math
+  render in a calm, themeable reading view.
+- **Move naturally between reading and writing.** Preview, Edit, and Split modes
+  share one window. Saves are atomic, preserve file characteristics, and refuse
+  to overwrite a file changed elsewhere.
+- **Find the document, not the app feature.** Projects, a virtualized file tree,
+  tabs, quick open, table of contents, and full-size reading keep large folders
+  manageable.
+- **Use AI on your terms.** Connect a local ACP-compatible CLI such as Codex,
+  Claude, or OpenCode. The Assistant works in the open project; the app does not
+  send documents to a model service itself.
+- **Stay local by default.** Reading, editing, themes, Mermaid, KaTeX, search,
+  and analytics run on the Mac. There is no account, cloud library, or telemetry.
 
 ## Why it exists
 
@@ -27,7 +54,7 @@ and wikis that already live next to your code.
 
 ## What you can do
 
-### Projects
+### Turn folders into workspaces
 
 Keep several folders in the **Projects** list. Search filters by name and path.
 
@@ -42,7 +69,7 @@ the record at the new location. Remove from List only drops the list entry.
 ⌘⇧P switches project. ⌘1 hides the Projects list; a slim strip remains so
 you can open it again.
 
-### Files
+### Navigate and organize
 
 The tree loads one directory level at a time. Expanded folders and pane widths
 persist. Icons distinguish folders, Markdown (`.md`, `.markdown`, `.mdown`,
@@ -70,7 +97,7 @@ Name clashes offer Replace, Keep Both, or Skip (optionally apply to all).
 
 Settings can show hidden files and require confirmation before Trash.
 
-### Reading
+### Read rich Markdown
 
 Open files stay in tabs. Preview (⌘E from the editor) renders GitHub Flavored
 Markdown:
@@ -98,7 +125,7 @@ In Preview and Split, the bar has A− / A+ (reading size) and − / % / +
 
 ![Split: Markdown source with highlighting, outline, and live preview including a Mermaid diagram](docs/screen-edit-split.png)
 
-### Editing
+### Edit without giving up file control
 
 **Edit** (⌘E) and **Split** (⌘⇧E) show the Markdown source. Split places the
 editor beside a live preview; drag the divider (width is remembered).
@@ -120,7 +147,7 @@ If another program (including Open in External Editor) saves the open file, a
 dialog asks to **Reload** or **Keep this version**, in Preview and Edit.
 Reload discards unsaved edits in this app.
 
-### Themes and settings
+### Make reading comfortable
 
 ⌘, (File → Settings…) has:
 
@@ -140,7 +167,7 @@ Reload discards unsaved edits in this app.
 
 Custom themes are JSON in `~/.1537paperstreet/themes/`.
 
-### Assistant
+### Work with local AI agents
 
 ⌘⌥A (View → Assistant, the Assistant tab, or the title-bar control) opens
 the Assistant **tab**: Configure (Settings), agent, model when the CLI lists
@@ -155,7 +182,7 @@ prompts. It does not send telemetry.
 
 ![Settings: theme palettes, typography, preview colors, Dock, and render toggles](docs/screen-settings.png)
 
-### Export
+### Share finished documents
 
 **Export** / File → Export PDF… / ⌘⌥E saves the open document as PDF: native
 Save dialog, then a snapshot of the preview (theme, diagrams, images).
@@ -165,7 +192,7 @@ PNG.
 
 ZIP of a whole project is not in this version.
 
-### Window and updates
+### Keep it ready, without keeping it in the way
 
 Closing the red traffic light hides the window; the menu-bar icon stays.
 Click it to show the window again. Quit from that menu or ⌘Q.
