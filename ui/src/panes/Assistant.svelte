@@ -35,7 +35,11 @@
     busy?: boolean
     models?: AgentChoice[]
     transcript?: string
-    permissionPrompt?: { id: number; title: string; options: AgentChoice[] } | null
+    permissionPrompt?: {
+      id: number
+      title: string
+      options: AgentChoice[]
+    } | null
     selectedServerId: string
     permission: AgentPermission
     selectedModelId?: string
@@ -124,7 +128,12 @@
     {/if}
     <div class="chat" aria-live="polite">{transcript}</div>
     {#if permissionPrompt}
-      <div class="permit" role="alertdialog" tabindex="-1" aria-label="Tool permission">
+      <div
+        class="permit"
+        role="alertdialog"
+        tabindex="-1"
+        aria-label="Tool permission"
+      >
         <p>{permissionPrompt.title}</p>
         <div class="actions">
           {#each permissionPrompt.options as option (option.id)}
@@ -159,8 +168,7 @@
         rows="4"
         bind:value={composer}
         placeholder="Ask the agent…"
-        disabled={!projectOpen || !selectedServerId}
-      ></textarea>
+        disabled={!projectOpen || !selectedServerId}></textarea>
       <div class="actions">
         <button type="button" onclick={onnewchat}>New chat</button>
         {#if busy}

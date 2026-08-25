@@ -435,23 +435,27 @@
     <section id="settings-agents">
       <h3>External Agents</h3>
       <p class="hint">
-        Agents run as programs already on this Mac (Agent Client Protocol).
-        This app does not call a model API or install agents. Billing and
-        sign-in stay with the CLI. Full permission can let that CLI change
-        files in the open project.
+        Agents run as programs already on this Mac (Agent Client Protocol). This
+        app does not call a model API or install agents. Billing and sign-in
+        stay with the CLI. Full permission can let that CLI change files in the
+        open project.
       </p>
       {#if presetError}
         <p class="hint" role="status">{presetError}</p>
       {/if}
       {#if draft.agents.servers.length === 0}
-        <p class="hint">No agents yet. Add a preset from PATH or a custom command.</p>
+        <p class="hint">
+          No agents yet. Add a preset from PATH or a custom command.
+        </p>
       {:else}
         <ul class="agent-list">
           {#each draft.agents.servers as server (server.id)}
             <li>
               <div>
                 <strong>{server.name}</strong>
-                <span class="hint">{server.command} {server.args.join(' ')}</span>
+                <span class="hint"
+                  >{server.command} {server.args.join(' ')}</span
+                >
               </div>
               <button
                 type="button"
@@ -470,9 +474,10 @@
             type="button"
             disabled={!preset.available ||
               draft.agents.servers.some((row) => row.preset === preset.preset)}
-            onclick={() => void addPreset(preset).catch((cause) => {
-              presetError = errorMessage(cause)
-            })}
+            onclick={() =>
+              void addPreset(preset).catch((cause) => {
+                presetError = errorMessage(cause)
+              })}
           >
             Add {preset.name}
             {preset.available ? '' : ' (not on PATH)'}

@@ -51,15 +51,15 @@ current project.
 
 Context menu and File / Go:
 
-| Action | How |
-| --- | --- |
-| New File / New Folder | ⌘N / ⌘⇧N in the selected folder |
-| Rename | click the selected name again, F2, or the context menu |
-| Duplicate | copy beside the original |
-| Copy to… / Move to… | pick a destination folder |
-| Reveal in Finder | ⌘⇧R |
-| Open in External Editor | ⌘⇧O |
-| Move to Trash | ⌘⌫, with confirmation |
+| Action                  | How                                                    |
+| ----------------------- | ------------------------------------------------------ |
+| New File / New Folder   | ⌘N / ⌘⇧N in the selected folder                        |
+| Rename                  | click the selected name again, F2, or the context menu |
+| Duplicate               | copy beside the original                               |
+| Copy to… / Move to…     | pick a destination folder                              |
+| Reveal in Finder        | ⌘⇧R                                                    |
+| Open in External Editor | ⌘⇧O                                                    |
+| Move to Trash           | ⌘⌫, with confirmation                                  |
 
 Drag inside the tree to move; hold ⌥ to copy. Hovering a folder expands it.
 Drop from Finder into a tree folder copies into the project. Drag a file onto

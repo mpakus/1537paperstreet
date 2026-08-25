@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Project } from './generated/core'
-import { isExternalFileDrag, pathsFromDataTransfer, recentProjects } from './open'
+import {
+  isExternalFileDrag,
+  pathsFromDataTransfer,
+  recentProjects,
+} from './open'
 
 function project(
   partial: Partial<Project> & Pick<Project, 'id' | 'name'>,

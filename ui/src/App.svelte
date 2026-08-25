@@ -56,7 +56,11 @@
   } from './lib/ipc'
   import type { MarkdownEditor } from './editor/types'
   import { applyMarkdownCommand } from './lib/markdown'
-  import { pathsFromDataTransfer, recentProjects, isExternalFileDrag } from './lib/open'
+  import {
+    pathsFromDataTransfer,
+    recentProjects,
+    isExternalFileDrag,
+  } from './lib/open'
   import { clampPanelWidth } from './lib/panel-width'
   import {
     closeWorkspaceTab,
@@ -385,7 +389,8 @@
 
   async function sendAssistantPrompt(text: string) {
     assistantComposer = ''
-    assistantTranscript += (assistantTranscript ? '\n\n' : '') + `You: ${text}\n\n`
+    assistantTranscript +=
+      (assistantTranscript ? '\n\n' : '') + `You: ${text}\n\n`
     assistantBusy = true
     assistantError = ''
     try {
@@ -813,7 +818,8 @@
     if (!active) {
       return
     }
-    const destProjectId = toProjectId ?? pendingTransfer?.toProjectId ?? active.id
+    const destProjectId =
+      toProjectId ?? pendingTransfer?.toProjectId ?? active.id
     const sourceProjectId =
       fromProjectId ?? pendingTransfer?.fromProjectId ?? active.id
     if (mode === 'import') {
@@ -832,8 +838,7 @@
         if (
           openPath &&
           from.some(
-            (path) =>
-              openPath === path || openPath.startsWith(`${path}/`),
+            (path) => openPath === path || openPath.startsWith(`${path}/`),
           )
         ) {
           closeTab(openPath)
@@ -879,7 +884,14 @@
       conflictNames = conflicts
       return
     }
-    await finishTransfer(mode, from, '', 'keepBoth', fromProjectId, toProject.id)
+    await finishTransfer(
+      mode,
+      from,
+      '',
+      'keepBoth',
+      fromProjectId,
+      toProject.id,
+    )
   }
 
   async function importInto(toDir: string, sources: string[]) {
@@ -1797,76 +1809,76 @@
           }}
         />
       {:else}
-      <div
-        class="workspace"
-        class:split={viewMode === 'split'}
-        bind:this={workspaceEl}
-      >
-        {#if findOpen}
-          <FindBar
-            root={articleEl ?? null}
-            onclose={() => (findOpen = false)}
-          />
-        {/if}
-        {#if editorOpened}
-          <Editor
-            bind:value={draftText}
-            bind:api={editorApi}
-            writable={docSourceMeta?.writable ?? false}
-            spellcheck={appConfig?.editor.spellcheck ?? true}
-            lineNumbers={appConfig?.editor.line_numbers ?? false}
-            softWrap={appConfig?.editor.soft_wrap ?? true}
-            indentUnit={appConfig?.editor.indent_unit ?? 2}
-            hidden={viewMode === 'preview'}
-          />
-        {/if}
-        {#if viewMode === 'split'}
-          <div
-            class="resize"
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize editor"
-            onpointerdown={(event) => {
-              event.preventDefault()
-              resizeStart = {
-                kind: 'editor',
-                x: event.clientX,
-                width: editorWidth,
-              }
-            }}
-          ></div>
-        {/if}
-        {#if viewMode !== 'editor'}
-          <Preview
-            {html}
-            {emptyMessage}
-            toc={showToc ? (docMeta?.toc ?? []) : []}
-            {tocWidth}
-            banner={docMeta?.readonlyReason ?? null}
-            themeId={activeThemeId}
-            mermaidEnabled={appConfig?.viewer.mermaid_enabled ?? true}
-            mathEnabled={appConfig?.viewer.math_enabled ?? true}
-            previewFont={appConfig?.viewer.preview_font ?? ''}
-            previewFontSize={appConfig?.viewer.preview_font_size ?? 0}
-            previewBg={appConfig?.viewer.preview_bg ?? ''}
-            previewFg={appConfig?.viewer.preview_fg ?? ''}
-            readingZoom={previewZoom}
-            bind:articleEl
-            onnavigate={(href) => {
-              void navigate(href).catch((cause) => {
-                error = errorMessage(cause)
-              })
-            }}
-            onerror={(message) => {
-              error = message
-            }}
-            ontocresize={(event) => {
-              event.preventDefault()
-              resizeStart = { kind: 'toc', x: event.clientX, width: tocWidth }
-            }}
-          />
-        {/if}
-      </div>
+        <div
+          class="workspace"
+          class:split={viewMode === 'split'}
+          bind:this={workspaceEl}
+        >
+          {#if findOpen}
+            <FindBar
+              root={articleEl ?? null}
+              onclose={() => (findOpen = false)}
+            />
+          {/if}
+          {#if editorOpened}
+            <Editor
+              bind:value={draftText}
+              bind:api={editorApi}
+              writable={docSourceMeta?.writable ?? false}
+              spellcheck={appConfig?.editor.spellcheck ?? true}
+              lineNumbers={appConfig?.editor.line_numbers ?? false}
+              softWrap={appConfig?.editor.soft_wrap ?? true}
+              indentUnit={appConfig?.editor.indent_unit ?? 2}
+              hidden={viewMode === 'preview'}
+            />
+          {/if}
+          {#if viewMode === 'split'}
+            <div
+              class="resize"
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize editor"
+              onpointerdown={(event) => {
+                event.preventDefault()
+                resizeStart = {
+                  kind: 'editor',
+                  x: event.clientX,
+                  width: editorWidth,
+                }
+              }}
+            ></div>
+          {/if}
+          {#if viewMode !== 'editor'}
+            <Preview
+              {html}
+              {emptyMessage}
+              toc={showToc ? (docMeta?.toc ?? []) : []}
+              {tocWidth}
+              banner={docMeta?.readonlyReason ?? null}
+              themeId={activeThemeId}
+              mermaidEnabled={appConfig?.viewer.mermaid_enabled ?? true}
+              mathEnabled={appConfig?.viewer.math_enabled ?? true}
+              previewFont={appConfig?.viewer.preview_font ?? ''}
+              previewFontSize={appConfig?.viewer.preview_font_size ?? 0}
+              previewBg={appConfig?.viewer.preview_bg ?? ''}
+              previewFg={appConfig?.viewer.preview_fg ?? ''}
+              readingZoom={previewZoom}
+              bind:articleEl
+              onnavigate={(href) => {
+                void navigate(href).catch((cause) => {
+                  error = errorMessage(cause)
+                })
+              }}
+              onerror={(message) => {
+                error = message
+              }}
+              ontocresize={(event) => {
+                event.preventDefault()
+                resizeStart = { kind: 'toc', x: event.clientX, width: tocWidth }
+              }}
+            />
+          {/if}
+        </div>
       {/if}
     </main>
   </div>
