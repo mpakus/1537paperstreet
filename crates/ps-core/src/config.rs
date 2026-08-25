@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use crate::agents::Agents;
 use crate::store::VersionedDocument;
 use crate::{Error, Result};
 
@@ -28,6 +29,9 @@ pub struct Config {
     pub window: Window,
     /// Update-check behavior.
     pub updates: Updates,
+    /// External ACP agents. Missing in older files; default is empty.
+    #[serde(default)]
+    pub agents: Agents,
 }
 
 impl Config {
@@ -39,7 +43,8 @@ impl Config {
             validate_range("preview_font_size", self.viewer.preview_font_size, 10, 32)?;
         }
         validate_hex_color("preview_bg", &self.viewer.preview_bg)?;
-        validate_hex_color("preview_fg", &self.viewer.preview_fg)
+        validate_hex_color("preview_fg", &self.viewer.preview_fg)?;
+        self.agents.validate()
     }
 }
 
@@ -55,6 +60,7 @@ impl Default for Config {
             files: Files::default(),
             window: Window::default(),
             updates: Updates::default(),
+            agents: Agents::default(),
         }
     }
 }

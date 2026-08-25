@@ -31,9 +31,7 @@
       </p>
       <div class="actions">
         <button type="button" onclick={onkeep}>Keep open</button>
-        <button type="button" class="primary" onclick={onreload}
-          >Close</button
-        >
+        <button type="button" class="primary" onclick={onreload}>Close</button>
       </div>
     {:else}
       <h2 id="reload-title">File changed on disk</h2>
@@ -45,9 +43,7 @@
       </p>
       <div class="actions">
         <button type="button" onclick={onkeep}>Keep this version</button>
-        <button type="button" class="primary" onclick={onreload}
-          >Reload</button
-        >
+        <button type="button" class="primary" onclick={onreload}>Reload</button>
       </div>
     {/if}
   </div>

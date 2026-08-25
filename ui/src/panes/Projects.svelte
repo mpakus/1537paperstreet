@@ -11,7 +11,12 @@
   } from '../lib/ipc'
   import { listboxFocusIndex } from '../lib/list-focus'
   import { highlightQuery } from '../lib/text'
-  import { isTreeDrag, resolveTreeDrag, setTreeDragCopy, visibleWindow } from '../lib/tree'
+  import {
+    isTreeDrag,
+    resolveTreeDrag,
+    setTreeDragCopy,
+    visibleWindow,
+  } from '../lib/tree'
 
   let {
     activeId = null,
@@ -87,7 +92,10 @@
     }
     event.preventDefault()
     event.stopPropagation()
-    const project = projectFromEvent(event) ?? items.find((item) => item.id === dropTargetId) ?? null
+    const project =
+      projectFromEvent(event) ??
+      items.find((item) => item.id === dropTargetId) ??
+      null
     dropTargetId = null
     if (!project || project.available === false) {
       return

@@ -4,7 +4,8 @@ App data lives in `~/.1537paperstreet/`, not next to your notes.
 
 | File | Contents |
 | --- | --- |
-| `config.json` | Theme, font, preview colors, Dock, Mermaid/KaTeX flags, window geometry |
+| `config.json` | Theme, font, preview colors, Dock, Mermaid/KaTeX flags, window geometry, external agents |
+| `agents/prompts.json` | Recent Assistant prompts (not agent replies) |
 | `projects.json` | Project list (name and path), not file contents |
 | `ui-state.json` | Expanded folders, pane widths |
 | `themes/` | Your JSON themes |

@@ -35,7 +35,8 @@ can also keep or hide the Dock icon after the window is hidden, and set
 preview font and colors.
 
 ⌘P quick-opens Markdown in the current project. Open files stay in tabs above
-the preview; the close control closes a tab.
+the preview, after pinned **Dashboard** and **Assistant** tabs. The close
+control closes a document tab; Dashboard and Assistant stay in the strip.
 
 A new folder or file immediately offers a name. Clicking an already selected
 name (not a double-click — that opens) also starts rename; F2 does the same.

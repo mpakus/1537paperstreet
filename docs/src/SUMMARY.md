@@ -11,6 +11,7 @@
 - [Themes](themes.md)
 - [Fonts and typography](typography.md)
 - [Export](export.md)
+- [Assistant](assistant.md)
 - [Keyboard shortcuts](shortcuts.md)
 - [Where files live](locations.md)
 - [FAQ](faq.md)

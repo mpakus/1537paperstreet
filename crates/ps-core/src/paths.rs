@@ -49,6 +49,7 @@ impl AppPaths {
             self.cache(),
             self.mermaid_cache(),
             self.logs(),
+            self.agents(),
         ] {
             std::fs::create_dir_all(&path)
                 .map_err(|source| Error::io("create the application directory", path, source))?;
@@ -104,5 +105,15 @@ impl AppPaths {
     /// Returns the persisted UI session file path.
     pub fn ui_state_file(&self) -> PathBuf {
         self.root.join("ui-state.json")
+    }
+
+    /// Returns the directory for assistant prompt history.
+    pub fn agents(&self) -> PathBuf {
+        self.root.join("agents")
+    }
+
+    /// Returns the prompt-history file path.
+    pub fn agent_prompts_file(&self) -> PathBuf {
+        self.agents().join("prompts.json")
     }
 }

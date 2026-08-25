@@ -19,6 +19,14 @@ import type {
   ThemeInfo,
   ThemeAppearance,
   WrittenDocument,
+  AgentChoice,
+  AgentClientEvent,
+  AgentPermission,
+  AgentPreset,
+  AgentPresetInfo,
+  AgentServer,
+  PromptHistoryEntry,
+  DashboardSnapshot,
   UpdateCheck,
 } from './generated/core'
 
@@ -420,7 +428,83 @@ export async function getAppVersion(): Promise<string> {
   return getVersion()
 }
 
+/** PATH probes for OpenCode, Claude, and Codex. Never downloads. */
+export function agentPresets(): Promise<AgentPresetInfo[]> {
+  return invokeIpc('agent_presets')
+}
+
+/** Builds a server record with a ULID. */
+export function agentMakeServer(
+  preset: AgentPreset,
+  name: string,
+  command: string,
+  args: string[],
+): Promise<AgentServer> {
+  return invokeIpc('agent_make_server', { preset, name, command, args })
+}
+
+/** Stored user prompts, newest first. */
+export function agentPromptHistory(): Promise<PromptHistoryEntry[]> {
+  return invokeIpc('agent_prompt_history')
+}
+
+/** Starts an ACP session for the open project. */
+export function agentStart(
+  serverId: string,
+  projectId: string,
+  permission: AgentPermission,
+): Promise<AgentClientEvent> {
+  return invokeIpc('agent_start', {
+    server_id: serverId,
+    project_id: projectId,
+    permission,
+  })
+}
+
+/** Stops the live ACP subprocess. */
+export function agentStop(): Promise<void> {
+  return invokeIpc('agent_stop')
+}
+
+/** Sends a prompt and stores it in local history. */
+export function agentPrompt(serverId: string, text: string): Promise<void> {
+  return invokeIpc('agent_prompt', { server_id: serverId, text })
+}
+
+/** Cancels the current prompt turn. */
+export function agentCancel(): Promise<void> {
+  return invokeIpc('agent_cancel')
+}
+
+/** Asks the agent to switch model when it advertises models. */
+export function agentSetModel(modelId: string): Promise<void> {
+  return invokeIpc('agent_set_model', { model_id: modelId })
+}
+
+/** Answers a tool permission request. */
+export function agentPermissionReply(
+  id: number,
+  optionId: string,
+): Promise<void> {
+  return invokeIpc('agent_permission_reply', { id, option_id: optionId })
+}
+
+/** Local library and agent counts for the Dashboard tab. */
+export function dashboardGet(
+  projectId: string | null,
+): Promise<DashboardSnapshot> {
+  return invokeIpc('dashboard_get', { project_id: projectId })
+}
+
 export type {
+  AgentChoice,
+  AgentClientEvent,
+  AgentPermission,
+  AgentPreset,
+  AgentPresetInfo,
+  AgentServer,
+  DashboardSnapshot,
+  PromptHistoryEntry,
   Config,
   ConflictStrategy,
   DocOpenResult,

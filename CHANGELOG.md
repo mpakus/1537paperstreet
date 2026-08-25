@@ -5,6 +5,24 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-24
+
+### Added
+
+- Settings → External Agents and the Assistant **tab** (⌘⌥A) talk to local ACP
+  CLIs (OpenCode, Claude, Codex on PATH, or a custom command). The Dashboard
+  tab shows local library and agent counts. The app does not call a model API
+  or the ACP Registry.
+
+### Fixed
+
+- Dashboard and Assistant are optional workspace tabs: they appear when opened
+  and can be closed like document tabs instead of remaining pinned.
+- Dashboard renders repeated metric and row labels without duplicate-key
+  errors.
+
+## [0.6.0] - 2026-08-21
+
 ### Added
 
 - Opening a file that another program saved shows a dialog to reload it in
@@ -232,7 +250,9 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/mpakus/1537paperstreet/releases/tag/v0.7.0
+[0.6.0]: https://github.com/mpakus/1537paperstreet/releases/tag/v0.6.0
 [0.5.0]: https://github.com/mpakus/1537paperstreet/releases/tag/v0.5.0
 [0.3.0]: https://github.com/mpakus/1537paperstreet/releases/tag/v0.3.0
 [0.2.1]: https://github.com/mpakus/1537paperstreet/releases/tag/v0.2.1

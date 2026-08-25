@@ -317,9 +317,10 @@ export function dataTransferHasType(
   if (typeof types.includes === 'function') {
     return types.includes(type)
   }
-  return Array.from({ length: types.length }, (_, index) => types[index]).includes(
-    type,
-  )
+  return Array.from(
+    { length: types.length },
+    (_, index) => types[index],
+  ).includes(type)
 }
 
 /** True when this drag is an in-app tree item. */

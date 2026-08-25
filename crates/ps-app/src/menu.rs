@@ -174,6 +174,16 @@ const VIEW_TOGGLE_THEME: MenuCommand = MenuCommand {
     title: "Toggle Light / Dark Theme",
     accelerator: Some("CmdOrCtrl+Alt+T"),
 };
+const VIEW_ASSISTANT: MenuCommand = MenuCommand {
+    id: "view-assistant",
+    title: "Assistant",
+    accelerator: Some("CmdOrCtrl+Alt+A"),
+};
+const VIEW_DASHBOARD: MenuCommand = MenuCommand {
+    id: "view-dashboard",
+    title: "Dashboard",
+    accelerator: None,
+};
 
 const GO_SWITCH_PROJECT: MenuCommand = MenuCommand {
     id: "go-switch-project",
@@ -257,6 +267,8 @@ pub(crate) fn plan_commands() -> &'static [MenuCommand] {
         VIEW_TOGGLE_PROJECTS,
         VIEW_TOGGLE_TREE,
         VIEW_TOGGLE_THEME,
+        VIEW_ASSISTANT,
+        VIEW_DASHBOARD,
         GO_SWITCH_PROJECT,
         GO_OPEN_FILE,
         GO_REVEAL,
@@ -399,6 +411,8 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let toggle_projects = item(app, VIEW_TOGGLE_PROJECTS)?;
     let toggle_tree = item(app, VIEW_TOGGLE_TREE)?;
     let toggle_theme = item(app, VIEW_TOGGLE_THEME)?;
+    let assistant = item(app, VIEW_ASSISTANT)?;
+    let dashboard = item(app, VIEW_DASHBOARD)?;
     let view_menu = Submenu::with_items(
         app,
         "View",
@@ -415,6 +429,8 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &toggle_tree,
             &PredefinedMenuItem::separator(app)?,
             &toggle_theme,
+            &assistant,
+            &dashboard,
         ],
     )?;
 
@@ -514,10 +530,10 @@ mod tests {
     use super::{
         APP_SETTINGS, EDIT_BOLD, EDIT_CODE, EDIT_FIND, EDIT_FIND_REPLACE, EDIT_ITALIC, EDIT_LINK,
         EDIT_LIST, EDIT_QUOTE, FILE_EXPORT, FILE_NEW, FILE_NEW_FOLDER, FILE_SAVE, FILE_TRASH,
-        GO_EXTERNAL_EDITOR, GO_OPEN_FILE, GO_REVEAL, GO_SWITCH_PROJECT, HEADINGS, VIEW_FONT_LARGER,
-        VIEW_FONT_RESET, VIEW_FONT_SMALLER, VIEW_TOGGLE_EDITOR, VIEW_TOGGLE_PROJECTS,
-        VIEW_TOGGLE_SPLIT, VIEW_TOGGLE_THEME, VIEW_TOGGLE_TREE, emits_menu_action, next_font_size,
-        plan_commands,
+        GO_EXTERNAL_EDITOR, GO_OPEN_FILE, GO_REVEAL, GO_SWITCH_PROJECT, HEADINGS, VIEW_ASSISTANT,
+        VIEW_FONT_LARGER, VIEW_FONT_RESET, VIEW_FONT_SMALLER, VIEW_TOGGLE_EDITOR,
+        VIEW_TOGGLE_PROJECTS, VIEW_TOGGLE_SPLIT, VIEW_TOGGLE_THEME, VIEW_TOGGLE_TREE,
+        emits_menu_action, next_font_size, plan_commands,
     };
     use ps_core::config::Config;
 
@@ -550,6 +566,7 @@ mod tests {
             VIEW_TOGGLE_PROJECTS.accelerator,
             VIEW_TOGGLE_TREE.accelerator,
             VIEW_TOGGLE_THEME.accelerator,
+            VIEW_ASSISTANT.accelerator,
             GO_SWITCH_PROJECT.accelerator,
             GO_OPEN_FILE.accelerator,
             GO_REVEAL.accelerator,
@@ -566,7 +583,7 @@ mod tests {
             );
         }
 
-        assert_eq!(accelerators.len(), 32);
+        assert_eq!(accelerators.len(), 33);
     }
 
     #[test]

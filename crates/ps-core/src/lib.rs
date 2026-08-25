@@ -2,7 +2,9 @@
 
 #![warn(missing_docs)]
 
+pub mod agents;
 pub mod config;
+pub mod dashboard;
 pub mod docio;
 pub mod error;
 pub mod fsops;

@@ -1,43 +1,72 @@
 <script lang="ts">
-  import { tabTitle, type DocTab } from '../lib/tabs'
+  import {
+    tabTitle,
+    type DocTab,
+    type WorkspacePage,
+    type WorkspaceTab,
+  } from '../lib/tabs'
 
   let {
     tabs,
+    workspaceTabs = [],
+    page = 'document',
     activeRelPath = null,
+    onpage,
+    onclosepage,
     onselect,
     onclose,
   }: {
     tabs: DocTab[]
+    workspaceTabs?: WorkspaceTab[]
+    page?: WorkspacePage
     activeRelPath?: string | null
+    onpage: (page: WorkspaceTab) => void
+    onclosepage: (page: WorkspaceTab) => void
     onselect: (relPath: string) => void
     onclose: (relPath: string) => void
   } = $props()
 </script>
 
-{#if tabs.length > 0}
-  <div class="tabs" role="tablist" aria-label="Open documents">
-    {#each tabs as tab (tab.relPath)}
-      {@const selected = tab.relPath === activeRelPath}
-      <div class="tab" class:selected>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={selected}
-          title={tab.relPath}
-          onclick={() => onselect(tab.relPath)}
-          >{tab.title || tabTitle(tab.relPath)}</button
-        >
-        <button
-          type="button"
-          class="close"
-          title="Close"
-          aria-label="Close {tab.title}"
-          onclick={() => onclose(tab.relPath)}>×</button
-        >
-      </div>
-    {/each}
-  </div>
-{/if}
+<div class="tabs" role="tablist" aria-label="Workspace">
+  {#each workspaceTabs as workspaceTab (workspaceTab)}
+    {@const title = workspaceTab === 'dashboard' ? 'Dashboard' : 'Assistant'}
+    <div class="tab" class:selected={page === workspaceTab}>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={page === workspaceTab}
+        onclick={() => onpage(workspaceTab)}>{title}</button
+      >
+      <button
+        type="button"
+        class="close"
+        title="Close"
+        aria-label="Close {title}"
+        onclick={() => onclosepage(workspaceTab)}>×</button
+      >
+    </div>
+  {/each}
+  {#each tabs as tab (tab.relPath)}
+    {@const selected = page === 'document' && tab.relPath === activeRelPath}
+    <div class="tab" class:selected>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={selected}
+        title={tab.relPath}
+        onclick={() => onselect(tab.relPath)}
+        >{tab.title || tabTitle(tab.relPath)}</button
+      >
+      <button
+        type="button"
+        class="close"
+        title="Close"
+        aria-label="Close {tab.title}"
+        onclick={() => onclose(tab.relPath)}>×</button
+      >
+    </div>
+  {/each}
+</div>
 
 <style>
   .tabs {

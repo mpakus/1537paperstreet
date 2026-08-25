@@ -510,4 +510,11 @@ mod coverage {
         let error = atomic_replace(&path, b"x", permissions).expect_err("unicode");
         assert!(error.to_string().contains("valid Unicode"));
     }
+
+    #[test]
+    fn atomic_replace_rejects_a_path_without_a_parent() {
+        let permissions = fs::metadata("/").unwrap().permissions();
+        let error = atomic_replace(Path::new("/"), b"x", permissions).expect_err("parent");
+        assert!(error.to_string().contains("parent directory"));
+    }
 }

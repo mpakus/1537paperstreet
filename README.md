@@ -21,9 +21,9 @@ and wikis that already live next to your code.
 - **Read first.** Preview GitHub Flavored Markdown with a table of contents,
   tabs, and a full-size reading view. Edit the source when you need to; save
   with ⌘S.
-- **Private by default.** Themes, Mermaid, and KaTeX are local. The only
-  optional network request is **Check for Updates**, which asks GitHub Releases
-  when you click it.
+- **Private by default.** Themes, Mermaid, and KaTeX are local. The app’s only
+  optional network request is **Check for Updates**. External Agents you add
+  in Settings are local CLIs; they may use the network under their own terms.
 
 ## What you can do
 
@@ -51,15 +51,15 @@ current project.
 
 Context menu and File / Go:
 
-| Action | How |
-| --- | --- |
-| New File / New Folder | ⌘N / ⌘⇧N in the selected folder |
-| Rename | click the selected name again, F2, or the context menu |
-| Duplicate | copy beside the original |
-| Copy to… / Move to… | pick a destination folder |
-| Reveal in Finder | ⌘⇧R |
-| Open in External Editor | ⌘⇧O |
-| Move to Trash | ⌘⌫, with confirmation |
+| Action                  | How                                                    |
+| ----------------------- | ------------------------------------------------------ |
+| New File / New Folder   | ⌘N / ⌘⇧N in the selected folder                        |
+| Rename                  | click the selected name again, F2, or the context menu |
+| Duplicate               | copy beside the original                               |
+| Copy to… / Move to…     | pick a destination folder                              |
+| Reveal in Finder        | ⌘⇧R                                                    |
+| Open in External Editor | ⌘⇧O                                                    |
+| Move to Trash           | ⌘⌫, with confirmation                                  |
 
 Drag inside the tree to move; hold ⌥ to copy. Hovering a folder expands it.
 Drop from Finder into a tree folder copies into the project. Drag a file onto
@@ -135,8 +135,23 @@ Reload discards unsaved edits in this app.
 - keep the Dock icon when the window is hidden
 - table of contents, confirm Trash, show hidden files
 - render Mermaid diagrams and KaTeX mathematics
+- **External Agents** — add OpenCode, Claude, or Codex if they are on `PATH`,
+  or a custom ACP command
 
 Custom themes are JSON in `~/.1537paperstreet/themes/`.
+
+### Assistant
+
+⌘⌥A (View → Assistant, the Assistant tab, or the title-bar control) opens
+the Assistant **tab**: Configure (Settings), agent, model when the CLI lists
+one, permissions (Allowance / Plan / Full), prompt history, and New chat.
+The session uses the open project as its working directory. This app does
+not implement ACP file methods; Full permission can still let the CLI change
+files.
+
+The **Dashboard** tab (View → Dashboard) is a local analytics page: project
+and Markdown counts, configured agents, the live ACP session, and recent
+prompts. It does not send telemetry.
 
 ![Settings: theme palettes, typography, preview colors, Dock, and render toggles](docs/screen-settings.png)
 
@@ -159,9 +174,10 @@ File → About 1537paperstreet shows version and a link to aomega.co.
 File → Check for Updates… (same control in About) compares your version to
 GitHub Releases and can open the download page. It does not install in place.
 
-Documents never leave the computer. Logs record actions and errors, not
-Markdown contents. App data lives in `~/.1537paperstreet/` (`config.json`,
-`projects.json`, `ui-state.json`, themes, Mermaid cache, logs).
+Documents never leave the computer unless you run an External Agent you
+installed yourself. Logs record actions and errors, not Markdown contents.
+App data lives in `~/.1537paperstreet/` (`config.json`, `projects.json`,
+`ui-state.json`, `agents/prompts.json`, themes, Mermaid cache, logs).
 
 ## Install
 

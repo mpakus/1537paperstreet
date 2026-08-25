@@ -1,7 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte'
 
-  import type { Config, ThemeInfo } from '../lib/ipc'
+  import {
+    agentMakeServer,
+    agentPresets,
+    errorMessage,
+    type AgentPresetInfo,
+    type AgentServer,
+    type Config,
+    type ThemeInfo,
+  } from '../lib/ipc'
 
   const BODY_FONTS = [
     'New York',
@@ -18,12 +26,14 @@
     onsave,
     onclose,
     onlive,
+    focusAgents = false,
   }: {
     config: Config
     themes: ThemeInfo[]
     onsave: (next: Config) => void
     onclose: () => void
     onlive?: (next: Config) => void
+    focusAgents?: boolean
   } = $props()
 
   // svelte-ignore state_referenced_locally
@@ -34,6 +44,25 @@
   let readingColorsOn = $state(
     config.viewer.preview_bg !== '' || config.viewer.preview_fg !== '',
   )
+  let presets = $state<AgentPresetInfo[]>([])
+  let presetError = $state('')
+  let customName = $state('')
+  let customCommand = $state('')
+  let customArgs = $state('')
+
+  onMount(() => {
+    pageEl?.focus()
+    if (focusAgents) {
+      document.getElementById('settings-agents')?.scrollIntoView()
+    }
+    void agentPresets()
+      .then((items) => {
+        presets = items
+      })
+      .catch((cause) => {
+        presetError = errorMessage(cause)
+      })
+  })
 
   const lightThemes = $derived(
     themes.filter((theme) => theme.appearance === 'light'),
@@ -42,12 +71,53 @@
     themes.filter((theme) => theme.appearance === 'dark'),
   )
 
-  onMount(() => {
-    pageEl?.focus()
-  })
-
   function persist() {
     onlive?.($state.snapshot(draft))
+  }
+
+  async function addPreset(preset: AgentPresetInfo) {
+    const server = await agentMakeServer(
+      preset.preset,
+      preset.name,
+      preset.command,
+      preset.args,
+    )
+    rememberServer(server)
+  }
+
+  async function addCustom() {
+    const args = customArgs
+      .trim()
+      .split(/\s+/)
+      .filter((part) => part.length > 0)
+    const server = await agentMakeServer(
+      'custom',
+      customName.trim() || 'Custom',
+      customCommand.trim(),
+      args,
+    )
+    customName = ''
+    customCommand = ''
+    customArgs = ''
+    rememberServer(server)
+  }
+
+  function rememberServer(server: AgentServer) {
+    draft.agents.servers.push(server)
+    if (!draft.agents.default_server_id) {
+      draft.agents.default_server_id = server.id
+    }
+    persist()
+  }
+
+  function removeServer(id: string) {
+    draft.agents.servers = draft.agents.servers.filter(
+      (server) => server.id !== id,
+    )
+    if (draft.agents.default_server_id === id) {
+      draft.agents.default_server_id = null
+    }
+    persist()
   }
 
   function pickTheme(which: 'light' | 'dark', id: string) {
@@ -361,6 +431,83 @@
         Render mathematics
       </label>
     </section>
+
+    <section id="settings-agents">
+      <h3>External Agents</h3>
+      <p class="hint">
+        Agents run as programs already on this Mac (Agent Client Protocol). This
+        app does not call a model API or install agents. Billing and sign-in
+        stay with the CLI. Full permission can let that CLI change files in the
+        open project.
+      </p>
+      {#if presetError}
+        <p class="hint" role="status">{presetError}</p>
+      {/if}
+      {#if draft.agents.servers.length === 0}
+        <p class="hint">
+          No agents yet. Add a preset from PATH or a custom command.
+        </p>
+      {:else}
+        <ul class="agent-list">
+          {#each draft.agents.servers as server (server.id)}
+            <li>
+              <div>
+                <strong>{server.name}</strong>
+                <span class="hint"
+                  >{server.command} {server.args.join(' ')}</span
+                >
+              </div>
+              <button
+                type="button"
+                class="icon-danger"
+                title={`Remove ${server.name}`}
+                aria-label={`Remove ${server.name}`}
+                onclick={() => removeServer(server.id)}>Remove</button
+              >
+            </li>
+          {/each}
+        </ul>
+      {/if}
+      <div class="agent-add">
+        {#each presets as preset (preset.preset)}
+          <button
+            type="button"
+            disabled={!preset.available ||
+              draft.agents.servers.some((row) => row.preset === preset.preset)}
+            onclick={() =>
+              void addPreset(preset).catch((cause) => {
+                presetError = errorMessage(cause)
+              })}
+          >
+            Add {preset.name}
+            {preset.available ? '' : ' (not on PATH)'}
+          </button>
+        {/each}
+      </div>
+      <div class="grid">
+        <label>
+          Custom name
+          <input bind:value={customName} placeholder="My agent" />
+        </label>
+        <label>
+          Command
+          <input bind:value={customCommand} placeholder="opencode" />
+        </label>
+        <label>
+          Arguments
+          <input bind:value={customArgs} placeholder="acp" />
+        </label>
+      </div>
+      <button
+        type="button"
+        class="done"
+        disabled={!customCommand.trim()}
+        onclick={() =>
+          void addCustom().catch((cause) => {
+            presetError = errorMessage(cause)
+          })}>Add Custom Agent</button
+      >
+    </section>
   </div>
 </div>
 
@@ -546,5 +693,48 @@
     background: var(--bg);
     color: var(--fg);
     font: inherit;
+  }
+
+  .agent-list {
+    list-style: none;
+    margin: 0 0 var(--space-3);
+    padding: 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .agent-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elev);
+  }
+
+  .agent-list strong {
+    display: block;
+    font-size: 0.875rem;
+  }
+
+  .agent-add {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-3) 0;
+  }
+
+  .agent-add button,
+  .icon-danger {
+    min-height: 28px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 0.75rem;
+    font-weight: 600;
   }
 </style>

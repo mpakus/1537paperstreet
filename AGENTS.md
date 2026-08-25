@@ -3,7 +3,7 @@
 Проект: **1537paperstreet**, локальный Markdown-ридер для macOS на Rust + Tauri 2 + Svelte 5.
 Читать перед началом любой задачи. Вместе с `PLAN.md` (архитектура) и `CHECKLIST.md` (задачи).
 
-**Текущий продукт — ридер**; фаза P9 (запись документов и редактор) начата с T-160. Фазы P0–P8 и P11 реализованы. P10 (история) и P12 (ZIP-экспорт) **не начинать**, пока пользователь явно не попросит.
+**Текущий продукт — ридер**; фаза P9 (запись документов и редактор) начата с T-160. Фазы P0–P8, P11 и P16 реализованы. P10 (история) и P12 (ZIP-экспорт) **не начинать**, пока пользователь явно не попросит.
 
 ---
 
@@ -62,7 +62,7 @@
 - Публичные типы, пересекающие IPC-границу, экспортируются в TypeScript через генератор. Ручное дублирование типов — ошибка ревью.
 - Логи (`ps-core::log`) не содержат текст документов. Только действия, пути служебных файлов, ошибки.
 - CSS тем генерируется в Rust (`themes_css`). JSON тем — kebab-case токены; IPC `ThemeInfo` — camelCase. UI не собирает карту токенов сам.
-- `window.show_in_dock` (по умолчанию true) и `viewer.preview_*` (пусто / `0` = тема) добавляются в `config.json` без bump `schema_version`.
+- `window.show_in_dock` (по умолчанию true), `viewer.preview_*` (пусто / `0` = тема) и `agents` добавляются в `config.json` без bump `schema_version`.
 - Кэш Mermaid: ключ = blake3(`source_hash + "\0" + theme_id`); хеш — 64 hex-символа; `theme_id` — slug (ASCII-буквы, цифры, дефис). Не-SVG и файлы > 2 MB отклоняются.
 
 ---
@@ -149,10 +149,9 @@
 
 ## 10. Карта кода
 
-- `ps-core`: `config`, `projects`, `fsops`, `tree`, `watch`, `docio`, `log`, `themes`, `mermaid_cache`, `ui_state`, `search`, `store`, `paths`, `updates`
-- `ps-render`: Markdown → HTML, шаблоны Mermaid с BLAKE3, span'ы KaTeX, `asset://`
-- `ps-app`: тонкие IPC-команды, overlay-окно, нативное меню, `asset://`, `WatchHub`, `save_user_file`
-- `ui`: панели Svelte 5 (`Projects`, `Tree`, `Preview`, `Settings`, `QuickOpen`, `QuickSwitch`, `FindBar`, `Conflict`, `About`)
+- `ps-core`: `config`, `agents`, `dashboard`, `projects`, `fsops`, `tree`, `watch`, `docio`, `log`, `themes`, `mermaid_cache`, `ui_state`, `search`, `store`, `paths`, `updates`
+- `ps-app`: тонкие IPC-команды, overlay-окно, нативное меню, `asset://`, `WatchHub`, `save_user_file`, ACP-хост
+- `ui`: панели Svelte 5 (`Projects`, `Tree`, `Preview`, `Settings`, `QuickOpen`, `QuickSwitch`, `FindBar`, `Conflict`, `About`, `Assistant`, `Dashboard`)
 - Темы: `crates/ps-core/themes/*.json` плюс `~/.1537paperstreet/themes/`
 - Кэш диаграмм: `~/.1537paperstreet/cache/mermaid/`
 - Состояние UI: `ui-state.json` (раскрытые узлы, ширины панелей)

@@ -3,7 +3,12 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 
+use ps_core::agents::{
+    AgentPresetInfo, AgentSessionStats, PromptHistory, PromptHistoryEntry, detect_presets,
+    open_prompt_history,
+};
 use ps_core::config::Config;
+use ps_core::dashboard::DashboardSnapshot;
 use ps_core::docio::{
     self, DocOpenResult, DocumentMeta, DocumentSource, DocumentStat, LoadedDocument, RestoreTraits,
     TocEntry, WrittenDocument,
@@ -33,6 +38,7 @@ pub(crate) struct AppState {
     themes: Arc<ThemeCatalog>,
     log: Arc<FileLog>,
     mermaid_cache: Arc<MermaidSvgCache>,
+    prompt_history: Arc<Mutex<JsonStore<PromptHistory>>>,
 }
 
 impl AppState {
@@ -54,6 +60,7 @@ impl AppState {
         }
 
         let mermaid_cache = MermaidSvgCache::open(paths.mermaid_cache())?;
+        let prompt_history = open_prompt_history(paths.agent_prompts_file())?;
 
         Ok(Self {
             paths,
@@ -64,6 +71,7 @@ impl AppState {
             themes: Arc::new(themes),
             log: Arc::new(log),
             mermaid_cache: Arc::new(mermaid_cache),
+            prompt_history: Arc::new(Mutex::new(prompt_history)),
         })
     }
 
@@ -360,6 +368,31 @@ impl AppState {
         copy: bool,
         conflict: ConflictStrategy,
     ) -> Result<Vec<TreeNode>> {
+        self.fs_transfer_with(
+            from_project_id,
+            from,
+            to_project_id,
+            to_dir,
+            copy,
+            conflict,
+            |root, paths| fsops::trash(root, paths, pending_history_snapshot),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn fs_transfer_with<D>(
+        &self,
+        from_project_id: String,
+        from: Vec<PathBuf>,
+        to_project_id: String,
+        to_dir: PathBuf,
+        copy: bool,
+        conflict: ConflictStrategy,
+        delete_source: D,
+    ) -> Result<Vec<TreeNode>>
+    where
+        D: FnOnce(&Path, &[PathBuf]) -> Result<()>,
+    {
         let from_root = self.project_root(&from_project_id)?;
         let to_root = self.project_root(&to_project_id)?;
         let from_canonical = from_root.canonicalize().map_err(|source| Error::Io {
@@ -407,7 +440,7 @@ impl AppState {
             nodes.push(tree::node_at(&to_root, &absolute)?);
         }
         if !copy && !copied.is_empty() {
-            fsops::trash(&from_root, &copied, pending_history_snapshot)?;
+            delete_source(&from_root, &copied)?;
         }
         Ok(nodes)
     }
@@ -465,8 +498,17 @@ impl AppState {
     }
 
     pub(crate) fn fs_trash(&self, project_id: String, rel_paths: Vec<PathBuf>) -> Result<()> {
+        self.fs_trash_with(project_id, rel_paths, |root, paths| {
+            fsops::trash(root, paths, pending_history_snapshot)
+        })
+    }
+
+    fn fs_trash_with<D>(&self, project_id: String, rel_paths: Vec<PathBuf>, delete: D) -> Result<()>
+    where
+        D: FnOnce(&Path, &[PathBuf]) -> Result<()>,
+    {
         let root = self.project_root(&project_id)?;
-        fsops::trash(&root, &rel_paths, pending_history_snapshot)
+        delete(&root, &rel_paths)
     }
 
     pub(crate) fn files_search(
@@ -646,6 +688,76 @@ impl AppState {
         Ok(projects.get(id)?.path.clone())
     }
 
+    pub(crate) fn agent_presets() -> Vec<AgentPresetInfo> {
+        detect_presets(None)
+    }
+
+    pub(crate) fn agent_server(&self, id: &str) -> Result<ps_core::agents::AgentServer> {
+        self.config_get()
+            .agents
+            .servers
+            .into_iter()
+            .find(|server| server.id == id)
+            .ok_or_else(|| Error::Agent {
+                message: "That agent is not in Settings.".into(),
+            })
+    }
+
+    pub(crate) fn prompt_history_list(&self) -> Vec<PromptHistoryEntry> {
+        self.prompt_history
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .value()
+            .entries
+            .clone()
+    }
+
+    pub(crate) fn prompt_history_push(
+        &self,
+        server_id: String,
+        text: &str,
+    ) -> Result<PromptHistoryEntry> {
+        let mut store = self
+            .prompt_history
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let mut history = store.value().clone();
+        let entry = history.push(server_id, text)?;
+        store.replace(history);
+        store.flush()?;
+        Ok(entry)
+    }
+
+    pub(crate) fn dashboard(
+        &self,
+        project_id: Option<&str>,
+        session: AgentSessionStats,
+    ) -> DashboardSnapshot {
+        let config = self.config_get();
+        let projects = {
+            let store = self
+                .projects
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            store.list().to_vec()
+        };
+        let active =
+            project_id.and_then(|id| projects.iter().find(|project| project.id == id).cloned());
+        let markdown = active
+            .as_ref()
+            .and_then(|project| tree::count_markdown(&project.path, config.files.show_hidden).ok())
+            .unwrap_or_default();
+        let history = self.prompt_history_list();
+        ps_core::dashboard::snapshot(
+            &projects,
+            &config.agents,
+            &history,
+            active.as_ref(),
+            markdown,
+            &session,
+        )
+    }
+
     fn absolute_in_project(&self, project_id: &str, rel_path: &Path) -> Result<PathBuf> {
         let root = self.project_root(project_id)?;
         fsops::resolve(&root, rel_path)
@@ -791,6 +903,7 @@ mod tests {
     use std::fs;
     use std::path::{Path, PathBuf};
 
+    use ps_core::agents::{AgentServer, AgentSessionStats};
     use ps_core::config::Config;
     use ps_core::docio::RestoreTraits;
     use ps_core::fsops::ConflictStrategy;
@@ -831,6 +944,52 @@ mod tests {
         let text = fs::read_to_string(state.paths().log_file()).expect("log");
         assert!(text.contains("warn sidebar vibrancy could not be applied"));
         assert!(!text.contains("# Heading"));
+    }
+
+    #[test]
+    fn agent_history_and_dashboard_share_persisted_application_state() {
+        let (temporary, state) = open_state();
+        let notes = temporary.path().join("notes");
+        fs::create_dir(&notes).expect("project directory");
+        fs::write(notes.join("readme.md"), b"# Notes\n").expect("document");
+        let project = state
+            .projects_add("Notes".into(), notes)
+            .expect("add project");
+
+        let server = AgentServer::custom("Local", "/usr/bin/true", Vec::new());
+        let mut config = state.config_get();
+        config.agents.default_server_id = Some(server.id.clone());
+        config.agents.servers.push(server.clone());
+        state.config_set(config).expect("save agent");
+
+        assert_eq!(state.agent_server(&server.id).expect("server"), server);
+        assert!(state.agent_server("missing").is_err());
+        assert_eq!(AppState::agent_presets().len(), 3);
+
+        let entry = state
+            .prompt_history_push(server.id.clone(), "Summarize these notes")
+            .expect("save prompt");
+        assert_eq!(entry.text, "Summarize these notes");
+        assert_eq!(state.prompt_history_list(), vec![entry.clone()]);
+
+        let session = AgentSessionStats::started(&server.name);
+        let dashboard = state.dashboard(Some(&project.id), session);
+        assert_eq!(dashboard.title, "Dashboard");
+        assert!(dashboard.sections.iter().any(|section| {
+            section.title == "Recent prompts"
+                && section.rows.iter().any(|row| row.title == entry.text)
+        }));
+
+        let reopened = AppState::open(AppPaths::from_root(temporary.path())).expect("reopen");
+        assert_eq!(reopened.prompt_history_list(), vec![entry]);
+        let empty = reopened.dashboard(Some("missing"), AgentSessionStats::default());
+        assert!(empty.sections.iter().any(|section| {
+            section.title == "Open project"
+                && section
+                    .metrics
+                    .iter()
+                    .any(|metric| metric.label == "Folder" && metric.value == "None")
+        }));
     }
 
     #[test]
@@ -1230,7 +1389,11 @@ mod tests {
         );
 
         state
-            .fs_trash(project.id.clone(), vec![PathBuf::from("inbox/note.md")])
+            .fs_trash_with(
+                project.id.clone(),
+                vec![PathBuf::from("inbox/note.md")],
+                |root, paths| ps_core::fsops::permanently_delete(root, paths, |_| Ok(())),
+            )
             .expect("trash");
         assert!(!project_root.join("inbox/note.md").exists());
         assert!(project_root.join("inbox/note 2.md").exists());
@@ -1294,13 +1457,14 @@ mod tests {
         );
 
         let moved = state
-            .fs_transfer(
+            .fs_transfer_with(
                 alpha.id.clone(),
                 vec![PathBuf::from("note.md")],
                 beta.id.clone(),
                 PathBuf::new(),
                 false,
                 ConflictStrategy::KeepBoth,
+                |root, paths| ps_core::fsops::permanently_delete(root, paths, |_| Ok(())),
             )
             .expect("move across");
         assert_eq!(moved[0].name, "note 2.md");

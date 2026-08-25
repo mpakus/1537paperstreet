@@ -160,6 +160,31 @@ pub fn node_at(project_root: &Path, absolute: &Path) -> Result<TreeNode> {
 
 const SEARCH_WALK_LIMIT: usize = 10_000;
 
+/// How many Markdown files a project walk found, and whether the cap applied.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct MarkdownCount {
+    /// Files collected before the walk limit.
+    pub files: u32,
+    /// True when the walk stopped at the ten-thousand-file cap.
+    pub capped: bool,
+}
+
+/// Counts Markdown files under a project without following symbolic links.
+pub fn count_markdown(project_root: &Path, show_hidden: bool) -> Result<MarkdownCount> {
+    let mut files = Vec::new();
+    collect_markdown(
+        project_root,
+        Path::new(""),
+        show_hidden,
+        &mut files,
+        SEARCH_WALK_LIMIT,
+    )?;
+    Ok(MarkdownCount {
+        files: u32::try_from(files.len()).unwrap_or(u32::MAX),
+        capped: files.len() >= SEARCH_WALK_LIMIT,
+    })
+}
+
 /// Fuzzy-searches Markdown files under a project by relative path.
 ///
 /// An empty query returns files in tree order, capped at `limit`. Hidden files

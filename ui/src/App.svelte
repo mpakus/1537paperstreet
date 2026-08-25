@@ -41,18 +41,38 @@
     type TreeNode,
     type UntitledKind,
     type ViewMode,
+    type AgentClientEvent,
+    type AgentChoice,
+    type AgentPermission,
+    type PromptHistoryEntry,
+    agentCancel,
+    agentPermissionReply,
+    agentPrompt,
+    agentPromptHistory,
+    agentSetModel,
+    agentStart,
+    dashboardGet,
+    type DashboardSnapshot,
   } from './lib/ipc'
   import type { MarkdownEditor } from './editor/types'
   import { applyMarkdownCommand } from './lib/markdown'
-  import { pathsFromDataTransfer, recentProjects, isExternalFileDrag } from './lib/open'
+  import {
+    pathsFromDataTransfer,
+    recentProjects,
+    isExternalFileDrag,
+  } from './lib/open'
   import { clampPanelWidth } from './lib/panel-width'
   import {
+    closeWorkspaceTab,
     nextAfterClose,
+    openWorkspaceTab,
     removeTab,
     retitleTab,
     tabTitle,
     upsertTab,
     type DocTab,
+    type WorkspacePage,
+    type WorkspaceTab,
   } from './lib/tabs'
   import { exportDocumentPdf } from './lib/print'
   import { windowTitle } from './lib/text'
@@ -72,8 +92,10 @@
     watchTouchesOpenFile,
   } from './lib/tree'
   import About from './panes/About.svelte'
+  import Assistant from './panes/Assistant.svelte'
   import ChromeToolbar from './panes/ChromeToolbar.svelte'
   import Conflict from './panes/Conflict.svelte'
+  import Dashboard from './panes/Dashboard.svelte'
   import DocTabs from './panes/DocTabs.svelte'
   import Editor from './panes/Editor.svelte'
   import FindBar from './panes/FindBar.svelte'
@@ -138,7 +160,26 @@
   } | null>(null)
   let ignoredExternal = $state<{ relPath: string; hash: string } | null>(null)
   let settingsOpen = $state(false)
+  let settingsFocusAgents = $state(false)
   let aboutOpen = $state(false)
+  let workspacePage = $state<WorkspacePage>('document')
+  let workspaceTabs = $state<WorkspaceTab[]>([])
+  let dashboardSnapshot = $state<DashboardSnapshot | null>(null)
+  let dashboardError = $state('')
+  let assistantBusy = $state(false)
+  let assistantError = $state('')
+  let assistantTranscript = $state('')
+  let assistantModels = $state<AgentChoice[]>([])
+  let assistantModelId = $state('')
+  let assistantComposer = $state('')
+  let assistantHistory = $state<PromptHistoryEntry[]>([])
+  let assistantPermission = $state<AgentPermission>('allowance')
+  let assistantServerId = $state('')
+  let assistantPermit = $state<{
+    id: number
+    title: string
+    options: AgentChoice[]
+  } | null>(null)
   let aboutAutocheck = $state(false)
   let aboutCheckSeq = $state(0)
   let projectsReload = $state(0)
@@ -163,7 +204,13 @@
     width: number
   } | null>(null)
 
-  const documentTitle = $derived(windowTitle(active?.path, openMeta?.relPath))
+  const documentTitle = $derived(
+    workspacePage === 'assistant'
+      ? 'Assistant'
+      : workspacePage === 'dashboard'
+        ? 'Dashboard'
+        : windowTitle(active?.path, openMeta?.relPath),
+  )
 
   $effect(() => {
     const title = documentTitle
@@ -199,6 +246,15 @@
     monoFont = config.typography.mono_font
     confirmDelete = config.files.confirm_delete
     showToc = config.viewer.show_toc
+    assistantPermission = config.agents?.permission ?? 'allowance'
+    const servers = config.agents?.servers ?? []
+    if (
+      !assistantServerId ||
+      !servers.some((server) => server.id === assistantServerId)
+    ) {
+      assistantServerId =
+        config.agents?.default_server_id ?? servers[0]?.id ?? ''
+    }
     applyTheme(config)
   }
 
@@ -231,7 +287,8 @@
     return ''
   }
 
-  async function openSettings() {
+  async function openSettings(opts?: { agents?: boolean }) {
+    settingsFocusAgents = opts?.agents ?? false
     settingsOpen = true
     if (appConfig) {
       return
@@ -240,6 +297,108 @@
       applyConfig(await configGet())
     } catch (cause) {
       error = errorMessage(cause)
+    }
+  }
+
+  async function openAssistant() {
+    workspaceTabs = openWorkspaceTab(workspaceTabs, 'assistant')
+    workspacePage = 'assistant'
+    assistantError = ''
+    try {
+      assistantHistory = await agentPromptHistory()
+      if (appConfig) {
+        applyConfig(appConfig)
+      }
+    } catch (cause) {
+      assistantError = errorMessage(cause)
+    }
+  }
+
+  async function openDashboard() {
+    workspaceTabs = openWorkspaceTab(workspaceTabs, 'dashboard')
+    workspacePage = 'dashboard'
+    dashboardError = ''
+    try {
+      dashboardSnapshot = await dashboardGet(active?.id ?? null)
+    } catch (cause) {
+      dashboardError = errorMessage(cause)
+    }
+  }
+
+  function applyAgentEvent(event: AgentClientEvent) {
+    switch (event.kind) {
+      case 'ready':
+        assistantModels = event.models
+        assistantModelId = event.models[0]?.id ?? ''
+        assistantBusy = false
+        break
+      case 'message':
+        assistantTranscript += event.text
+        break
+      case 'tool':
+        assistantTranscript += `\n[${event.title}: ${event.status}]`
+        break
+      case 'permission':
+        assistantPermit = {
+          id: event.id,
+          title: event.title,
+          options: event.options,
+        }
+        break
+      case 'done':
+        assistantBusy = false
+        assistantTranscript += assistantTranscript.endsWith('\n') ? '' : '\n'
+        break
+      case 'error':
+        assistantBusy = false
+        assistantError = event.message
+        break
+    }
+    if (event.kind !== 'message' && workspacePage === 'dashboard') {
+      void openDashboard()
+    }
+  }
+
+  async function startAssistantChat(): Promise<boolean> {
+    if (!active) {
+      assistantError = 'Open a folder first.'
+      return false
+    }
+    if (!assistantServerId) {
+      assistantError = 'Add an agent in Settings.'
+      return false
+    }
+    assistantError = ''
+    assistantTranscript = ''
+    assistantPermit = null
+    assistantBusy = true
+    try {
+      const ready = await agentStart(
+        assistantServerId,
+        active.id,
+        assistantPermission,
+      )
+      applyAgentEvent(ready)
+      return true
+    } catch (cause) {
+      assistantBusy = false
+      assistantError = errorMessage(cause)
+      return false
+    }
+  }
+
+  async function sendAssistantPrompt(text: string) {
+    assistantComposer = ''
+    assistantTranscript +=
+      (assistantTranscript ? '\n\n' : '') + `You: ${text}\n\n`
+    assistantBusy = true
+    assistantError = ''
+    try {
+      await agentPrompt(assistantServerId, text)
+      assistantHistory = await agentPromptHistory()
+    } catch (cause) {
+      assistantBusy = false
+      assistantError = errorMessage(cause)
     }
   }
 
@@ -468,6 +627,14 @@
         await openSettings()
         return
       }
+      if (id === 'view-assistant') {
+        await openAssistant()
+        return
+      }
+      if (id === 'view-dashboard') {
+        await openDashboard()
+        return
+      }
       if (id === 'app-about' || id === 'file-about') {
         aboutAutocheck = false
         aboutOpen = true
@@ -651,7 +818,8 @@
     if (!active) {
       return
     }
-    const destProjectId = toProjectId ?? pendingTransfer?.toProjectId ?? active.id
+    const destProjectId =
+      toProjectId ?? pendingTransfer?.toProjectId ?? active.id
     const sourceProjectId =
       fromProjectId ?? pendingTransfer?.fromProjectId ?? active.id
     if (mode === 'import') {
@@ -670,8 +838,7 @@
         if (
           openPath &&
           from.some(
-            (path) =>
-              openPath === path || openPath.startsWith(`${path}/`),
+            (path) => openPath === path || openPath.startsWith(`${path}/`),
           )
         ) {
           closeTab(openPath)
@@ -717,7 +884,14 @@
       conflictNames = conflicts
       return
     }
-    await finishTransfer(mode, from, '', 'keepBoth', fromProjectId, toProject.id)
+    await finishTransfer(
+      mode,
+      from,
+      '',
+      'keepBoth',
+      fromProjectId,
+      toProject.id,
+    )
   }
 
   async function importInto(toDir: string, sources: string[]) {
@@ -934,6 +1108,7 @@
     if (!active) {
       return
     }
+    workspacePage = 'document'
     const leaving = snapshotCurrentTab()
     if (leaving && leaving.relPath !== relPath) {
       tabs = upsertTab(tabs, leaving)
@@ -996,6 +1171,7 @@
     if (!active) {
       return
     }
+    workspacePage = 'document'
     openMeta = { projectId: active.id, relPath: tab.relPath }
     html = tab.html
     docMeta = tab.docMeta
@@ -1024,6 +1200,13 @@
     docSourceMeta = null
     draftText = ''
     docMissing = false
+  }
+
+  function closeWorkspacePage(page: WorkspaceTab) {
+    workspaceTabs = closeWorkspaceTab(workspaceTabs, page)
+    if (workspacePage === page) {
+      workspacePage = workspaceTabs.at(-1) ?? 'document'
+    }
   }
 
   async function handleDrop(
@@ -1143,6 +1326,10 @@
 
         void listen<FsChangedEvent>('fs://changed', (event) => {
           applyWatch(event.payload)
+        }).then((unlisten) => stops.push(unlisten))
+
+        void listen<AgentClientEvent>('agent://event', (event) => {
+          applyAgentEvent(event.payload)
         }).then((unlisten) => stops.push(unlisten))
       })
       .catch((cause) => {
@@ -1318,6 +1505,16 @@
     }}
   >
     <p class="window-title">{documentTitle}</p>
+    <button
+      type="button"
+      class="titlebar-assistant"
+      title="Assistant (⌘⌥A)"
+      onclick={() => {
+        void openAssistant().catch((cause) => {
+          error = errorMessage(cause)
+        })
+      }}>Assistant</button
+    >
   </header>
   <ChromeToolbar
     mode={viewMode}
@@ -1500,7 +1697,23 @@
     <main>
       <DocTabs
         {tabs}
+        {workspaceTabs}
+        page={workspacePage}
         activeRelPath={openMeta?.relPath ?? null}
+        onpage={(page) => {
+          if (page === 'assistant') {
+            void openAssistant().catch((cause) => {
+              error = errorMessage(cause)
+            })
+            return
+          }
+          if (page === 'dashboard') {
+            void openDashboard().catch((cause) => {
+              error = errorMessage(cause)
+            })
+          }
+        }}
+        onclosepage={closeWorkspacePage}
         onselect={(relPath) => {
           void openDocument(relPath).catch((cause) => {
             error = errorMessage(cause)
@@ -1508,76 +1721,165 @@
         }}
         onclose={closeTab}
       />
-      <div
-        class="workspace"
-        class:split={viewMode === 'split'}
-        bind:this={workspaceEl}
-      >
-        {#if findOpen}
-          <FindBar
-            root={articleEl ?? null}
-            onclose={() => (findOpen = false)}
-          />
-        {/if}
-        {#if editorOpened}
-          <Editor
-            bind:value={draftText}
-            bind:api={editorApi}
-            writable={docSourceMeta?.writable ?? false}
-            spellcheck={appConfig?.editor.spellcheck ?? true}
-            lineNumbers={appConfig?.editor.line_numbers ?? false}
-            softWrap={appConfig?.editor.soft_wrap ?? true}
-            indentUnit={appConfig?.editor.indent_unit ?? 2}
-            hidden={viewMode === 'preview'}
-          />
-        {/if}
-        {#if viewMode === 'split'}
-          <div
-            class="resize"
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize editor"
-            onpointerdown={(event) => {
-              event.preventDefault()
-              resizeStart = {
-                kind: 'editor',
-                x: event.clientX,
-                width: editorWidth,
+      {#if workspacePage === 'assistant'}
+        <Assistant
+          servers={appConfig?.agents.servers ?? []}
+          history={assistantHistory}
+          projectOpen={Boolean(active)}
+          busy={assistantBusy}
+          models={assistantModels}
+          transcript={assistantTranscript}
+          permissionPrompt={assistantPermit}
+          selectedServerId={assistantServerId}
+          permission={assistantPermission}
+          selectedModelId={assistantModelId}
+          bind:composer={assistantComposer}
+          error={assistantError}
+          onconfigure={() => {
+            void openSettings({ agents: true })
+          }}
+          onserver={(id) => {
+            assistantServerId = id
+            if (!appConfig) {
+              return
+            }
+            appConfig.agents.default_server_id = id
+            void configSet(appConfig).catch((cause) => {
+              error = errorMessage(cause)
+            })
+          }}
+          onpermission={(value) => {
+            assistantPermission = value
+            if (!appConfig) {
+              return
+            }
+            appConfig.agents.permission = value
+            void configSet(appConfig).catch((cause) => {
+              error = errorMessage(cause)
+            })
+          }}
+          onmodel={(id) => {
+            assistantModelId = id
+            void agentSetModel(id).catch((cause) => {
+              assistantError = errorMessage(cause)
+            })
+          }}
+          onnewchat={() => {
+            void startAssistantChat()
+          }}
+          onsend={(text) => {
+            void (async () => {
+              if (!assistantTranscript) {
+                const ok = await startAssistantChat()
+                if (!ok) {
+                  return
+                }
               }
-            }}
-          ></div>
-        {/if}
-        {#if viewMode !== 'editor'}
-          <Preview
-            {html}
-            {emptyMessage}
-            toc={showToc ? (docMeta?.toc ?? []) : []}
-            {tocWidth}
-            banner={docMeta?.readonlyReason ?? null}
-            themeId={activeThemeId}
-            mermaidEnabled={appConfig?.viewer.mermaid_enabled ?? true}
-            mathEnabled={appConfig?.viewer.math_enabled ?? true}
-            previewFont={appConfig?.viewer.preview_font ?? ''}
-            previewFontSize={appConfig?.viewer.preview_font_size ?? 0}
-            previewBg={appConfig?.viewer.preview_bg ?? ''}
-            previewFg={appConfig?.viewer.preview_fg ?? ''}
-            readingZoom={previewZoom}
-            bind:articleEl
-            onnavigate={(href) => {
-              void navigate(href).catch((cause) => {
-                error = errorMessage(cause)
-              })
-            }}
-            onerror={(message) => {
-              error = message
-            }}
-            ontocresize={(event) => {
-              event.preventDefault()
-              resizeStart = { kind: 'toc', x: event.clientX, width: tocWidth }
-            }}
-          />
-        {/if}
-      </div>
+              await sendAssistantPrompt(text)
+            })()
+          }}
+          oncancel={() => {
+            void agentCancel().catch((cause) => {
+              assistantError = errorMessage(cause)
+            })
+            assistantBusy = false
+          }}
+          onhistory={(text) => {
+            assistantComposer = text
+          }}
+          onpermit={(id, optionId) => {
+            assistantPermit = null
+            void agentPermissionReply(id, optionId).catch((cause) => {
+              assistantError = errorMessage(cause)
+            })
+          }}
+        />
+      {:else if workspacePage === 'dashboard'}
+        <Dashboard
+          snapshot={dashboardSnapshot}
+          error={dashboardError}
+          onrefresh={() => {
+            void openDashboard()
+          }}
+          onassistant={() => {
+            void openAssistant()
+          }}
+          onconfigure={() => {
+            void openSettings({ agents: true })
+          }}
+        />
+      {:else}
+        <div
+          class="workspace"
+          class:split={viewMode === 'split'}
+          bind:this={workspaceEl}
+        >
+          {#if findOpen}
+            <FindBar
+              root={articleEl ?? null}
+              onclose={() => (findOpen = false)}
+            />
+          {/if}
+          {#if editorOpened}
+            <Editor
+              bind:value={draftText}
+              bind:api={editorApi}
+              writable={docSourceMeta?.writable ?? false}
+              spellcheck={appConfig?.editor.spellcheck ?? true}
+              lineNumbers={appConfig?.editor.line_numbers ?? false}
+              softWrap={appConfig?.editor.soft_wrap ?? true}
+              indentUnit={appConfig?.editor.indent_unit ?? 2}
+              hidden={viewMode === 'preview'}
+            />
+          {/if}
+          {#if viewMode === 'split'}
+            <div
+              class="resize"
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize editor"
+              onpointerdown={(event) => {
+                event.preventDefault()
+                resizeStart = {
+                  kind: 'editor',
+                  x: event.clientX,
+                  width: editorWidth,
+                }
+              }}
+            ></div>
+          {/if}
+          {#if viewMode !== 'editor'}
+            <Preview
+              {html}
+              {emptyMessage}
+              toc={showToc ? (docMeta?.toc ?? []) : []}
+              {tocWidth}
+              banner={docMeta?.readonlyReason ?? null}
+              themeId={activeThemeId}
+              mermaidEnabled={appConfig?.viewer.mermaid_enabled ?? true}
+              mathEnabled={appConfig?.viewer.math_enabled ?? true}
+              previewFont={appConfig?.viewer.preview_font ?? ''}
+              previewFontSize={appConfig?.viewer.preview_font_size ?? 0}
+              previewBg={appConfig?.viewer.preview_bg ?? ''}
+              previewFg={appConfig?.viewer.preview_fg ?? ''}
+              readingZoom={previewZoom}
+              bind:articleEl
+              onnavigate={(href) => {
+                void navigate(href).catch((cause) => {
+                  error = errorMessage(cause)
+                })
+              }}
+              onerror={(message) => {
+                error = message
+              }}
+              ontocresize={(event) => {
+                event.preventDefault()
+                resizeStart = { kind: 'toc', x: event.clientX, width: tocWidth }
+              }}
+            />
+          {/if}
+        </div>
+      {/if}
     </main>
   </div>
 
@@ -1667,6 +1969,7 @@
               error = errorMessage(cause)
             })
         }}
+        focusAgents={settingsFocusAgents}
       />
     {:else}
       <div class="settings-loading" role="status">Loading settings…</div>
@@ -1764,6 +2067,7 @@
   .window-title {
     margin: 0;
     min-width: 0;
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1772,6 +2076,19 @@
     color: var(--fg-muted);
     user-select: none;
     pointer-events: none;
+  }
+
+  .titlebar-assistant {
+    flex: none;
+    min-height: 22px;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    -webkit-app-region: no-drag;
   }
 
   .titlebar :global(button) {
@@ -1901,6 +2218,11 @@
     min-width: 0;
     overflow: hidden;
     background: var(--bg);
+  }
+
+  main > :global([role='tabpanel']) {
+    flex: 1;
+    min-height: 0;
   }
 
   .workspace {

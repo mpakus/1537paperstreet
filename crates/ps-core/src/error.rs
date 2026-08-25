@@ -180,6 +180,13 @@ pub enum Error {
     /// The latest GitHub Release tag is not a semantic version.
     #[error("The latest GitHub release tag is not a version number.")]
     InvalidUpdateVersion,
+
+    /// An external assistant could not be used.
+    #[error("{message}")]
+    Agent {
+        /// User-visible explanation. Must not include prompt text or secrets.
+        message: String,
+    },
 }
 
 impl Error {
@@ -287,6 +294,13 @@ mod tests {
             Error::InvalidUpdateVersion
                 .to_string()
                 .contains("version number")
+        );
+        assert_eq!(
+            Error::Agent {
+                message: "Open a folder first.".into()
+            }
+            .to_string(),
+            "Open a folder first."
         );
         let json = Error::json(
             "decode",

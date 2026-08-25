@@ -3210,7 +3210,7 @@ dependencies = [
 
 [[package]]
 name = "ps-app"
-version = "0.5.0"
+version = "0.7.0"
 dependencies = [
  "block2",
  "objc2",
@@ -3219,6 +3219,7 @@ dependencies = [
  "objc2-web-kit",
  "ps-core",
  "ps-render",
+ "serde",
  "serde_json",
  "tauri",
  "tauri-build",
@@ -3232,7 +3233,7 @@ dependencies = [
 
 [[package]]
 name = "ps-core"
-version = "0.5.0"
+version = "0.7.0"
 dependencies = [
  "blake3",
  "criterion",
@@ -3252,7 +3253,7 @@ dependencies = [
 
 [[package]]
 name = "ps-render"
-version = "0.5.0"
+version = "0.7.0"
 dependencies = [
  "ammonia",
  "blake3",

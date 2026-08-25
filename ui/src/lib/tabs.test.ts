@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  closeWorkspaceTab,
   nextAfterClose,
+  openWorkspaceTab,
   removeTab,
   retitleTab,
   tabTitle,
@@ -21,6 +23,14 @@ function tab(relPath: string): DocTab {
 }
 
 describe('tabs', () => {
+  it('opens each optional workspace tab once and closes it', () => {
+    expect(openWorkspaceTab([], 'dashboard')).toEqual(['dashboard'])
+    expect(openWorkspaceTab(['assistant'], 'assistant')).toEqual(['assistant'])
+    expect(closeWorkspaceTab(['dashboard', 'assistant'], 'dashboard')).toEqual([
+      'assistant',
+    ])
+  })
+
   it('uses the file name as the label', () => {
     expect(tabTitle('notes/guide.md')).toBe('guide.md')
   })
