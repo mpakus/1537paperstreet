@@ -5,6 +5,20 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-08-24
+
+### Fixed
+
+- Synchronized the app, Rust workspace, and npm package versions so builds and
+  About report 0.7.2.
+
+## [0.7.1] - 2026-08-24
+
+### Changed
+
+- Reworked the README around the product's local-first workflow, practical
+  features, and privacy model.
+
 ## [0.7.0] - 2026-08-24
 
 ### Added
@@ -250,7 +264,9 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/mpakus/1537paperstreet/compare/v0.7.1...v0.7.2
+[0.7.1]: https://github.com/mpakus/1537paperstreet/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/mpakus/1537paperstreet/releases/tag/v0.7.0
 [0.6.0]: https://github.com/mpakus/1537paperstreet/releases/tag/v0.6.0
 [0.5.0]: https://github.com/mpakus/1537paperstreet/releases/tag/v0.5.0
