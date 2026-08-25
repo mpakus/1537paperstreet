@@ -1,4 +1,8 @@
+use std::sync::Mutex;
+
 use ps_core::paths::AppPaths;
+
+static ENV_LOCK: Mutex<()> = Mutex::new(());
 
 #[test]
 fn ensure_creates_the_application_directory_tree() {
@@ -30,6 +34,7 @@ fn ensure_creates_the_application_directory_tree() {
 
 #[test]
 fn discover_reads_the_override_environment_variable() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|error| error.into_inner());
     let temp = tempfile::tempdir().expect("temporary directory");
     let previous = std::env::var_os(ps_core::paths::ROOT_OVERRIDE_ENV);
     // SAFETY: this test process is the only writer of PAPERSTREET_HOME here.
@@ -46,6 +51,7 @@ fn discover_reads_the_override_environment_variable() {
 
 #[test]
 fn discover_falls_back_to_home_when_the_override_is_empty() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|error| error.into_inner());
     let previous_override = std::env::var_os(ps_core::paths::ROOT_OVERRIDE_ENV);
     let previous_home = std::env::var_os("HOME");
     let home = tempfile::tempdir().expect("home directory");
@@ -70,6 +76,7 @@ fn discover_falls_back_to_home_when_the_override_is_empty() {
 
 #[test]
 fn discover_requires_a_home_directory_without_an_override() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|error| error.into_inner());
     let previous_override = std::env::var_os(ps_core::paths::ROOT_OVERRIDE_ENV);
     let previous_home = std::env::var_os("HOME");
     unsafe {
