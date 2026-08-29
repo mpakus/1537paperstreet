@@ -1,10 +1,14 @@
 <script lang="ts">
+  import { isComposerSubmitKey } from '../lib/keys'
   import type {
     AgentChoice,
     AgentPermission,
     AgentServer,
     PromptHistoryEntry,
   } from '../lib/ipc'
+
+  const COMPOSER_MIN = 72
+  const COMPOSER_DEFAULT = 140
 
   let {
     servers,
@@ -27,6 +31,8 @@
     onsend,
     oncancel,
     onhistory,
+    onforget,
+    onclearhistory,
     onpermit,
   }: {
     servers: AgentServer[]
@@ -53,8 +59,30 @@
     onsend: (text: string) => void
     oncancel: () => void
     onhistory: (text: string) => void
+    onforget: (id: string) => void
+    onclearhistory: () => void
     onpermit: (id: number, optionId: string) => void
   } = $props()
+
+  let composerHeight = $state(COMPOSER_DEFAULT)
+  let stageEl = $state<HTMLDivElement | undefined>(undefined)
+  let splitDrag = $state<{ y: number; height: number } | null>(null)
+
+  function clampComposer(next: number): number {
+    const stage = stageEl?.clientHeight ?? 480
+    const max = Math.max(COMPOSER_MIN, Math.floor(stage * 0.55))
+    return Math.min(max, Math.max(COMPOSER_MIN, Math.round(next)))
+  }
+
+  function submitComposer(event: Event) {
+    event.preventDefault()
+    const text = composer.trim()
+    if (!text || busy) {
+      return
+    }
+    onsend(text)
+    composer = ''
+  }
 </script>
 
 <div class="pane" role="tabpanel" aria-label="Assistant">
@@ -114,85 +142,131 @@
     </div>
     {#if history.length > 0}
       <section class="history" aria-label="Prompt history">
-        <h3>History</h3>
+        <div class="history-head">
+          <h3>History</h3>
+          <button type="button" onclick={onclearhistory}>Clear History</button>
+        </div>
         <ul>
           {#each history as entry (entry.id)}
             <li>
-              <button type="button" onclick={() => onhistory(entry.text)}>
+              <button
+                type="button"
+                class="recall"
+                onclick={() => onhistory(entry.text)}
+              >
                 {entry.text}
               </button>
+              <button
+                type="button"
+                class="forget"
+                aria-label="Remove prompt"
+                onclick={() => onforget(entry.id)}>×</button
+              >
             </li>
           {/each}
         </ul>
       </section>
     {/if}
-    <div class="chat" aria-live="polite">{transcript}</div>
-    {#if permissionPrompt}
-      <div
-        class="permit"
-        role="alertdialog"
-        tabindex="-1"
-        aria-label="Tool permission"
-      >
-        <p>{permissionPrompt.title}</p>
-        <div class="actions">
-          {#each permissionPrompt.options as option (option.id)}
-            <button
-              type="button"
-              onclick={() => onpermit(permissionPrompt.id, option.id)}
-              >{option.name}</button
-            >
-          {/each}
+    <div class="stage" bind:this={stageEl}>
+      <div class="chat" aria-live="polite">{transcript}</div>
+      {#if permissionPrompt}
+        <div
+          class="permit"
+          role="alertdialog"
+          tabindex="-1"
+          aria-label="Tool permission"
+        >
+          <p>{permissionPrompt.title}</p>
+          <div class="actions">
+            {#each permissionPrompt.options as option (option.id)}
+              <button
+                type="button"
+                onclick={() => onpermit(permissionPrompt.id, option.id)}
+                >{option.name}</button
+              >
+            {/each}
+          </div>
         </div>
-      </div>
-    {/if}
-    {#if error}
-      <p class="status" role="status">{error}</p>
-    {/if}
-    {#if !projectOpen}
-      <p class="status">Open a folder before starting a chat.</p>
-    {/if}
-    <form
-      class="composer"
-      onsubmit={(event) => {
-        event.preventDefault()
-        const text = composer.trim()
-        if (!text || busy) {
-          return
-        }
-        onsend(text)
-        composer = ''
-      }}
-    >
-      <textarea
-        rows="4"
-        bind:value={composer}
-        placeholder="Ask the agent…"
-        disabled={!projectOpen || !selectedServerId}></textarea>
-      <div class="actions">
-        <button type="button" onclick={onnewchat}>New chat</button>
-        {#if busy}
-          <button type="button" onclick={oncancel}>Stop</button>
-        {:else}
-          <button
-            type="submit"
-            disabled={!projectOpen || !selectedServerId || !composer.trim()}
-            >Send</button
-          >
-        {/if}
-      </div>
-    </form>
+      {/if}
+      {#if error}
+        <p class="status" role="status">{error}</p>
+      {/if}
+      {#if !projectOpen}
+        <p class="status">Open a folder before starting a chat.</p>
+      {/if}
+      <div
+        class="split"
+        class:dragging={splitDrag !== null}
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize prompt"
+        onpointerdown={(event) => {
+          event.preventDefault()
+          splitDrag = { y: event.clientY, height: composerHeight }
+          event.currentTarget.setPointerCapture(event.pointerId)
+        }}
+        onpointermove={(event) => {
+          if (!splitDrag) {
+            return
+          }
+          composerHeight = clampComposer(
+            splitDrag.height - (event.clientY - splitDrag.y),
+          )
+        }}
+        onpointerup={() => {
+          splitDrag = null
+        }}
+        onpointercancel={() => {
+          splitDrag = null
+        }}
+      ></div>
+      <form class="composer" onsubmit={submitComposer}>
+        <textarea
+          bind:value={composer}
+          style:height="{composerHeight}px"
+          placeholder="Ask the agent…"
+          title="Shift+Enter to send"
+          disabled={!projectOpen || !selectedServerId}
+          onkeydown={(event) => {
+            if (!isComposerSubmitKey(event)) {
+              return
+            }
+            event.preventDefault()
+            event.currentTarget.form?.requestSubmit()
+          }}></textarea>
+        <div class="actions">
+          <button type="button" onclick={onnewchat}>New chat</button>
+          {#if busy}
+            <span
+              class="busy"
+              role="status"
+              aria-live="polite"
+              aria-label="Working"
+            >
+              <span class="busy-ring" aria-hidden="true"></span>
+            </span>
+            <button type="button" onclick={oncancel}>Stop</button>
+          {:else}
+            <button
+              type="submit"
+              disabled={!projectOpen || !selectedServerId || !composer.trim()}
+              >Send</button
+            >
+          {/if}
+        </div>
+      </form>
+    </div>
   {/if}
 </div>
 
 <style>
   .pane {
-    display: grid;
-    grid-template-rows: auto auto auto 1fr auto auto auto;
+    display: flex;
+    flex-direction: column;
     gap: var(--space-3);
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    overflow: hidden;
     padding: var(--space-5);
     color: var(--fg);
     background: var(--bg);
@@ -200,6 +274,7 @@
 
   header {
     display: flex;
+    flex: none;
     align-items: start;
     justify-content: space-between;
     gap: var(--space-3);
@@ -235,6 +310,8 @@
   .actions {
     display: flex;
     flex-wrap: wrap;
+    flex: none;
+    align-items: center;
     gap: var(--space-2);
   }
 
@@ -260,10 +337,25 @@
   }
 
   button {
+    flex: none;
+    height: 28px;
     min-height: 28px;
     padding: 0 var(--space-3);
     font-size: 0.75rem;
     font-weight: 600;
+  }
+
+  .history {
+    flex: none;
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
   }
 
   .history ul {
@@ -276,8 +368,16 @@
     overflow: auto;
   }
 
-  .history button {
-    width: 100%;
+  .history li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .history .recall {
+    flex: 1;
+    min-width: 0;
     text-align: start;
     font-weight: 400;
     white-space: nowrap;
@@ -285,8 +385,28 @@
     text-overflow: ellipsis;
   }
 
+  .history .forget {
+    width: 28px;
+    padding: 0;
+    color: var(--fg-muted);
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .history .forget:hover {
+    color: var(--fg);
+  }
+
+  .stage {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
   .chat {
-    min-height: 12rem;
+    flex: 1;
+    min-height: 4rem;
     overflow: auto;
     padding: var(--space-3);
     border: 1px solid var(--border);
@@ -296,6 +416,20 @@
     font-size: 0.875rem;
   }
 
+  .split {
+    flex: none;
+    height: var(--space-1);
+    margin: var(--space-2) 0;
+    cursor: row-resize;
+    touch-action: none;
+    background: var(--border);
+  }
+
+  .split:hover,
+  .split.dragging {
+    background: var(--accent);
+  }
+
   .permit {
     padding: var(--space-3);
     border: 1px solid var(--accent);
@@ -303,11 +437,52 @@
   }
 
   .composer {
-    display: grid;
+    display: flex;
+    flex: none;
+    flex-direction: column;
     gap: var(--space-2);
+  }
+
+  textarea {
+    flex: none;
+    width: 100%;
+    min-height: 4.5rem;
+    resize: none;
+    box-sizing: border-box;
   }
 
   button:disabled {
     opacity: 0.6;
+  }
+
+  .busy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+  }
+
+  .busy-ring {
+    width: 14px;
+    height: 14px;
+    box-sizing: border-box;
+    border: 2px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: assistant-busy 0.8s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .busy-ring {
+      animation: none;
+      border-color: var(--accent);
+    }
+  }
+
+  @keyframes assistant-busy {
+    to {
+      transform: rotate(360deg);
+    }
   }
 </style>

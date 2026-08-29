@@ -1,7 +1,7 @@
 //! External ACP agent configuration, PATH presets, and local prompt history.
 
 use std::env;
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -42,7 +42,7 @@ pub enum AgentPreset {
     Opencode,
     /// Claude Code (`claude --acp`).
     Claude,
-    /// Codex (`codex acp` or `codex-acp`).
+    /// Codex (`codex app-server`, or the `codex-acp` adapter).
     Codex,
     /// User-supplied command and arguments.
     #[default]
@@ -363,6 +363,23 @@ impl PromptHistory {
         self.entries.truncate(MAX_PROMPT_HISTORY);
         Ok(entry)
     }
+
+    /// Removes one stored prompt. Missing ids are an error, not a no-op.
+    pub fn remove(&mut self, id: &str) -> Result<PromptHistoryEntry> {
+        let index = self
+            .entries
+            .iter()
+            .position(|entry| entry.id == id)
+            .ok_or_else(|| Error::Agent {
+                message: "That prompt is no longer in history.".into(),
+            })?;
+        Ok(self.entries.remove(index))
+    }
+
+    /// Drops every stored prompt.
+    pub fn clear(&mut self) {
+        self.entries.clear();
+    }
 }
 
 /// Opens or creates the prompt-history store.
@@ -386,7 +403,7 @@ impl AgentPreset {
         match self {
             Self::Opencode => &[("opencode", &["acp"])],
             Self::Claude => &[("claude", &["--acp"])],
-            Self::Codex => &[("codex", &["acp"]), ("codex-acp", &[])],
+            Self::Codex => &[("codex", &["app-server", "--stdio"]), ("codex-acp", &[])],
             Self::Custom => &[],
         }
     }
@@ -402,11 +419,18 @@ pub fn named_presets() -> &'static [AgentPreset] {
 }
 
 /// Probes `PATH` (or `path`) for built-in ACP commands. Does not download anything.
+///
+/// When `path` is omitted, common login-shell directories are prepended so a
+/// GUI launch still finds Homebrew and `~/.local/bin` agents.
 pub fn detect_presets(path: Option<&OsStr>) -> Vec<AgentPresetInfo> {
-    let search = path
-        .map(OsStr::to_os_string)
-        .or_else(|| env::var_os("PATH"));
-    let directories = search.as_deref().map(split_path).unwrap_or_default();
+    let search = match path {
+        Some(path) => path.to_os_string(),
+        None => login_path(
+            env::var_os("PATH").as_deref(),
+            env::var_os("HOME").as_deref().map(Path::new),
+        ),
+    };
+    let directories = split_path(&search);
 
     named_presets()
         .iter()
@@ -478,6 +502,25 @@ fn split_path(path: &OsStr) -> Vec<PathBuf> {
     env::split_paths(path)
         .filter(|dir| !dir.as_os_str().is_empty())
         .collect()
+}
+
+/// Prepends common user bin directories so GUI launches still find local agents.
+pub fn login_path(existing: Option<&OsStr>, home: Option<&Path>) -> OsString {
+    let mut dirs = Vec::new();
+    if let Some(home) = home {
+        dirs.push(home.join(".local/bin"));
+        dirs.push(home.join(".cargo/bin"));
+    }
+    dirs.push(PathBuf::from("/opt/homebrew/bin"));
+    dirs.push(PathBuf::from("/usr/local/bin"));
+    if let Some(existing) = existing {
+        for dir in env::split_paths(existing) {
+            if !dir.as_os_str().is_empty() && !dirs.contains(&dir) {
+                dirs.push(dir);
+            }
+        }
+    }
+    env::join_paths(&dirs).unwrap_or_else(|_| existing.map(OsStr::to_os_string).unwrap_or_default())
 }
 
 fn is_runnable(path: &Path) -> bool {

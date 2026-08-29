@@ -728,6 +728,30 @@ impl AppState {
         Ok(entry)
     }
 
+    pub(crate) fn prompt_history_remove(&self, id: &str) -> Result<()> {
+        let mut store = self
+            .prompt_history
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let mut history = store.value().clone();
+        history.remove(id)?;
+        store.replace(history);
+        store.flush()?;
+        Ok(())
+    }
+
+    pub(crate) fn prompt_history_clear(&self) -> Result<()> {
+        let mut store = self
+            .prompt_history
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let mut history = store.value().clone();
+        history.clear();
+        store.replace(history);
+        store.flush()?;
+        Ok(())
+    }
+
     pub(crate) fn dashboard(
         &self,
         project_id: Option<&str>,
@@ -990,6 +1014,38 @@ mod tests {
                     .iter()
                     .any(|metric| metric.label == "Folder" && metric.value == "None")
         }));
+    }
+
+    #[test]
+    fn prompt_history_remove_and_clear_persist() {
+        let (temporary, state) = open_state();
+        let older = state
+            .prompt_history_push("01SERVER".into(), "older prompt")
+            .expect("save older");
+        let newer = state
+            .prompt_history_push("01SERVER".into(), "newer prompt")
+            .expect("save newer");
+        assert_eq!(
+            state
+                .prompt_history_list()
+                .iter()
+                .map(|entry| entry.text.as_str())
+                .collect::<Vec<_>>(),
+            vec!["newer prompt", "older prompt"]
+        );
+
+        state
+            .prompt_history_remove(&older.id)
+            .expect("remove older");
+        assert_eq!(state.prompt_history_list(), vec![newer.clone()]);
+        assert!(state.prompt_history_remove("missing").is_err());
+
+        state.prompt_history_clear().expect("clear");
+        assert!(state.prompt_history_list().is_empty());
+
+        let reopened = AppState::open(AppPaths::from_root(temporary.path())).expect("reopen");
+        assert!(reopened.prompt_history_list().is_empty());
+        assert_eq!(newer.text, "newer prompt");
     }
 
     #[test]

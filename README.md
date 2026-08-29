@@ -162,18 +162,24 @@ Reload discards unsaved edits in this app.
 - keep the Dock icon when the window is hidden
 - table of contents, confirm Trash, show hidden files
 - render Mermaid diagrams and KaTeX mathematics
-- **External Agents** — add OpenCode, Claude, or Codex if they are on `PATH`,
-  or a custom ACP command
+- **External Agents** — add OpenCode, Claude, or Codex if they are on `PATH`
+  (`codex` runs as `app-server --stdio`), or a custom ACP command
 
 Custom themes are JSON in `~/.1537paperstreet/themes/`.
 
 ### Work with local AI agents
 
-⌘⌥A (View → Assistant, the Assistant tab, or the title-bar control) opens
-the Assistant **tab**: Configure (Settings), agent, model when the CLI lists
-one, permissions (Allowance / Plan / Full), prompt history, and New chat.
-The session uses the open project as its working directory. This app does
-not implement ACP file methods; Full permission can still let the CLI change
+⌘⌥A, View → Assistant, the Assistant tab, or the toolbar **AI** button
+(next to Board) opens the Assistant **tab**: Configure (Settings), agent,
+model when the CLI lists one, permissions (Allowance / Plan / Full),
+prompt history, and New chat. Shift+Enter, Ctrl+Enter, or ⌘Enter send;
+plain Enter is a newline. While the agent is working, Send becomes **Stop**
+with a spinner. Click a History prompt to reuse it; × removes that prompt;
+**Clear History** deletes every stored prompt.
+
+Codex is spawned as `codex app-server --stdio` (not `codex acp`). The
+session uses the open project as its working directory. This app does not
+implement ACP file methods; Full permission can still let the CLI change
 files.
 
 The **Dashboard** tab (View → Dashboard) is a local analytics page: project

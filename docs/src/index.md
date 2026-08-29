@@ -6,8 +6,9 @@ network.
 
 The app reads and lightly edits files you already have: projects on the left,
 a file tree in the middle, preview on the right. Preview, Edit, and Split live
-in the bar under the title. To use another editor, Open in External Editor
-(⌘⇧O) — the tree picks up disk changes on its own.
+in the bar under the title, with Board (Dashboard) and AI (Assistant) next to
+Save / Export. To use another editor, Open in External Editor (⌘⇧O) — the tree
+picks up disk changes on its own.
 
 ![Preview of a Markdown file with syntax highlighting, the Projects list, and the file tree](../screen01.png)
 

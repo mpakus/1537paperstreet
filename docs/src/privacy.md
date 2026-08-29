@@ -12,7 +12,9 @@ documents.
 
 If you add an External Agent in Settings, that **local CLI** may use the
 network under its own terms. The app does not send your notes to a model API
-and does not install agents from a registry.
+and does not install agents from a registry. Assistant History stores only
+prompts you typed, on this Mac; × and Clear History delete that file’s entries
+and do not send anything off-device.
 
 `asset://` serves files only from registered project roots. `javascript:`,
 `data:`, and local `file:` links in a document are not used as navigation.

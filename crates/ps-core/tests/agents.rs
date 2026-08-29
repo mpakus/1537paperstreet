@@ -4,8 +4,8 @@ use std::os::unix::fs::PermissionsExt;
 use ps_core::Error;
 use ps_core::agents::{
     AgentChoice, AgentEnvVar, AgentPermission, AgentPreset, AgentServer, Agents,
-    MAX_PROMPT_HISTORY, PermissionOutcome, PromptHistory, detect_presets, permission_outcome,
-    preferred_plan_mode,
+    MAX_PROMPT_HISTORY, PermissionOutcome, PromptHistory, detect_presets, login_path,
+    permission_outcome, preferred_plan_mode,
 };
 use ps_core::config::Config;
 
@@ -127,6 +127,40 @@ fn detects_preset_binaries_on_an_injected_path() {
 }
 
 #[test]
+fn prefers_native_codex_app_server_over_the_adapter() {
+    let temp = tempfile::tempdir().expect("path dir");
+    for name in ["codex", "codex-acp"] {
+        let bin = temp.path().join(name);
+        fs::write(&bin, b"#!/bin/sh\n").expect("write");
+        let mut permissions = fs::metadata(&bin).expect("meta").permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&bin, permissions).expect("chmod");
+    }
+
+    let found = detect_presets(Some(temp.path().as_os_str()));
+    let codex = found
+        .iter()
+        .find(|preset| preset.preset == AgentPreset::Codex)
+        .expect("codex preset");
+    assert!(codex.available);
+    assert_eq!(codex.command, "codex");
+    assert_eq!(codex.args, vec!["app-server", "--stdio"]);
+}
+
+#[test]
+fn login_path_puts_local_bin_ahead_of_a_narrow_path() {
+    let home = tempfile::tempdir().expect("home");
+    let joined = login_path(Some(std::ffi::OsStr::new("/usr/bin")), Some(home.path()));
+    let text = joined.to_string_lossy();
+    let local = home.path().join(".local/bin");
+    let local_at = text
+        .find(local.to_string_lossy().as_ref())
+        .expect("local bin");
+    let usr_at = text.find("/usr/bin").expect("usr bin");
+    assert!(local_at < usr_at);
+}
+
+#[test]
 fn plan_permission_rejects_write_tools_and_prefers_plan_modes() {
     assert_eq!(
         permission_outcome(AgentPermission::Full, Some("edit")),
@@ -172,4 +206,27 @@ fn prompt_history_keeps_the_newest_entries_and_drops_the_oldest() {
         format!("prompt {}", MAX_PROMPT_HISTORY + 2)
     );
     assert!(history.push("server".into(), "   ").is_err());
+}
+
+#[test]
+fn prompt_history_removes_one_entry_and_clears_the_rest() {
+    let mut history = PromptHistory::default();
+    let first = history.push("server".into(), "first").expect("push");
+    let second = history.push("server".into(), "second").expect("push");
+    assert_eq!(history.remove(&first.id).expect("remove").text, "first");
+    assert_eq!(
+        history
+            .entries
+            .iter()
+            .map(|entry| entry.text.as_str())
+            .collect::<Vec<_>>(),
+        vec!["second"]
+    );
+    assert!(history.remove("missing").is_err());
+    history.clear();
+    assert!(history.entries.is_empty());
+    assert_eq!(
+        history.remove(&second.id).unwrap_err().to_string(),
+        "That prompt is no longer in history."
+    );
 }

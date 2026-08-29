@@ -1,7 +1,7 @@
 # FAQ
 
-**Why can’t I type in the preview?** This is a reader. A richer editor is the
-next large phase. For now: ⌘⇧O, or Edit / Split with ⌘S.
+**Why can’t I type in the preview?** Preview is read-only. Switch to Edit or
+Split (⌘E / ⌘⇧E) and save with ⌘S, or Open in External Editor (⌘⇧O).
 
 **A project disappeared from the list?** The folder was probably moved.
 Context menu → Find Folder….
@@ -23,3 +23,10 @@ quits the process.
 **Is there a cloud, account, or telemetry?** No. Update checking runs only
 when you choose File → Check for Updates… or the button in About; it asks
 GitHub Releases and does not send documents.
+
+**How do I send an Assistant prompt?** Shift+Enter, Ctrl+Enter, or ⌘Enter.
+Plain Enter is a new line. While the agent is working, Stop cancels the turn.
+
+**Codex never becomes ready?** Use the Codex preset or `codex` with
+`app-server --stdio`. `codex acp` is a terminal UI, not the protocol this
+app speaks. More in [Assistant](assistant.md).

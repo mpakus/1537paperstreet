@@ -577,6 +577,19 @@ pub(crate) fn agent_prompt_history(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+pub(crate) fn agent_prompt_history_remove(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<(), String> {
+    state.prompt_history_remove(&id).map_err(to_command_error)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) fn agent_prompt_history_clear(state: State<'_, AppState>) -> Result<(), String> {
+    state.prompt_history_clear().map_err(to_command_error)
+}
+
+#[tauri::command(rename_all = "snake_case")]
 pub(crate) async fn agent_start(
     app: tauri::AppHandle,
     state: State<'_, AppState>,

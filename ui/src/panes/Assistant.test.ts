@@ -20,6 +20,8 @@ describe('Assistant', () => {
         onsend() {},
         oncancel() {},
         onhistory() {},
+        onforget() {},
+        onclearhistory() {},
         onpermit() {},
       },
     })
@@ -63,6 +65,8 @@ describe('Assistant', () => {
         onsend() {},
         oncancel() {},
         onhistory() {},
+        onforget() {},
+        onclearhistory() {},
         onpermit() {},
       },
     })
@@ -71,7 +75,55 @@ describe('Assistant', () => {
     expect(body).toContain('Kimi')
     expect(body).toContain('Allowance')
     expect(body).toContain('Summarize FLOW.md')
+    expect(body).toContain('OpenCode')
+    expect(body).toContain('Model')
+    expect(body).toContain('Kimi')
+    expect(body).toContain('Allowance')
+    expect(body).toContain('Summarize FLOW.md')
     expect(body).toContain('New chat')
     expect(body).toContain('Send')
+    expect(body).toContain('aria-orientation="horizontal"')
+    expect(body).toContain('Resize prompt')
+    expect(body).toContain('Shift+Enter to send')
+    expect(body).toContain('Clear History')
+    expect(body).toContain('aria-label="Remove prompt"')
+  })
+
+  it('shows a working spinner next to Stop while the agent is busy', () => {
+    const { body } = render(Assistant, {
+      props: {
+        servers: [
+          {
+            id: '01TEST',
+            name: 'OpenCode',
+            preset: 'opencode',
+            command: 'opencode',
+            args: ['acp'],
+            env: [],
+            enabled: true,
+          },
+        ],
+        history: [],
+        projectOpen: true,
+        busy: true,
+        selectedServerId: '01TEST',
+        permission: 'allowance',
+        onconfigure() {},
+        onserver() {},
+        onpermission() {},
+        onmodel() {},
+        onnewchat() {},
+        onsend() {},
+        oncancel() {},
+        onhistory() {},
+        onforget() {},
+        onclearhistory() {},
+        onpermit() {},
+      },
+    })
+    expect(body).toContain('Stop')
+    expect(body).toContain('aria-label="Working"')
+    expect(body).not.toContain('>Send</button')
+    expect(body).not.toContain('Clear History')
   })
 })

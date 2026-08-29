@@ -43,8 +43,10 @@ name (not a double-click — that opens) also starts rename; F2 does the same.
 Dragging in the tree moves into a folder; ⌥ copies; hovering a folder expands
 it.
 
-The bar under the title: Preview / Edit / Split, Save, and Export; in Preview
-and Split — type size and zoom. More in [editing](editing.md).
+The bar under the title: Preview / Edit / Split, Save, Export, Board, and AI;
+in Preview and Split — type size and zoom. Board opens the Dashboard tab; AI
+opens the Assistant. More in [editing](editing.md) and
+[assistant](assistant.md).
 
 Images get width and height from the file header so layout does not jump.
 A file that is too large (> 8 MB), binary, or missing shows a message instead

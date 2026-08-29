@@ -11,6 +11,8 @@ do with the document:
   and writable
 - **Export** — PDF of the current document (⌘⌥E); the Save dialog picks the
   folder
+- **Board** — Dashboard tab (local counts; no telemetry)
+- **AI** — Assistant tab (⌘⌥A)
 
 Top-right of the preview — a small **Full size** button: preview fills the
 window (under the title bar). Click again or press Escape to return.

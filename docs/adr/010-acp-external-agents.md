@@ -17,13 +17,16 @@ later task; the subprocess still uses the open project as `cwd`.
 - Store `agents` in `config.json` with serde defaults and **no**
   `schema_version` bump.
 - Discover OpenCode, Claude, and Codex only if their binaries are already on
-  `PATH`. Never run `npx -y` or fetch the ACP Registry.
+  `PATH`. Never run `npx -y` or fetch the ACP Registry. Codex CLI is spawned
+  as `codex app-server --stdio` (not `codex acp`). `codex-acp` remains a
+  valid custom ACP adapter.
 - Host ACP in `ps-app` as newline-delimited JSON-RPC. Do not implement client
   `fs` or terminal capabilities.
 - Default permission is **allowance** (ask). Full auto-allows tool requests;
   Plan prefers a plan/ask session mode and rejects write-like kinds.
 - Prompt history is `~/.1537paperstreet/agents/prompts.json` (user prompts
-  only). Logs record spawn/exit, never prompt text or env values.
+  only). The Assistant can remove one entry or clear the file. Logs record
+  spawn/exit, never prompt text or env values.
 
 ## Alternatives
 

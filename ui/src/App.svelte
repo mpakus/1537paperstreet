@@ -49,6 +49,8 @@
     agentPermissionReply,
     agentPrompt,
     agentPromptHistory,
+    agentPromptHistoryClear,
+    agentPromptHistoryRemove,
     agentSetModel,
     agentStart,
     dashboardGet,
@@ -1505,24 +1507,16 @@
     }}
   >
     <p class="window-title">{documentTitle}</p>
-    <button
-      type="button"
-      class="titlebar-assistant"
-      title="Assistant (⌘⌥A)"
-      onclick={() => {
-        void openAssistant().catch((cause) => {
-          error = errorMessage(cause)
-        })
-      }}>Assistant</button
-    >
   </header>
   <ChromeToolbar
     mode={viewMode}
+    page={workspacePage}
     hasDocument={Boolean(openMeta)}
     canSave={Boolean(openMeta && docSourceMeta?.writable)}
     canFormat={Boolean(docSourceMeta?.writable)}
     readingZoom={previewZoom}
     onmode={(mode) => {
+      workspacePage = 'document'
       void setViewMode(mode).catch((cause) => {
         error = errorMessage(cause)
       })
@@ -1786,6 +1780,26 @@
           }}
           onhistory={(text) => {
             assistantComposer = text
+          }}
+          onforget={(id) => {
+            void (async () => {
+              try {
+                await agentPromptHistoryRemove(id)
+                assistantHistory = await agentPromptHistory()
+              } catch (cause) {
+                assistantError = errorMessage(cause)
+              }
+            })()
+          }}
+          onclearhistory={() => {
+            void (async () => {
+              try {
+                await agentPromptHistoryClear()
+                assistantHistory = await agentPromptHistory()
+              } catch (cause) {
+                assistantError = errorMessage(cause)
+              }
+            })()
           }}
           onpermit={(id, optionId) => {
             assistantPermit = null
@@ -2076,23 +2090,6 @@
     color: var(--fg-muted);
     user-select: none;
     pointer-events: none;
-  }
-
-  .titlebar-assistant {
-    flex: none;
-    min-height: 22px;
-    padding: 0 var(--space-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg);
-    color: var(--fg);
-    font-size: 0.6875rem;
-    font-weight: 600;
-    -webkit-app-region: no-drag;
-  }
-
-  .titlebar :global(button) {
-    -webkit-app-region: no-drag;
   }
 
   .columns {

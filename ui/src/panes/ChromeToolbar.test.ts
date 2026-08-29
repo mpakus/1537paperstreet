@@ -22,6 +22,8 @@ describe('ChromeToolbar', () => {
     expect(body).toContain('Split')
     expect(body).toContain('Save')
     expect(body).toContain('Export')
+    expect(body).toContain('title="Board"')
+    expect(body).toContain('>AI</button')
     expect(body).not.toContain('Settings')
     expect(body).toContain('Open a Markdown file to preview, edit, or export.')
     expect(body).toContain('aria-label="Reading"')

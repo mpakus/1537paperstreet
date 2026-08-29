@@ -5,6 +5,34 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Animated working indicator next to Stop while the Assistant is busy.
+- Assistant History can delete one prompt or clear every stored prompt.
+
+### Changed
+
+- Removed the Assistant button from the window title bar.
+- User guide, README, and AGENTS.md match Assistant chrome, Codex spawn, and
+  prompt-history delete.
+
+### Fixed
+
+- Assistant transcript fills leftover height; a drag handle resizes the prompt
+  without stretching New chat / Send.
+- Ctrl+Enter and ⌘Enter send the Assistant prompt.
+- Codex chats through `codex app-server` instead of the removed `acp`
+  subcommand. ACP handshake errors still include why a process quit.
+- Codex `thread/start` uses kebab-case `sandbox` and `approvalPolicy` values
+  (`workspace-write`, `on-request`) expected by Codex CLI 0.146.
+- Shift+Enter sends the Assistant prompt.
+
+## [0.7.3] - 2026-08-29
+
+### Added
+
+- Board and AI buttons next to Save / Export open the Dashboard and Assistant.
+
 ## [0.7.2] - 2026-08-24
 
 ### Fixed
@@ -264,7 +292,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/mpakus/1537paperstreet/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/mpakus/1537paperstreet/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/mpakus/1537paperstreet/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/mpakus/1537paperstreet/releases/tag/v0.7.0

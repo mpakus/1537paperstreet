@@ -3,7 +3,7 @@
 The Assistant talks to **local** coding agents through the
 [Agent Client Protocol](https://agentclientprotocol.com). It lives in its
 **own tab** in the workspace strip (next to Dashboard). Open it with
-**⌘⌥A**, View → Assistant, the Assistant tab, or the title-bar control.
+**⌘⌥A**, View → Assistant, the Assistant tab, or the toolbar AI button.
 
 The **Dashboard** tab (View → Dashboard) shows local library and agent
 counts: projects, Markdown files in the open folder, configured agents, the
@@ -17,7 +17,10 @@ registry. You add a CLI that is already on your Mac.
 Settings → External Agents:
 
 - **Add OpenCode / Claude / Codex** when that binary is on `PATH`
-  (`opencode acp`, `claude --acp`, `codex acp` or `codex-acp`).
+  (`opencode acp`, `claude --acp`, `codex app-server`). Codex CLI 0.146+
+  speaks its app-server protocol over stdio; the Assistant maps that to the
+  chat. The optional `codex-acp` adapter still works if you add it as a
+  custom command.
 - **Add Custom Agent** — name, command, arguments (no shell).
 - Remove a row with Remove.
 
@@ -27,9 +30,16 @@ asks each time. Plan prefers a plan/ask mode and rejects write-like tools.
 ## Chat
 
 Configure opens Settings. Pick an agent, model (if the agent lists models),
-and a permission. History lists recent **user** prompts stored in
-`~/.1537paperstreet/agents/prompts.json`. New chat starts a fresh ACP session
-in the current project folder.
+and a permission. The prompt box sits under a drag handle (**Resize prompt**);
+New chat and Send stay a single row of buttons. Shift+Enter, Ctrl+Enter, or
+⌘Enter send; plain Enter is a newline. While the agent is working, Send
+becomes **Stop** and a spinner shows that a turn is in progress.
+
+History lists recent **user** prompts stored in
+`~/.1537paperstreet/agents/prompts.json` (not agent replies). Click a prompt
+to put it back in the composer. × removes that prompt; **Clear History**
+deletes every stored prompt. New chat starts a fresh ACP session in the
+current project folder.
 
 The agent process may use the network. The reader still does not, except
 Check for Updates.

@@ -448,6 +448,16 @@ export function agentPromptHistory(): Promise<PromptHistoryEntry[]> {
   return invokeIpc('agent_prompt_history')
 }
 
+/** Removes one stored user prompt. */
+export function agentPromptHistoryRemove(id: string): Promise<void> {
+  return invokeIpc('agent_prompt_history_remove', { id })
+}
+
+/** Deletes every stored user prompt. */
+export function agentPromptHistoryClear(): Promise<void> {
+  return invokeIpc('agent_prompt_history_clear')
+}
+
 /** Starts an ACP session for the open project. */
 export function agentStart(
   serverId: string,

@@ -24,7 +24,10 @@ Working in the reader:
 | ⌘⌫ | Move to Trash |
 
 The same actions appear in the bar under the title: Preview / Edit / Split,
-Save, Export. In Preview and Split on the right — A− / A+ (type size) and
-− / % / + (preview zoom). Full size sits in the preview corner. Formatting
-(⌘B / ⌘I / ⌘K) appears in Edit. Settings — File → Settings… or ⌘,.
+Save, Export, Board, AI. In Preview and Split on the right — A− / A+ (type
+size) and − / % / + (preview zoom). Full size sits in the preview corner.
+Formatting (⌘B / ⌘I / ⌘K) appears in Edit. Settings — File → Settings… or ⌘,.
 Find and replace (⌘⌥F) is still ahead.
+
+In the Assistant composer: Shift+Enter, Ctrl+Enter, or ⌘Enter send; Enter
+inserts a newline. Escape does not cancel a running turn — use **Stop**.

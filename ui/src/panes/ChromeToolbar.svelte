@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ViewMode } from '../lib/generated/core'
+  import type { WorkspacePage } from '../lib/tabs'
   import {
     PREVIEW_ZOOM_MAX,
     PREVIEW_ZOOM_MIN,
@@ -9,6 +10,7 @@
 
   let {
     mode,
+    page = 'document',
     canSave = false,
     canFormat = false,
     hasDocument = false,
@@ -17,6 +19,7 @@
     oncommand,
   }: {
     mode: ViewMode
+    page?: WorkspacePage
     canSave?: boolean
     canFormat?: boolean
     hasDocument?: boolean
@@ -40,7 +43,7 @@
           type="button"
           class="seg"
           title={view.title}
-          aria-pressed={mode === view.id}
+          aria-pressed={page === 'document' && mode === view.id}
           onclick={() => onmode(view.id)}>{view.label}</button
         >
       {/each}
@@ -61,6 +64,18 @@
       title="Export PDF (⌘⌥E)"
       disabled={!hasDocument}
       onclick={() => oncommand('file-export')}>Export</button
+    >
+    <button
+      type="button"
+      title="Board"
+      aria-pressed={page === 'dashboard'}
+      onclick={() => oncommand('view-dashboard')}>Board</button
+    >
+    <button
+      type="button"
+      title="Assistant (⌘⌥A)"
+      aria-pressed={page === 'assistant'}
+      onclick={() => oncommand('view-assistant')}>AI</button
     >
   </div>
 
@@ -260,6 +275,11 @@
   .seg:active,
   .cluster > button:active:not(:disabled) {
     transform: scale(0.96);
+  }
+
+  .cluster > button[aria-pressed='true'] {
+    color: var(--fg);
+    background: var(--selection);
   }
 
   .cluster > button:disabled {

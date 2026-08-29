@@ -60,10 +60,12 @@
 - Команды в `ps-app` — тонкие: распаковать аргументы, вызвать core, вернуть. Если в команде появилась логика — её место в core.
 - Тесты файловой системы — только на `tempfile`. Никаких обращений к реальному `$HOME`.
 - Публичные типы, пересекающие IPC-границу, экспортируются в TypeScript через генератор. Ручное дублирование типов — ошибка ревью.
-- Логи (`ps-core::log`) не содержат текст документов. Только действия, пути служебных файлов, ошибки.
+- Логи (`ps-core::log`) не содержат текст документов и **не содержат текст промптов Assistant**. Только действия, пути служебных файлов, ошибки.
 - CSS тем генерируется в Rust (`themes_css`). JSON тем — kebab-case токены; IPC `ThemeInfo` — camelCase. UI не собирает карту токенов сам.
 - `window.show_in_dock` (по умолчанию true), `viewer.preview_*` (пусто / `0` = тема) и `agents` добавляются в `config.json` без bump `schema_version`.
 - Кэш Mermaid: ключ = blake3(`source_hash + "\0" + theme_id`); хеш — 64 hex-символа; `theme_id` — slug (ASCII-буквы, цифры, дефис). Не-SVG и файлы > 2 MB отклоняются.
+- Codex: spawn `codex app-server --stdio` (пресет Codex или `command` basename `codex` с args `["acp"]`). Это не `codex acp` (TUI). Диалект `AgentWire::CodexApp`. `login_path()` дополняет PATH (`~/.local/bin`, Homebrew и т.п.).
+- История промптов Assistant (`PromptHistory` / `agents/prompts.json`) — не P10 (история документов). IPC: `agent_prompt_history`, `agent_prompt_history_remove`, `agent_prompt_history_clear`. Удаление — явное действие пользователя, снимок `pre_*` не требуется.
 
 ---
 
@@ -76,14 +78,14 @@
 - IPC только через `ui/src/lib/ipc.ts`. В тестах — `ui/src/lib/ipc.mock.ts`. Молчаливый `catch {}` — ошибка ревью.
 - Ошибки IPC обрабатываются и показываются пользователю.
 - Никаких сетевых запросов. Все ассеты — локальные. Mermaid и KaTeX — pinned npm + dynamic import, без CDN. Точка входа Mermaid — `ui/vendor/mermaid.esm.min.mjs`.
-- Overlay-титлбар: полная полоса ~38px сверху окна с `data-tauri-drag-region` и `-webkit-app-region: drag`; интерактивные контролы — `no-drag`.
+- Overlay-титлбар: полная полоса ~38px сверху окна с `data-tauri-drag-region` и `-webkit-app-region: drag`; интерактивные контролы — `no-drag`. Сейчас в полосе только заголовок окна (кнопки Assistant там нет).
 - Тема: UI ставит только атрибут `data-theme`. Переключение ⌘⌥T использует сессионный `forcedThemeId` и **не** меняет пару `theme` / `theme_dark` в конфиге.
 
 **Исключения из «логика в Rust»:**
 
-1. Текстовый буфер редактора — CodeMirror (ADR-008), когда появится P9. Сейчас его нет.
+1. Текстовый буфер редактора — CodeMirror (ADR-008), P9.
 2. Ленивый клиентский рендер уже санитизированных шаблонов Mermaid и KaTeX (`IntersectionObserver`, `rootMargin: 400px`, `securityLevel: 'strict'`). Исходник, BLAKE3-хеш и HTML приходят из `ps-render`.
-3. Презентационные хелперы: плоский список строк дерева и подсветка поискового запроса в `ui/src/lib/tree.ts` и `text.ts`. Без парсинга Markdown и без работы с путями на диске.
+3. Презентационные хелперы: плоский список строк дерева и подсветка поискового запроса в `ui/src/lib/tree.ts` и `text.ts`; аккорды отправки промпта Assistant в `ui/src/lib/keys.ts`. Без парсинга Markdown и без работы с путями на диске.
 
 ---
 
@@ -150,9 +152,10 @@
 ## 10. Карта кода
 
 - `ps-core`: `config`, `agents`, `dashboard`, `projects`, `fsops`, `tree`, `watch`, `docio`, `log`, `themes`, `mermaid_cache`, `ui_state`, `search`, `store`, `paths`, `updates`
-- `ps-app`: тонкие IPC-команды, overlay-окно, нативное меню, `asset://`, `WatchHub`, `save_user_file`, ACP-хост
-- `ui`: панели Svelte 5 (`Projects`, `Tree`, `Preview`, `Settings`, `QuickOpen`, `QuickSwitch`, `FindBar`, `Conflict`, `About`, `Assistant`, `Dashboard`)
+- `ps-app`: тонкие IPC-команды, overlay-окно, нативное меню, `asset://`, `WatchHub`, `save_user_file`, ACP-хост (включая Codex app-server)
+- `ui`: панели Svelte 5 (`Projects`, `Tree`, `Preview`, `Settings`, `QuickOpen`, `QuickSwitch`, `FindBar`, `Conflict`, `About`, `Assistant`, `Dashboard`, `ChromeToolbar`)
 - Темы: `crates/ps-core/themes/*.json` плюс `~/.1537paperstreet/themes/`
 - Кэш диаграмм: `~/.1537paperstreet/cache/mermaid/`
 - Состояние UI: `ui-state.json` (раскрытые узлы, ширины панелей)
 - Логи: `~/.1537paperstreet/logs/app.log`
+- История промптов Assistant: `~/.1537paperstreet/agents/prompts.json`
