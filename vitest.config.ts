@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [svelte({ configFile: 'ui/svelte.config.js' })],
   test: {
     include: ['ui/src/**/*.test.ts'],
+    environmentMatchGlobs: [['ui/src/lib/find.test.ts', 'happy-dom']],
     coverage: {
       provider: 'v8',
       include: ['ui/src/lib/tree.ts', 'ui/src/lib/text.ts'],

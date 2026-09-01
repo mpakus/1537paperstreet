@@ -564,6 +564,9 @@
           error = 'Open a document first.'
           return
         }
+        if (viewMode === 'editor') {
+          await setViewMode('split')
+        }
         findOpen = true
         return
       }
@@ -1442,6 +1445,12 @@
     }
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'g') {
       event.preventDefault()
+      if (!html) {
+        return
+      }
+      if (viewMode === 'editor') {
+        void setViewMode('split')
+      }
       findOpen = true
     }
   }}
@@ -1831,6 +1840,7 @@
           {#if findOpen}
             <FindBar
               root={articleEl ?? null}
+              revision={html}
               onclose={() => (findOpen = false)}
             />
           {/if}

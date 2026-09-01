@@ -1,74 +1,95 @@
 <script lang="ts">
-  import { findMatchOffsets } from '../lib/text'
+  import { onMount } from 'svelte'
+
+  import { applyFindHits, clearFindHits } from '../lib/find'
 
   let {
     root = null,
+    revision = '',
     onclose,
   }: {
     root?: HTMLElement | null
+    revision?: string
     onclose: () => void
   } = $props()
 
   let query = $state('')
   let index = $state(0)
-  let matches = $state<Range[]>([])
+  let hits = $state<HTMLElement[]>([])
+  let capped = $state(false)
   let inputEl = $state<HTMLInputElement | undefined>()
 
-  $effect(() => {
+  onMount(() => {
     inputEl?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (
+        !(event.metaKey || event.ctrlKey) ||
+        event.key.toLowerCase() !== 'g'
+      ) {
+        return
+      }
+      event.preventDefault()
+      step(event.shiftKey ? -1 : 1)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  $effect(() => {
+    const host = root
+    return () => {
+      if (host) {
+        clearFindHits(host)
+      }
+    }
   })
 
   $effect(() => {
     const needle = query
     const host = root
+    void revision
+    const frame = requestAnimationFrame(() => {
+      paint(host, needle)
+    })
+    return () => cancelAnimationFrame(frame)
+  })
+
+  function paint(host: HTMLElement | null, needle: string) {
     if (!host || !needle) {
-      matches = []
+      if (host) {
+        clearFindHits(host)
+      }
+      hits = []
+      capped = false
       index = 0
       return
     }
-    matches = collectRanges(host, needle)
+    const next = applyFindHits(host, needle)
+    hits = next.marks
+    capped = next.capped
     index = 0
-    reveal(0)
-  })
-
-  function collectRanges(host: HTMLElement, needle: string): Range[] {
-    const found: Range[] = []
-    const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT)
-    let node = walker.nextNode()
-    while (node) {
-      const text = node.textContent ?? ''
-      for (const at of findMatchOffsets(text, needle)) {
-        const range = document.createRange()
-        range.setStart(node, at)
-        range.setEnd(node, at + needle.length)
-        found.push(range)
-      }
-      node = walker.nextNode()
-    }
-    return found
+    reveal(next.marks, 0)
   }
 
-  function reveal(next: number) {
-    const range = matches[next]
-    if (!range) {
+  function reveal(marks: HTMLElement[], next: number) {
+    for (const mark of marks) {
+      mark.classList.toggle('find-hit-current', false)
+    }
+    const current = marks[next]
+    if (!current) {
       return
     }
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(range)
-    const element =
-      range.startContainer instanceof Element
-        ? range.startContainer
-        : range.startContainer.parentElement
-    element?.scrollIntoView({ block: 'center' })
+    current.classList.add('find-hit-current')
+    current.scrollIntoView({ block: 'center', inline: 'nearest' })
   }
 
   function step(delta: number) {
-    if (matches.length === 0) {
+    if (hits.length === 0) {
       return
     }
-    index = (index + delta + matches.length) % matches.length
-    reveal(index)
+    const next = (index + delta + hits.length) % hits.length
+    index = next
+    reveal(hits, next)
   }
 </script>
 
@@ -76,8 +97,12 @@
   <input
     bind:this={inputEl}
     bind:value={query}
+    type="search"
     placeholder="Find in document"
     aria-label="Find in document"
+    autocomplete="off"
+    autocorrect="off"
+    spellcheck="false"
     onkeydown={(event) => {
       if (event.key === 'Escape') {
         onclose()
@@ -91,7 +116,10 @@
       }
     }}
   />
-  <span>{matches.length === 0 ? '0' : `${index + 1} of ${matches.length}`}</span
+  <span
+    >{hits.length === 0
+      ? '0'
+      : `${index + 1} of ${hits.length}${capped ? '+' : ''}`}</span
   >
   <button type="button" onclick={() => step(-1)}>Previous</button>
   <button type="button" onclick={() => step(1)}>Next</button>
@@ -131,5 +159,15 @@
     border-radius: var(--radius-sm);
     background: var(--bg);
     color: var(--fg);
+  }
+
+  :global(article mark.find-hit) {
+    color: inherit;
+    background: var(--selection);
+    border-radius: 2px;
+  }
+
+  :global(article mark.find-hit-current) {
+    background: color-mix(in srgb, var(--accent) 40%, var(--selection));
   }
 </style>

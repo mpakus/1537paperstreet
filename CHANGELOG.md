@@ -5,6 +5,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-08-31
+
 ### Added
 
 - Animated working indicator next to Stop while the Assistant is busy.
@@ -20,6 +22,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 - Assistant transcript fills leftover height; a drag handle resizes the prompt
   without stretching New chat / Send.
+- Find (⌘F) highlights every match in the preview as you type; ⌘G / ⌘⇧G step
+  through them.
 - Ctrl+Enter and ⌘Enter send the Assistant prompt.
 - Codex chats through `codex app-server` instead of the removed `acp`
   subcommand. ACP handshake errors still include why a process quit.
@@ -292,7 +296,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.3...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.4...HEAD
+[0.7.4]: https://github.com/mpakus/1537paperstreet/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/mpakus/1537paperstreet/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/mpakus/1537paperstreet/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/mpakus/1537paperstreet/compare/v0.7.0...v0.7.1

@@ -115,7 +115,8 @@ viewer; `http(s)` links open in the browser; heading anchors scroll smoothly.
 Images reserve width and height from the file header so layout does not jump.
 
 A file that is too large (> 8 MB), binary, or missing shows a message instead
-of a blank pane. ⌘F finds text in the preview.
+of a blank pane. ⌘F finds text in the preview and highlights matches as you
+type; ⌘G / ⌘⇧G move to the next or previous hit.
 
 Top-right of the preview — **Full size**: reading fills the window under the
 title bar. Click again or Escape to return.

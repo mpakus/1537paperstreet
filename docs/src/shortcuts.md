@@ -9,6 +9,7 @@ Working in the reader:
 | ⌘P | Quick-open a file |
 | ⌘⇧P | Switch project |
 | ⌘F | Find in preview |
+| ⌘G / ⌘⇧G | Next / previous find match |
 | ⌘1 / ⌘2 | Hide projects / tree |
 | ⌘E | Preview / editor |
 | ⌘⇧E | Split |
