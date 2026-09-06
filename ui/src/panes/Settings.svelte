@@ -519,7 +519,7 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    padding-top: 38px;
+    padding-top: var(--titlebar-h);
     background: var(--bg);
     color: var(--fg);
   }

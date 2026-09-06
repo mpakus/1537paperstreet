@@ -32,6 +32,7 @@ mod tests {
         assert_eq!(window["titleBarStyle"].as_str(), Some("Overlay"));
         assert_eq!(window["hiddenTitle"].as_bool(), Some(true));
         assert_eq!(window["dragDropEnabled"].as_bool(), Some(true));
+        assert_eq!(window["trafficLightPosition"]["x"].as_f64(), Some(16.0));
         assert_eq!(window["trafficLightPosition"]["y"].as_f64(), Some(18.0));
     }
 

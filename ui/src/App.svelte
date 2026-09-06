@@ -76,6 +76,7 @@
     type WorkspacePage,
     type WorkspaceTab,
   } from './lib/tabs'
+  import { recordMessage, TOAST_MS, type AppMessage } from './lib/messages'
   import { exportDocumentPdf } from './lib/print'
   import { windowTitle } from './lib/text'
   import { nextPreviewZoom } from './lib/zoom'
@@ -101,6 +102,7 @@
   import DocTabs from './panes/DocTabs.svelte'
   import Editor from './panes/Editor.svelte'
   import FindBar from './panes/FindBar.svelte'
+  import MessageToasts from './panes/MessageToasts.svelte'
   import Preview from './panes/Preview.svelte'
   import Projects from './panes/Projects.svelte'
   import QuickOpen from './panes/QuickOpen.svelte'
@@ -123,6 +125,9 @@
   let docMeta = $state<DocumentMeta | null>(null)
   let openMeta = $state<{ projectId: string; relPath: string } | null>(null)
   let error = $state('')
+  let errorSeq = $state(0)
+  let messageHistory = $state<AppMessage[]>([])
+  let historyOpen = $state(false)
   let dragging = $state(false)
   let sidebarWidth = $state(220)
   let treeWidth = $state(260)
@@ -206,6 +211,30 @@
     width: number
   } | null>(null)
 
+  function showError(message: string) {
+    const text = message.trim()
+    if (!text) {
+      error = ''
+      return
+    }
+    messageHistory = recordMessage(messageHistory, text)
+    error = text
+    errorSeq += 1
+  }
+
+  $effect(() => {
+    const seq = errorSeq
+    if (!error) {
+      return
+    }
+    const handle = setTimeout(() => {
+      if (errorSeq === seq) {
+        error = ''
+      }
+    }, TOAST_MS)
+    return () => clearTimeout(handle)
+  })
+
   const documentTitle = $derived(
     workspacePage === 'assistant'
       ? 'Assistant'
@@ -217,7 +246,7 @@
   $effect(() => {
     const title = documentTitle
     void setWindowTitle(title).catch((cause) => {
-      error = errorMessage(cause)
+      showError(errorMessage(cause))
     })
   })
 
@@ -298,7 +327,7 @@
     try {
       applyConfig(await configGet())
     } catch (cause) {
-      error = errorMessage(cause)
+      showError(errorMessage(cause))
     }
   }
 
@@ -470,7 +499,7 @@
     active = project
     expandedSeed = await treeExpandedGet(project.id)
     void watchStart(project.id).catch((cause) => {
-      error = errorMessage(cause)
+      showError(errorMessage(cause))
     })
     const focus = openRelPath ?? project.last_file
     if (focus) {
@@ -498,7 +527,7 @@
       }
       await applyOpened(opened.project, opened.openRelPath)
     } catch (cause) {
-      error = errorMessage(cause)
+      showError(errorMessage(cause))
     }
   }
 
@@ -553,7 +582,7 @@
       }
       if (id === 'go-open-file') {
         if (!active) {
-          error = 'Open a folder first.'
+          showError('Open a folder first.')
           return
         }
         quickOpen = true
@@ -561,7 +590,7 @@
       }
       if (id === 'edit-find') {
         if (!html) {
-          error = 'Open a document first.'
+          showError('Open a document first.')
           return
         }
         if (viewMode === 'editor') {
@@ -571,7 +600,7 @@
         return
       }
       if (id === 'edit-find-replace') {
-        error = 'Find and replace arrives with the editor.'
+        showError('Find and replace arrives with the editor.')
         return
       }
       if (id === 'file-save') {
@@ -580,12 +609,12 @@
       }
       if (id === 'file-export') {
         if (!openMeta) {
-          error = 'Open a document first.'
+          showError('Open a document first.')
           return
         }
         const articleHtml = articleEl?.innerHTML || html
         if (!articleHtml.trim()) {
-          error = 'There is nothing to export yet.'
+          showError('There is nothing to export yet.')
           return
         }
         const themeCss =
@@ -603,7 +632,7 @@
             monoFont,
           })
         } catch (cause) {
-          error = errorMessage(cause)
+          showError(errorMessage(cause))
         }
         return
       }
@@ -688,7 +717,7 @@
         return
       }
     } catch (cause) {
-      error = errorMessage(cause)
+      showError(errorMessage(cause))
     }
   }
 
@@ -699,7 +728,7 @@
 
   async function createUntitled(kind: UntitledKind) {
     if (!active) {
-      error = 'Open a folder first.'
+      showError('Open a folder first.')
       return
     }
     const created = await fsCreateUntitled(
@@ -723,7 +752,7 @@
 
   function requestTrash() {
     if (!active || selectedNodes.length === 0) {
-      error = 'Select a file or folder first.'
+      showError('Select a file or folder first.')
       return
     }
     if (confirmDelete) {
@@ -752,13 +781,13 @@
         docMissing = true
       }
     } catch (cause) {
-      error = errorMessage(cause)
+      showError(errorMessage(cause))
     }
   }
 
   async function revealSelected() {
     if (!active) {
-      error = 'Open a folder first.'
+      showError('Open a folder first.')
       return
     }
     await revealInFinder(active.id, selectedNode?.relPath ?? '')
@@ -766,7 +795,7 @@
 
   async function openSelectedExternal() {
     if (!active || !selectedNode || selectedNode.kind === 'directory') {
-      error = 'Select a file first.'
+      showError('Select a file first.')
       return
     }
     await openExternal(active.id, selectedNode.relPath)
@@ -784,7 +813,7 @@
     if (toDir === '' && destMode === null) {
       destMode = mode
       transferFrom = sources
-      error = 'Choose a destination folder.'
+      showError('Choose a destination folder.')
       return
     }
     destMode = null
@@ -1061,11 +1090,11 @@
 
   async function saveDocument() {
     if (!active || !openMeta || !docSourceMeta) {
-      error = 'Open a document in the editor first.'
+      showError('Open a document in the editor first.')
       return
     }
     if (!docSourceMeta.writable) {
-      error = docSourceMeta.readonlyReason ?? 'This file cannot be saved.'
+      showError(docSourceMeta.readonlyReason ?? 'This file cannot be saved.')
       return
     }
     const written = await docSave(
@@ -1092,7 +1121,7 @@
       await setViewMode('editor')
     }
     if (!openMeta) {
-      error = 'Open a document first.'
+      showError('Open a document first.')
       return
     }
     if (!docSourceMeta) {
@@ -1195,7 +1224,7 @@
     }
     if (next) {
       void openDocument(next).catch((cause) => {
-        error = errorMessage(cause)
+        showError(errorMessage(cause))
       })
       return
     }
@@ -1232,7 +1261,7 @@
       const opened = await openDroppedPaths(paths)
       await applyOpened(opened.project, opened.openRelPath)
     } catch (cause) {
-      error = errorMessage(cause)
+      showError(errorMessage(cause))
     }
   }
 
@@ -1247,7 +1276,7 @@
     }
     void transferAcross(dest, drag.projectId, drag.paths, copy).catch(
       (cause) => {
-        error = errorMessage(cause)
+        showError(errorMessage(cause))
       },
     )
     return true
@@ -1301,7 +1330,7 @@
           await activateProject(active)
         }
       } catch (cause) {
-        error = errorMessage(cause)
+        showError(errorMessage(cause))
       }
     })()
 
@@ -1318,7 +1347,7 @@
       .then(({ listen }) => {
         void listen('menu://action', (event) => {
           void handleMenu(menuActionId(event.payload)).catch((cause) => {
-            error = errorMessage(cause)
+            showError(errorMessage(cause))
           })
         }).then((unlisten) => stops.push(unlisten))
 
@@ -1338,7 +1367,7 @@
         }).then((unlisten) => stops.push(unlisten))
       })
       .catch((cause) => {
-        error = errorMessage(cause)
+        showError(errorMessage(cause))
       })
 
     void import('@tauri-apps/api/webview')
@@ -1392,7 +1421,7 @@
       )
       .then((unlisten) => stops.push(unlisten))
       .catch((cause) => {
-        error = errorMessage(cause)
+        showError(errorMessage(cause))
       })
 
     return () => {
@@ -1432,7 +1461,7 @@
             : editorWidth
     resizeStart = null
     void persistPanelWidth(kind, width).catch((cause) => {
-      error = errorMessage(cause)
+      showError(errorMessage(cause))
     })
   }}
   onkeydown={(event) => {
@@ -1505,37 +1534,43 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <header
     class="titlebar"
-    data-tauri-drag-region
     onpointerdown={(event) => {
       if (event.button !== 0 || event.detail > 1) {
         return
       }
+      const target = event.target
+      if (
+        target instanceof Element &&
+        target.closest('button, input, select, textarea, a')
+      ) {
+        return
+      }
       void startWindowDrag().catch((cause) => {
-        error = errorMessage(cause)
+        showError(errorMessage(cause))
       })
     }}
   >
-    <p class="window-title">{documentTitle}</p>
+    <div class="titlebar-drag" data-tauri-drag-region></div>
+    <ChromeToolbar
+      mode={viewMode}
+      page={workspacePage}
+      hasDocument={Boolean(openMeta)}
+      canSave={Boolean(openMeta && docSourceMeta?.writable)}
+      canFormat={Boolean(docSourceMeta?.writable)}
+      readingZoom={previewZoom}
+      onmode={(mode) => {
+        workspacePage = 'document'
+        void setViewMode(mode).catch((cause) => {
+          showError(errorMessage(cause))
+        })
+      }}
+      oncommand={(id) => {
+        void handleMenu(id).catch((cause) => {
+          showError(errorMessage(cause))
+        })
+      }}
+    />
   </header>
-  <ChromeToolbar
-    mode={viewMode}
-    page={workspacePage}
-    hasDocument={Boolean(openMeta)}
-    canSave={Boolean(openMeta && docSourceMeta?.writable)}
-    canFormat={Boolean(docSourceMeta?.writable)}
-    readingZoom={previewZoom}
-    onmode={(mode) => {
-      workspacePage = 'document'
-      void setViewMode(mode).catch((cause) => {
-        error = errorMessage(cause)
-      })
-    }}
-    oncommand={(id) => {
-      void handleMenu(id).catch((cause) => {
-        error = errorMessage(cause)
-      })
-    }}
-  />
   <div class="columns">
     {#if projectsHidden}
       <aside class="projects-rail">
@@ -1568,11 +1603,11 @@
           oncollapse={() => (projectsHidden = true)}
           onopen={(project) => {
             void activateProject(project).catch((cause) => {
-              error = errorMessage(cause)
+              showError(errorMessage(cause))
             })
           }}
           onerror={(message) => {
-            error = message
+            showError(message)
           }}
           onadd={() => void pickOpen('folder')}
           onfilesdrop={(project, payload) => {
@@ -1582,7 +1617,7 @@
               payload.paths,
               payload.copy,
             ).catch((cause) => {
-              error = errorMessage(cause)
+              showError(errorMessage(cause))
             })
           }}
           onremoved={() => {
@@ -1601,7 +1636,7 @@
                 }
               })
               .catch((cause) => {
-                error = errorMessage(cause)
+                showError(errorMessage(cause))
               })
           }}
         />
@@ -1643,7 +1678,7 @@
             {watchDirs}
             externalDropRel={finderDropRel}
             onerror={(message) => {
-              error = message
+              showError(message)
             }}
             onselect={(nodes) => {
               setSelection(nodes)
@@ -1655,7 +1690,7 @@
             }}
             onopen={(relPath) => {
               void openDocument(relPath).catch((cause) => {
-                error = errorMessage(cause)
+                showError(errorMessage(cause))
               })
             }}
             onrenamed={(from, to) => {
@@ -1669,12 +1704,12 @@
                 return
               }
               void treeExpandedSet(active.id, paths).catch((cause) => {
-                error = errorMessage(cause)
+                showError(errorMessage(cause))
               })
             }}
             ontransfer={(mode, from, toDir) => {
               void transfer(mode, from, toDir).catch((cause) => {
-                error = errorMessage(cause)
+                showError(errorMessage(cause))
               })
             }}
           />
@@ -1706,20 +1741,20 @@
         onpage={(page) => {
           if (page === 'assistant') {
             void openAssistant().catch((cause) => {
-              error = errorMessage(cause)
+              showError(errorMessage(cause))
             })
             return
           }
           if (page === 'dashboard') {
             void openDashboard().catch((cause) => {
-              error = errorMessage(cause)
+              showError(errorMessage(cause))
             })
           }
         }}
         onclosepage={closeWorkspacePage}
         onselect={(relPath) => {
           void openDocument(relPath).catch((cause) => {
-            error = errorMessage(cause)
+            showError(errorMessage(cause))
           })
         }}
         onclose={closeTab}
@@ -1748,7 +1783,7 @@
             }
             appConfig.agents.default_server_id = id
             void configSet(appConfig).catch((cause) => {
-              error = errorMessage(cause)
+              showError(errorMessage(cause))
             })
           }}
           onpermission={(value) => {
@@ -1758,7 +1793,7 @@
             }
             appConfig.agents.permission = value
             void configSet(appConfig).catch((cause) => {
-              error = errorMessage(cause)
+              showError(errorMessage(cause))
             })
           }}
           onmodel={(id) => {
@@ -1890,11 +1925,11 @@
               bind:articleEl
               onnavigate={(href) => {
                 void navigate(href).catch((cause) => {
-                  error = errorMessage(cause)
+                  showError(errorMessage(cause))
                 })
               }}
               onerror={(message) => {
-                error = message
+                showError(message)
               }}
               ontocresize={(event) => {
                 event.preventDefault()
@@ -1941,12 +1976,12 @@
     <QuickSwitch
       onopen={(project) => {
         void activateProject(project).catch((cause) => {
-          error = errorMessage(cause)
+          showError(errorMessage(cause))
         })
       }}
       onclose={() => (switchOpen = false)}
       onerror={(message) => {
-        error = message
+        showError(message)
       }}
     />
   {/if}
@@ -1957,12 +1992,12 @@
       onopen={(relPath) => {
         revealRelPath = relPath
         void openDocument(relPath).catch((cause) => {
-          error = errorMessage(cause)
+          showError(errorMessage(cause))
         })
       }}
       onclose={() => (quickOpen = false)}
       onerror={(message) => {
-        error = message
+        showError(message)
       }}
     />
   {/if}
@@ -1980,7 +2015,7 @@
               treeReload += 1
             })
             .catch((cause) => {
-              error = errorMessage(cause)
+              showError(errorMessage(cause))
             })
         }}
         onclose={() => (settingsOpen = false)}
@@ -1990,7 +2025,7 @@
               applyConfig(next)
             })
             .catch((cause) => {
-              error = errorMessage(cause)
+              showError(errorMessage(cause))
             })
         }}
         focusAgents={settingsFocusAgents}
@@ -2011,7 +2046,7 @@
         }}
         onopen={(url) => {
           void openUrl(url).catch((cause) => {
-            error = errorMessage(cause)
+            showError(errorMessage(cause))
           })
         }}
         oncheck={() => updatesCheck()}
@@ -2035,7 +2070,7 @@
           pending.fromProjectId,
           pending.toProjectId,
         ).catch((cause) => {
-          error = errorMessage(cause)
+          showError(errorMessage(cause))
         })
       }}
       oncancel={() => {
@@ -2052,7 +2087,7 @@
       missing={externalPrompt.missing}
       onreload={() => {
         void reloadFromDisk().catch((cause) => {
-          error = errorMessage(cause)
+          showError(errorMessage(cause))
         })
       }}
       onkeep={keepDiskVersion}
@@ -2065,9 +2100,14 @@
     </div>
   {/if}
 
-  {#if error}
-    <div class="toast" role="status">{error}</div>
-  {/if}
+  <MessageToasts
+    toast={error}
+    history={messageHistory}
+    open={historyOpen}
+    ondismiss={() => (error = '')}
+    ontoggle={() => (historyOpen = !historyOpen)}
+    onclose={() => (historyOpen = false)}
+  />
 </div>
 
 <style>
@@ -2079,27 +2119,23 @@
   }
 
   .titlebar {
-    height: 38px;
+    position: relative;
+    height: var(--titlebar-h);
+    min-height: var(--titlebar-h);
     flex: none;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
-    padding-inline: 78px var(--space-4);
+    padding-inline: var(--traffic-pad) var(--space-3);
     background: color-mix(in srgb, var(--sidebar) 78%, var(--bg));
-    -webkit-app-region: drag;
+    border-block-end: 1px solid var(--border);
+    z-index: 2;
   }
 
-  .window-title {
-    margin: 0;
-    min-width: 0;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--fg-muted);
-    user-select: none;
-    pointer-events: none;
+  .titlebar-drag {
+    position: absolute;
+    inset: 0;
+    -webkit-app-region: drag;
   }
 
   .columns {
@@ -2261,7 +2297,7 @@
     z-index: 200;
     display: grid;
     place-items: center;
-    padding-top: 38px;
+    padding-top: var(--titlebar-h);
     background: var(--bg);
     color: var(--fg-muted);
   }
@@ -2320,17 +2356,5 @@
     color: var(--fg);
     font-weight: 600;
     pointer-events: none;
-  }
-
-  .toast {
-    position: absolute;
-    z-index: 50;
-    inset-inline: var(--space-4);
-    inset-block-end: var(--space-4);
-    padding: var(--space-2) var(--space-3);
-    background: var(--bg-elev);
-    color: var(--fg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
   }
 </style>

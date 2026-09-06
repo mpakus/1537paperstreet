@@ -134,15 +134,25 @@
 
 <style>
   .chrome {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    height: 44px;
-    flex: none;
+    height: 100%;
+    flex: 1;
     min-width: 0;
-    padding-inline: var(--space-3);
-    border-block-end: 1px solid var(--border);
-    background: color-mix(in srgb, var(--sidebar) 55%, var(--bg));
+    padding: 0;
+    pointer-events: none;
+  }
+
+  .cluster,
+  .format,
+  .reading,
+  .segment,
+  .tiny,
+  .chrome button {
+    pointer-events: auto;
     -webkit-app-region: no-drag;
   }
 
@@ -226,6 +236,7 @@
     white-space: nowrap;
     color: var(--fg-muted);
     font-size: 0.75rem;
+    pointer-events: none;
   }
 
   .segment {

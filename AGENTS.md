@@ -78,7 +78,7 @@
 - IPC только через `ui/src/lib/ipc.ts`. В тестах — `ui/src/lib/ipc.mock.ts`. Молчаливый `catch {}` — ошибка ревью.
 - Ошибки IPC обрабатываются и показываются пользователю.
 - Никаких сетевых запросов. Все ассеты — локальные. Mermaid и KaTeX — pinned npm + dynamic import, без CDN. Точка входа Mermaid — `ui/vendor/mermaid.esm.min.mjs`.
-- Overlay-титлбар: полная полоса ~38px сверху окна с `data-tauri-drag-region` и `-webkit-app-region: drag`; интерактивные контролы — `no-drag`. Сейчас в полосе только заголовок окна (кнопки Assistant там нет).
+- Overlay-титлбар: полная полоса `--titlebar-h` (52px) сверху окна; drag-регион — внутренний элемент с `data-tauri-drag-region` и `-webkit-app-region: drag`, чтобы полоса не выпадала из потока. Слева `--traffic-pad` (88px) под traffic lights, затем Preview / Edit / Split / Save / Export / Board / AI. Текст заголовка в полосе не показывается (`hiddenTitle`); `setWindowTitle` по-прежнему ставит имя для Mission Control. Интерактивные контролы — `no-drag`.
 - Тема: UI ставит только атрибут `data-theme`. Переключение ⌘⌥T использует сессионный `forcedThemeId` и **не** меняет пару `theme` / `theme_dark` в конфиге.
 
 **Исключения из «логика в Rust»:**

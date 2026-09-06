@@ -104,7 +104,7 @@
     })
     const preview = host.parentElement
     const stopMermaid = preview
-      ? observeMermaid(preview, theme, mermaidEnabled)
+      ? observeMermaid(preview, theme, mermaidEnabled, onerror)
       : () => {}
     const stopMath = observeMath(host, mathEnabled)
     const headings = [...host.querySelectorAll('h1, h2, h3, h4, h5, h6')]
@@ -397,7 +397,7 @@
 
   .pane.is-full {
     position: fixed;
-    inset: 38px 0 0 0;
+    inset: var(--titlebar-h) 0 0 0;
     z-index: 25;
   }
 

@@ -61,6 +61,7 @@ export async function renderMermaidFigure(
   figure: HTMLElement,
   themeId: string,
   style: CSSStyleDeclaration,
+  onerror?: (message: string) => void,
 ): Promise<void> {
   if (
     figure.dataset.rendered === 'svg' ||
@@ -92,18 +93,19 @@ export async function renderMermaidFigure(
     return
   }
 
+  const mod = await loadMermaid()
+  const mermaid = mod.default
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    suppressErrorRendering: true,
+    theme: 'base',
+    themeVariables: mermaidThemeVariables(style),
+    flowchart: { htmlLabels: false },
+  })
+  renderSeq += 1
+  const id = `mermaid-${sourceHash.slice(0, 12)}-${renderSeq}`
   try {
-    const mod = await loadMermaid()
-    const mermaid = mod.default
-    mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: 'strict',
-      theme: 'base',
-      themeVariables: mermaidThemeVariables(style),
-      flowchart: { htmlLabels: false },
-    })
-    renderSeq += 1
-    const id = `mermaid-${sourceHash.slice(0, 12)}-${renderSeq}`
     const { svg } = await mermaid.render(id, source)
     memory.set(key, svg)
     try {
@@ -114,7 +116,8 @@ export async function renderMermaidFigure(
     }
     showSvg(figure, svg)
   } catch (cause) {
-    showDiagramError(figure, source, cause)
+    removeMermaidOrphans(id)
+    onerror?.(showDiagramError(figure, source, cause))
   }
 }
 
@@ -128,12 +131,18 @@ function showSvg(figure: HTMLElement, svg: string): void {
   figure.append(frame)
 }
 
+/** Drops leftover parse-error nodes Mermaid inserts outside the figure. */
+function removeMermaidOrphans(id: string): void {
+  document.getElementById(id)?.remove()
+  document.getElementById(`d${id}`)?.remove()
+}
+
 /** Replaces a figure with the error message and the diagram source. */
 export function showDiagramError(
   figure: HTMLElement,
   source: string,
   cause: unknown,
-): void {
+): string {
   figure.classList.add('mermaid-error')
   figure.dataset.rendered = 'error'
   const message =
@@ -145,6 +154,7 @@ export function showDiagramError(
   const pre = document.createElement('pre')
   pre.textContent = source
   figure.replaceChildren(status, pre)
+  return message
 }
 
 /** Observes mermaid figures and renders them just before they enter view. */
@@ -152,6 +162,7 @@ export function observeMermaid(
   root: HTMLElement,
   themeId: string,
   enabled: boolean,
+  onerror?: (message: string) => void,
 ): () => void {
   const figures = [...root.querySelectorAll<HTMLElement>('figure.mermaid')]
   if (figures.length === 0) {
@@ -159,11 +170,12 @@ export function observeMermaid(
   }
   if (!enabled) {
     for (const figure of figures) {
-      showDiagramError(
+      const message = showDiagramError(
         figure,
         diagramSource(figure),
         new Error('Mermaid is turned off in Settings.'),
       )
+      onerror?.(message)
     }
     return () => {}
   }
@@ -174,8 +186,8 @@ export function observeMermaid(
     if (cancelled) {
       return
     }
-    void renderMermaidFigure(figure, themeId, style).catch((cause) => {
-      showDiagramError(figure, diagramSource(figure), cause)
+    void renderMermaidFigure(figure, themeId, style, onerror).catch((cause) => {
+      onerror?.(showDiagramError(figure, diagramSource(figure), cause))
     })
   }
 

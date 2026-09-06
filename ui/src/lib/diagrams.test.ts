@@ -1,6 +1,12 @@
+// @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest'
 
-import { cacheKey, diagramSource, mermaidThemeVariables } from './diagrams'
+import {
+  cacheKey,
+  diagramSource,
+  mermaidThemeVariables,
+  showDiagramError,
+} from './diagrams'
 
 describe('diagrams', () => {
   it('reads the template source and builds a cache key', () => {
@@ -62,5 +68,19 @@ describe('diagrams', () => {
     } as unknown as CSSStyleDeclaration
     expect(mermaidThemeVariables(style).background).toBe('#fbfaf7')
     expect(mermaidThemeVariables(style).primaryTextColor).toBe('#1e1c1a')
+  })
+
+  it('returns the error text when a diagram fails', () => {
+    const figure = document.createElement('figure')
+    const message = showDiagramError(
+      figure,
+      'graph TD',
+      new Error('Syntax error in text'),
+    )
+    expect(message).toBe('Syntax error in text')
+    expect(figure.dataset.rendered).toBe('error')
+    expect(figure.classList.contains('mermaid-error')).toBe(true)
+    expect(figure.textContent).toContain('Syntax error in text')
+    expect(figure.textContent).toContain('graph TD')
   })
 })

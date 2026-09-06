@@ -28,5 +28,7 @@ describe('App', () => {
     expect(body).toContain('aria-label="Hide projects"')
     expect(body).toContain('Open a Markdown file to preview, edit, or export.')
     expect(body).toContain('Open Folder…')
+    expect(body).toContain('aria-label="Message history"')
+    expect(body).toContain('titlebar-drag')
   })
 })

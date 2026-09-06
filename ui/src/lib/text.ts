@@ -54,7 +54,7 @@ export function findMatchOffsets(haystack: string, needle: string): number[] {
   return found
 }
 
-/** Overlay and native window title: app name, plus the open document path. */
+/** Native window title (menu bar / Mission Control): app name plus the open path. */
 export function windowTitle(
   projectPath?: string | null,
   relPath?: string | null,

@@ -1,6 +1,6 @@
 # Editing and saving
 
-Open a Markdown file in the tree. The bar under the title shows what you can
+Open a Markdown file in the tree. The title bar shows what you can
 do with the document:
 
 - **Preview** — reading (⌘E toggles from the editor)

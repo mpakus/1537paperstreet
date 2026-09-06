@@ -39,6 +39,8 @@
   --sidebar-w: 220px;
   --toc-w: 224px;
   --focus-ring: var(--accent);
+  --titlebar-h: 52px;
+  --traffic-pad: 88px;
 }
 
 [data-theme='paper-dark'] {

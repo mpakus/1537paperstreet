@@ -43,7 +43,7 @@ name (not a double-click — that opens) also starts rename; F2 does the same.
 Dragging in the tree moves into a folder; ⌥ copies; hovering a folder expands
 it.
 
-The bar under the title: Preview / Edit / Split, Save, Export, Board, and AI;
+The title bar: Preview / Edit / Split, Save, Export, Board, and AI;
 in Preview and Split — type size and zoom. Board opens the Dashboard tab; AI
 opens the Assistant. More in [editing](editing.md) and
 [assistant](assistant.md).

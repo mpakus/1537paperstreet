@@ -24,7 +24,7 @@ Working in the reader:
 | ⌘⇧O | Open in External Editor |
 | ⌘⌫ | Move to Trash |
 
-The same actions appear in the bar under the title: Preview / Edit / Split,
+The same actions appear in the title bar: Preview / Edit / Split,
 Save, Export, Board, AI. In Preview and Split on the right — A− / A+ (type
 size) and − / % / + (preview zoom). Full size sits in the preview corner.
 Formatting (⌘B / ⌘I / ⌘K) appears in Edit. Settings — File → Settings… or ⌘,.

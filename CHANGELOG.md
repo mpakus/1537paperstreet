@@ -5,6 +5,20 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.5] - 2026-09-06
+
+### Added
+
+- Message history button in the bottom-left corner. Toasts dismiss with × or
+  after eight seconds; recent errors stay in the list.
+
+### Fixed
+
+- Preview, Edit, Split, Save, Export, Board, and AI sit in the overlay title
+  bar next to the traffic lights. The in-window document title is gone.
+- Invalid Mermaid diagrams no longer paint a floating overlay. The error stays
+  under the block and in the toast.
+
 ## [0.7.4] - 2026-08-31
 
 ### Added
@@ -296,7 +310,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.4...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.5...HEAD
+[0.7.5]: https://github.com/mpakus/1537paperstreet/compare/v0.7.4...v0.7.5
 [0.7.4]: https://github.com/mpakus/1537paperstreet/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/mpakus/1537paperstreet/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/mpakus/1537paperstreet/compare/v0.7.1...v0.7.2

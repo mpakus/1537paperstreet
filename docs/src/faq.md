@@ -7,7 +7,8 @@ Split (⌘E / ⌘⇧E) and save with ⌘S, or Open in External Editor (⌘⇧O).
 Context menu → Find Folder….
 
 **The diagram is empty.** Check Settings → Render Mermaid diagrams. If it is
-on, check the fence syntax; errors show under the source.
+on, check the fence syntax; errors show under the source and in the toast at
+the bottom of the window (Message history keeps recent ones).
 
 **Formulas don’t render.** Settings → mathematics (KaTeX). You need `$...$` /
 `$$...$$` in the Markdown, as in the renderer corpus.
