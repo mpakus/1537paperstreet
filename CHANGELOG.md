@@ -5,6 +5,20 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.6] - 2026-09-10
+
+### Added
+
+- Tree context menu: Copy name (basename) and Copy path (absolute path).
+- `bin/test.dev` runs the local development app; `bin/build` compiles a
+  host, Apple Silicon, Intel, or universal macOS bundle.
+- Tree drag shows a stacked file ghost that eases into the destination folder.
+
+### Fixed
+
+- Dragging selected files onto a folder in the tree moves them there
+  (hold ⌥ to copy). Dropping onto a file targets that file's folder.
+
 ## [0.7.5] - 2026-09-06
 
 ### Added
@@ -310,7 +324,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.5...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.6...HEAD
+[0.7.6]: https://github.com/mpakus/1537paperstreet/compare/v0.7.5...v0.7.6
 [0.7.5]: https://github.com/mpakus/1537paperstreet/compare/v0.7.4...v0.7.5
 [0.7.4]: https://github.com/mpakus/1537paperstreet/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/mpakus/1537paperstreet/compare/v0.7.2...v0.7.3

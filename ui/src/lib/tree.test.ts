@@ -28,6 +28,12 @@ import {
   resolveTreeDrag,
   dataTransferHasType,
   projectIdAtPoint,
+  canDropInto,
+  acceptTreeDrop,
+  logicalDragPoint,
+  clipboardNames,
+  clipboardPaths,
+  dragGhostPreview,
   watchTouchesOpenFile,
   isDraftDirty,
   TREE_DRAG_PREFIX,
@@ -70,6 +76,66 @@ describe('tree helpers', () => {
     expect(targetDir(null)).toBe('')
     expect(targetDir(node('chapters', 'directory'))).toBe('chapters')
     expect(targetDir(node('chapters/01.md', 'file'))).toBe('chapters')
+  })
+
+  it('allows dropping into another folder, not onto self or a descendant', () => {
+    expect(canDropInto('notes/a.md', 'docs')).toBe(true)
+    expect(canDropInto('a.md', '')).toBe(false)
+    expect(canDropInto('notes/a.md', 'notes')).toBe(false)
+    expect(canDropInto('docs', 'docs')).toBe(false)
+    expect(canDropInto('docs', 'docs/sub')).toBe(false)
+    expect(canDropInto('docs', 'other')).toBe(true)
+    expect(
+      acceptTreeDrop(['notes/a.md'], { kind: 'tree', dir: 'docs' }),
+    ).toEqual({ kind: 'tree', dir: 'docs' })
+    expect(acceptTreeDrop(['a.md'], { kind: 'tree', dir: '' })).toBeNull()
+    expect(acceptTreeDrop(['a.md'], { kind: 'project', id: 'p2' })).toEqual({
+      kind: 'project',
+      id: 'p2',
+    })
+  })
+
+  it('converts Tauri physical drag points to CSS pixels', () => {
+    expect(logicalDragPoint({ x: 200, y: 400 }, 2)).toEqual({ x: 100, y: 200 })
+    expect(logicalDragPoint(undefined, 2)).toEqual({ x: -1, y: -1 })
+  })
+
+  it('formats clipboard name and absolute path text', () => {
+    expect(clipboardNames([node('notes/a.md', 'file')])).toBe('a.md')
+    expect(
+      clipboardNames([node('notes/a.md', 'file'), node('docs', 'directory')]),
+    ).toBe('a.md\ndocs')
+    expect(clipboardPaths('/Users/me/notes', ['a.md'])).toBe(
+      '/Users/me/notes/a.md',
+    )
+    expect(clipboardPaths('/Users/me/notes/', ['', 'docs/b.md'])).toBe(
+      '/Users/me/notes\n/Users/me/notes/docs/b.md',
+    )
+  })
+
+  it('stacks a few drag-ghost names and a leftover count', () => {
+    expect(dragGhostPreview([node('a.md', 'file')])).toEqual({
+      items: [{ name: 'a.md', kind: 'file', relPath: 'a.md' }],
+      extra: 0,
+    })
+    expect(
+      dragGhostPreview(
+        [
+          node('a.md', 'file'),
+          node('b.md', 'file'),
+          node('docs', 'directory'),
+          node('c.md', 'file'),
+        ],
+        3,
+      ),
+    ).toEqual({
+      items: [
+        { name: 'a.md', kind: 'file', relPath: 'a.md' },
+        { name: 'b.md', kind: 'file', relPath: 'b.md' },
+        { name: 'docs', kind: 'directory', relPath: 'docs' },
+      ],
+      extra: 1,
+    })
   })
 
   it('flattens only expanded directories', () => {
@@ -186,6 +252,11 @@ describe('tree helpers', () => {
     clearTreeDrag()
     expect(peekTreeDrag()).toBeNull()
     expect(isTreeDrag(null)).toBe(false)
+    const plain = {
+      getData: () => 'not-a-tree-drag',
+      types: ['text/plain'],
+    } as unknown as DataTransfer
+    expect(isTreeDrag(plain)).toBe(false)
   })
 
   it('records copy vs move and ignores a duplicate drop', () => {

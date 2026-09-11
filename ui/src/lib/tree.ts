@@ -54,6 +54,55 @@ export function joinRel(dir: string, name: string): string {
   return dir ? `${dir}/${name}` : name
 }
 
+/** True when `from` can be moved or copied into `toDir` (project-relative). */
+export function canDropInto(from: string, toDir: string): boolean {
+  if (from === toDir) {
+    return false
+  }
+  if (parentDir(from) === toDir) {
+    return false
+  }
+  return !toDir.startsWith(`${from}/`)
+}
+
+/** Stacked names shown in the tree drag ghost. */
+export type DragGhostPreview = {
+  items: Array<{ name: string; kind: TreeNode['kind']; relPath: string }>
+  extra: number
+}
+
+/** First few dragged nodes plus a leftover count for the ghost. */
+export function dragGhostPreview(
+  nodes: Pick<TreeNode, 'name' | 'kind' | 'relPath'>[],
+  limit = 3,
+): DragGhostPreview {
+  const items = nodes.slice(0, Math.max(0, limit)).map((node) => ({
+    name: node.name,
+    kind: node.kind,
+    relPath: node.relPath,
+  }))
+  return { items, extra: Math.max(0, nodes.length - items.length) }
+}
+
+/** Display names for the Copy name clipboard, one per line. */
+export function clipboardNames(nodes: Pick<TreeNode, 'name'>[]): string {
+  return nodes.map((node) => node.name).join('\n')
+}
+
+/** Absolute paths for the Copy path clipboard, one per line. */
+export function clipboardPaths(
+  projectPath: string,
+  relPaths: string[],
+): string {
+  const root = projectPath.replace(/[/\\]+$/, '')
+  return relPaths
+    .map((rel) => {
+      const trimmed = rel.replace(/^[/\\]+/, '')
+      return trimmed ? `${root}/${trimmed}` : root
+    })
+    .join('\n')
+}
+
 /** Directory that should receive a new file created from `node`. */
 export function targetDir(node: TreeNode | null): string {
   if (!node) {
@@ -197,7 +246,56 @@ export function dropDirAtPoint(x: number, y: number): string | null {
       ? row.dataset.rel
       : parentDir(row.dataset.rel)
   }
+  if (el.closest('.tree-scroll')) {
+    return ''
+  }
   return null
+}
+
+/** Where an in-app tree drag would land. */
+export type TreeDropSite =
+  { kind: 'project'; id: string } | { kind: 'tree'; dir: string }
+
+/** Project row, then tree folder, under a pointer. */
+export function treeDropSiteAt(x: number, y: number): TreeDropSite | null {
+  const id = projectIdAtPoint(x, y)
+  if (id) {
+    return { kind: 'project', id }
+  }
+  const dir = dropDirAtPoint(x, y)
+  if (dir === null) {
+    return null
+  }
+  return { kind: 'tree', dir }
+}
+
+/** Rejects drops onto self, the current parent, or a descendant. */
+export function acceptTreeDrop(
+  from: string[],
+  site: TreeDropSite | null,
+): TreeDropSite | null {
+  if (!site || from.length === 0) {
+    return null
+  }
+  if (site.kind === 'project') {
+    return site
+  }
+  if (from.some((path) => !canDropInto(path, site.dir))) {
+    return null
+  }
+  return site
+}
+
+/** Converts Tauri physical drag coordinates to CSS pixels for `elementFromPoint`. */
+export function logicalDragPoint(
+  position: { x: number; y: number } | undefined,
+  scale: number,
+): { x: number; y: number } {
+  if (!position) {
+    return { x: -1, y: -1 }
+  }
+  const factor = scale > 0 ? scale : 1
+  return { x: position.x / factor, y: position.y / factor }
 }
 
 /** Project row under a pointer, or `null` when the pointer is not over Projects. */
@@ -325,7 +423,15 @@ export function dataTransferHasType(
 
 /** True when this drag is an in-app tree item. */
 export function isTreeDrag(transfer: DataTransfer | null): boolean {
-  return activeTreeDrag !== null || dataTransferHasType(transfer, 'text/plain')
+  if (activeTreeDrag !== null) {
+    return true
+  }
+  try {
+    const parsed = decodeTreeDrag(transfer?.getData('text/plain') ?? '')
+    return Boolean(parsed?.projectId && parsed.paths.length > 0)
+  } catch {
+    return false
+  }
 }
 
 /** In-memory payload first, then `text/plain`, so WKWebView drops still work. */

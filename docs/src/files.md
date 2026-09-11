@@ -17,12 +17,15 @@ Tree context menu and File / Go:
 | New File / New Folder | ⌘N / ⌘⇧N — in the selected folder |
 | Rename | click the selected name again, F2, or the context menu |
 | Duplicate | copy beside the original |
+| Copy name | basename to the clipboard |
+| Copy path | absolute path to the clipboard |
 | Copy to… / Move to… | pick a destination folder |
 | Reveal in Finder | ⌘⇧R |
 | Open in External Editor | ⌘⇧O |
 | Move to Trash | ⌘⌫, with confirmation |
 
-Drag inside the tree moves a file. Hold ⌥ while dropping to copy. Drop from
+Drag inside the tree moves a file. Hold ⌥ while dropping to copy. A stacked
+ghost of the dragged names follows the pointer and eases into the folder. Drop from
 Finder into a tree folder copies files into the project. Drag a file onto
 another project in the Projects list to move it there; hold ⌥ to copy.
 
@@ -40,8 +43,10 @@ control closes a document tab; Dashboard and Assistant stay in the strip.
 
 A new folder or file immediately offers a name. Clicking an already selected
 name (not a double-click — that opens) also starts rename; F2 does the same.
-Dragging in the tree moves into a folder; ⌥ copies; hovering a folder expands
-it.
+Dragging in the tree moves into a folder (drop on a file targets that file's
+folder); ⌥ copies; hovering a folder expands it. A stacked ghost of the
+dragged names follows the pointer and eases into the folder. Copy name and
+Copy path put the basename or the absolute path on the clipboard.
 
 The title bar: Preview / Edit / Split, Save, Export, Board, and AI;
 in Preview and Split — type size and zoom. Board opens the Dashboard tab; AI

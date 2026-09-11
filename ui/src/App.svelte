@@ -91,6 +91,9 @@
     peekTreeDragCopy,
     projectIdAtPoint,
     claimTreeDrop,
+    acceptTreeDrop,
+    logicalDragPoint,
+    treeDropSiteAt,
     targetDir,
     watchTouchesOpenFile,
   } from './lib/tree'
@@ -1265,6 +1268,29 @@
     }
   }
 
+  function applyTreeDragAt(x: number, y: number, copy: boolean): boolean {
+    const drag = peekTreeDrag()
+    if (!drag) {
+      return false
+    }
+    const site = acceptTreeDrop(drag.paths, treeDropSiteAt(x, y))
+    if (!site) {
+      return false
+    }
+    if (site.kind === 'project') {
+      return dropTreeOnProject(site.id, copy)
+    }
+    if (!claimTreeDrop(drag.projectId, drag.paths)) {
+      return false
+    }
+    void transfer(copy ? 'copy' : 'move', drag.paths, site.dir).catch(
+      (cause) => {
+        showError(errorMessage(cause))
+      },
+    )
+    return true
+  }
+
   function dropTreeOnProject(destId: string | null, copy: boolean): boolean {
     const drag = peekTreeDrag()
     if (!drag || !destId) {
@@ -1378,40 +1404,44 @@
           const treeDrag = peekTreeDrag()
           switch (event.payload.type) {
             case 'enter':
-            case 'over':
+            case 'over': {
+              const point = logicalDragPoint(
+                position,
+                window.devicePixelRatio || 1,
+              )
               if (treeDrag) {
                 dragging = false
-                finderDropRel = null
-                projectDropId = projectIdAtPoint(
-                  position?.x ?? -1,
-                  position?.y ?? -1,
-                )
+                projectDropId = projectIdAtPoint(point.x, point.y)
+                finderDropRel = projectDropId
+                  ? null
+                  : dropDirAtPoint(point.x, point.y)
                 break
               }
               dragging = true
               projectDropId = null
-              finderDropRel = active
-                ? dropDirAtPoint(position?.x ?? -1, position?.y ?? -1)
-                : null
+              finderDropRel = active ? dropDirAtPoint(point.x, point.y) : null
               break
+            }
             case 'leave':
               dragging = false
               finderDropRel = null
               projectDropId = null
               break
-            case 'drop':
+            case 'drop': {
+              const point = logicalDragPoint(
+                position,
+                window.devicePixelRatio || 1,
+              )
               if (treeDrag) {
                 dragging = false
                 finderDropRel = null
-                const destId =
-                  projectIdAtPoint(position?.x ?? -1, position?.y ?? -1) ??
-                  projectDropId
                 projectDropId = null
-                dropTreeOnProject(destId, peekTreeDragCopy())
+                applyTreeDragAt(point.x, point.y, peekTreeDragCopy())
                 break
               }
-              void handleDrop(event.payload.paths, position)
+              void handleDrop(event.payload.paths, point)
               break
+            }
             default:
               dragging = false
               finderDropRel = null
@@ -1438,6 +1468,9 @@
 
 <svelte:window
   onpointermove={(event) => {
+    if (peekTreeDrag()) {
+      projectDropId = projectIdAtPoint(event.clientX, event.clientY)
+    }
     if (!resizeStart) {
       return
     }
@@ -1502,10 +1535,12 @@
     event.preventDefault()
     if (peekTreeDrag()) {
       dragging = false
-      const destId =
-        projectIdAtPoint(event.clientX, event.clientY) ?? projectDropId
       projectDropId = null
-      dropTreeOnProject(destId, event.altKey)
+      applyTreeDragAt(
+        event.clientX,
+        event.clientY,
+        event.altKey || peekTreeDragCopy(),
+      )
       return
     }
     const paths = pathsFromDataTransfer(event.dataTransfer)
@@ -1711,6 +1746,9 @@
               void transfer(mode, from, toDir).catch((cause) => {
                 showError(errorMessage(cause))
               })
+            }}
+            onprojectdrop={(id, copy) => {
+              dropTreeOnProject(id, copy)
             }}
           />
         {:else}

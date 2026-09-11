@@ -17,18 +17,24 @@
   import {
     ancestorDirs,
     beginTreeDrag,
+    claimTreeDrop,
     clearTreeDrag,
-    decodeTreeDrag,
-    encodeTreeDrag,
+    clipboardNames,
+    clipboardPaths,
     fileIconKind,
     flattenTree,
     isMarkdownPath,
-    isTreeDrag,
     joinRel,
     parentDir,
+    peekTreeDragCopy,
     rangeRelPaths,
+    setTreeDragCopy,
     sortDirsByDepth,
     targetDir,
+    treeDropSiteAt,
+    acceptTreeDrop,
+    dragGhostPreview,
+    type DragGhostPreview,
     visibleWindow,
   } from '../lib/tree'
 
@@ -49,6 +55,7 @@
     onexpanded,
     ontrashed = () => {},
     ontransfer,
+    onprojectdrop = () => {},
     onrenamed,
   }: {
     project: Project | null
@@ -67,6 +74,7 @@
     onexpanded: (paths: string[]) => void
     ontrashed?: (relPaths: string[]) => void
     ontransfer: (mode: 'copy' | 'move', from: string[], toDir: string) => void
+    onprojectdrop?: (projectId: string, copy: boolean) => void
     onrenamed?: (from: string, to: string) => void
   } = $props()
 
@@ -88,13 +96,25 @@
   let renameInput = $state<HTMLInputElement | undefined>()
   let dropTarget = $state<string | null>(null)
   let draggingPaths = $state<string[]>([])
+  let ghost = $state<
+    (DragGhostPreview & { x: number; y: number; copy: boolean }) | null
+  >(null)
+  let ghostEl = $state<HTMLDivElement | undefined>()
+  let ghostLeaving = $state(false)
   let anchorRel = $state<string | null>(null)
   let trashTargets = $state<TreeNode[]>([])
   let renameTimer: ReturnType<typeof setTimeout> | null = null
   let expandTimer: ReturnType<typeof setTimeout> | null = null
+  let expandDest: string | null = null
   let dragged = false
+  let press: { x: number; y: number; node: TreeNode } | null = null
   const RENAME_CLICK_MS = 550
   const EXPAND_ON_DRAG_MS = 500
+  const DRAG_PX = 6
+  const GHOST_X = 14
+  const GHOST_Y = 12
+  const GHOST_DROP_MS = 200
+  const GHOST_EASE = 'cubic-bezier(0.23, 1, 0.32, 1)'
 
   async function loadDir(relPath: string) {
     if (!project) {
@@ -280,6 +300,7 @@
       clearTimeout(expandTimer)
       expandTimer = null
     }
+    expandDest = null
   }
 
   function beginRename(node: TreeNode) {
@@ -324,15 +345,183 @@
     activate(node)
   }
 
-  function dropDir(node: TreeNode): string {
-    return node.kind === 'directory' ? node.relPath : parentDir(node.relPath)
+  function prefersReducedMotion(): boolean {
+    return (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
   }
 
-  function canDrop(from: string, toDir: string): boolean {
-    if (from === toDir) {
-      return false
+  function destGhostPoint(
+    site: { kind: 'project'; id: string } | { kind: 'tree'; dir: string },
+  ): { x: number; y: number } | null {
+    if (typeof document === 'undefined') {
+      return null
     }
-    return !toDir.startsWith(`${from}/`)
+    const selector =
+      site.kind === 'project'
+        ? `[data-project-id="${CSS.escape(site.id)}"]`
+        : site.dir === ''
+          ? '.tree-scroll'
+          : `[data-rel="${CSS.escape(site.dir)}"][data-kind="directory"]`
+    const el = document.querySelector(selector)
+    if (!(el instanceof HTMLElement)) {
+      return null
+    }
+    const box = el.getBoundingClientRect()
+    return { x: box.left + 12, y: box.top + Math.min(8, box.height / 4) }
+  }
+
+  function placeGhost(x: number, y: number, copy: boolean) {
+    if (!ghost || ghostLeaving) {
+      return
+    }
+    const next = { ...ghost, x: x + GHOST_X, y: y + GHOST_Y, copy }
+    ghost = next
+    if (ghostEl) {
+      ghostEl.style.transform = `translate3d(${next.x}px, ${next.y}px, 0)`
+    }
+  }
+
+  function hideGhost() {
+    ghost = null
+    ghostLeaving = false
+  }
+
+  function exitGhost(to: { x: number; y: number } | null, ondone: () => void) {
+    const current = ghost
+    const el = ghostEl
+    if (!current || !el || prefersReducedMotion()) {
+      hideGhost()
+      ondone()
+      return
+    }
+    const dest = to ?? { x: current.x, y: current.y }
+    const scale = to ? 0.94 : 0.96
+    const anim = el.animate(
+      [
+        {
+          transform: `translate3d(${current.x}px, ${current.y}px, 0) scale(1)`,
+          opacity: 1,
+        },
+        {
+          transform: `translate3d(${dest.x}px, ${dest.y}px, 0) scale(${scale})`,
+          opacity: 0,
+        },
+      ],
+      { duration: GHOST_DROP_MS, easing: GHOST_EASE, fill: 'forwards' },
+    )
+    ghostLeaving = true
+    void anim.finished.finally(() => {
+      hideGhost()
+      ondone()
+    })
+  }
+
+  function hoverPointerDrop(x: number, y: number) {
+    const site = acceptTreeDrop(draggingPaths, treeDropSiteAt(x, y))
+    dropTarget = site?.kind === 'tree' ? site.dir : null
+    if (typeof document === 'undefined') {
+      return
+    }
+    const el = document.elementFromPoint(x, y)
+    const row = el instanceof Element ? el.closest('[data-rel]') : null
+    const dest =
+      row instanceof HTMLElement && row.dataset.kind === 'directory'
+        ? (row.dataset.rel ?? null)
+        : null
+    if (!dest || expanded.has(dest)) {
+      if (expandDest !== dest) {
+        clearExpandTimer()
+      }
+      return
+    }
+    if (expandDest === dest) {
+      return
+    }
+    clearExpandTimer()
+    expandDest = dest
+    expandTimer = setTimeout(() => {
+      expanded.add(dest)
+      void loadDir(dest)
+      persistExpanded()
+    }, EXPAND_ON_DRAG_MS)
+  }
+
+  function finishPointerDrop(event: PointerEvent) {
+    const paths = draggingPaths
+    const copy = event.altKey || peekTreeDragCopy()
+    dropTarget = null
+    clearExpandTimer()
+    press = null
+    if (paths.length === 0 || !project) {
+      exitGhost(null, () => {
+        draggingPaths = []
+        clearTreeDrag()
+      })
+      return
+    }
+    const site = acceptTreeDrop(
+      paths,
+      treeDropSiteAt(event.clientX, event.clientY),
+    )
+    if (!site) {
+      exitGhost(null, () => {
+        draggingPaths = []
+        clearTreeDrag()
+      })
+      return
+    }
+    const flyTo = destGhostPoint(site)
+    if (site.kind === 'project') {
+      onprojectdrop(site.id, copy)
+    } else if (claimTreeDrop(project.id, paths)) {
+      ontransfer(copy ? 'copy' : 'move', paths, site.dir)
+    }
+    exitGhost(flyTo, () => {
+      draggingPaths = []
+      clearTreeDrag()
+    })
+  }
+
+  function movePointerDrag(event: PointerEvent) {
+    if (!press || !project) {
+      return
+    }
+    if (draggingPaths.length === 0) {
+      if (
+        Math.hypot(event.clientX - press.x, event.clientY - press.y) < DRAG_PX
+      ) {
+        return
+      }
+      if (event.buttons === 0) {
+        press = null
+        return
+      }
+      dragged = true
+      const paths = actionNodes(press.node).map((item) => item.relPath)
+      draggingPaths = paths
+      beginTreeDrag(project.id, paths)
+      ghost = {
+        ...dragGhostPreview(nodesFor(paths)),
+        x: event.clientX + GHOST_X,
+        y: event.clientY + GHOST_Y,
+        copy: event.altKey,
+      }
+    } else {
+      placeGhost(event.clientX, event.clientY, event.altKey)
+    }
+    event.preventDefault()
+    setTreeDragCopy(event.altKey)
+    hoverPointerDrop(event.clientX, event.clientY)
+  }
+
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch (cause) {
+      onerror(errorMessage(cause))
+    }
   }
 
   async function createUntitled(
@@ -469,6 +658,12 @@
   }
 
   $effect(() => {
+    if (ghostEl && ghost && !ghostLeaving) {
+      ghostEl.style.transform = `translate3d(${ghost.x}px, ${ghost.y}px, 0)`
+    }
+  })
+
+  $effect(() => {
     if (renaming && renameInput) {
       renameInput.focus()
       renameInput.select()
@@ -482,19 +677,44 @@
       closeMenu()
     }
   }}
+  onpointermove={(event) => {
+    movePointerDrag(event)
+  }}
+  onpointerup={(event) => {
+    if (press && event.button === 0) {
+      finishPointerDrop(event)
+    }
+  }}
+  onpointercancel={() => {
+    dropTarget = null
+    draggingPaths = []
+    press = null
+    clearExpandTimer()
+    hideGhost()
+    clearTreeDrag()
+  }}
   onkeydown={(event) => {
     if (event.key === 'Escape') {
       closeMenu()
       clearRenameTimer()
       renaming = null
       trashTargets = []
+      if (press || draggingPaths.length > 0 || ghost) {
+        dropTarget = null
+        draggingPaths = []
+        press = null
+        clearExpandTimer()
+        hideGhost()
+        clearTreeDrag()
+      }
     }
   }}
 />
 
 <div
   class="tree-scroll"
-  class:drop-root={externalDropRel === ''}
+  class:drop-root={externalDropRel === '' || dropTarget === ''}
+  class:is-dragging={draggingPaths.length > 0}
   role="region"
   aria-label="Files"
   bind:clientHeight={viewportHeight}
@@ -538,90 +758,24 @@
             role="treeitem"
             aria-selected={selected}
             aria-expanded={isDir ? open : undefined}
-            draggable={!editing}
             onclick={(event) => {
               if (!editing) {
                 clickRow(event, row.node)
               }
             }}
+            onpointerdown={(event) => {
+              if (editing || destMode || event.button !== 0) {
+                return
+              }
+              press = {
+                x: event.clientX,
+                y: event.clientY,
+                node: row.node,
+              }
+            }}
             oncontextmenu={(event) => {
               event.stopPropagation()
               openMenu(event, row.node)
-            }}
-            ondragstart={(event) => {
-              if (!project) {
-                return
-              }
-              dragged = true
-              const paths = actionNodes(row.node).map((item) => item.relPath)
-              draggingPaths = paths
-              beginTreeDrag(project.id, paths)
-              event.dataTransfer?.setData(
-                'text/plain',
-                encodeTreeDrag(project.id, paths),
-              )
-              if (event.dataTransfer) {
-                event.dataTransfer.effectAllowed = 'copyMove'
-              }
-            }}
-            ondragend={() => {
-              dropTarget = null
-              draggingPaths = []
-              clearExpandTimer()
-              window.setTimeout(() => {
-                clearTreeDrag()
-              }, 100)
-            }}
-            ondragover={(event) => {
-              if (!isTreeDrag(event.dataTransfer)) {
-                return
-              }
-              event.preventDefault()
-              if (event.dataTransfer) {
-                event.dataTransfer.dropEffect = event.altKey ? 'copy' : 'move'
-              }
-              dropTarget = row.node.relPath
-            }}
-            ondragenter={(event) => {
-              if (!isTreeDrag(event.dataTransfer)) {
-                return
-              }
-              event.preventDefault()
-              dropTarget = row.node.relPath
-              clearExpandTimer()
-              if (isDir && !expanded.has(row.node.relPath)) {
-                expandTimer = setTimeout(() => {
-                  expanded.add(row.node.relPath)
-                  void loadDir(row.node.relPath)
-                  persistExpanded()
-                }, EXPAND_ON_DRAG_MS)
-              }
-            }}
-            ondragleave={(event) => {
-              const next = event.relatedTarget
-              if (next instanceof Node && event.currentTarget.contains(next)) {
-                return
-              }
-              if (dropTarget === row.node.relPath) {
-                dropTarget = null
-              }
-              clearExpandTimer()
-            }}
-            ondrop={(event) => {
-              event.preventDefault()
-              dropTarget = null
-              const drag = decodeTreeDrag(
-                event.dataTransfer?.getData('text/plain') ?? '',
-              )
-              const from = drag?.paths ?? []
-              const toDir = dropDir(row.node)
-              if (
-                from.length === 0 ||
-                from.some((path) => !canDrop(path, toDir))
-              ) {
-                return
-              }
-              ontransfer(event.altKey ? 'copy' : 'move', from, toDir)
             }}
             onkeydown={(event) => {
               if (editing) {
@@ -695,6 +849,57 @@
   {/if}
 </div>
 
+{#if ghost}
+  <div
+    bind:this={ghostEl}
+    class="drag-ghost"
+    class:copy={ghost.copy}
+    class:leaving={ghostLeaving}
+    aria-hidden="true"
+  >
+    <div class="drag-ghost-inner">
+      {#each ghost.items as item, index (item.relPath)}
+        <div
+          class="drag-ghost-card"
+          class:folder={item.kind === 'directory'}
+          class:markdown={item.kind !== 'directory' &&
+            isMarkdownPath(item.name)}
+          style:transform="translate({index * 3}px, {index * 3}px)"
+          style:z-index={ghost.items.length - index}
+        >
+          <span class="icon" aria-hidden="true">
+            {#if item.kind === 'directory'}
+              <svg viewBox="0 0 16 16">
+                <path
+                  d="M2 4.5A1.5 1.5 0 0 1 3.5 3h3l1 1.5H12.5A1.5 1.5 0 0 1 14 6v6.5A1.5 1.5 0 0 1 12.5 14h-9A1.5 1.5 0 0 1 2 12.5z"
+                />
+              </svg>
+            {:else if isMarkdownPath(item.name)}
+              <svg viewBox="0 0 16 16">
+                <path
+                  d="M3.5 2h6l3.5 3.5V13.5A1.5 1.5 0 0 1 11.5 15h-8A1.5 1.5 0 0 1 2 13.5v-10A1.5 1.5 0 0 1 3.5 2zm.5 3h4v1.2L6.7 8.5 5.4 6.8 4 8.4V5zm5 6.2c.9 0 1.6-.6 1.6-1.5S10.4 8.2 9.5 8.2 7.9 8.8 7.9 9.7s.7 1.5 1.6 1.5z"
+                />
+              </svg>
+            {:else}
+              <svg viewBox="0 0 16 16">
+                <path
+                  d="M3.5 2h6L13 5.5V13.5A1.5 1.5 0 0 1 11.5 15h-8A1.5 1.5 0 0 1 2 13.5v-10A1.5 1.5 0 0 1 3.5 2z"
+                />
+              </svg>
+            {/if}
+          </span>
+          <span class="name">{item.name}</span>
+        </div>
+      {/each}
+      {#if ghost.items.length + ghost.extra > 1}
+        <span class="drag-ghost-count">
+          {ghost.items.length + ghost.extra}
+        </span>
+      {/if}
+    </div>
+  </div>
+{/if}
+
 {#if menu}
   <div
     class="menu"
@@ -741,6 +946,31 @@
               }
             }
           })}>Duplicate</button
+      >
+      <button
+        type="button"
+        role="menuitem"
+        onclick={() =>
+          withMenu((node) => {
+            if (node) {
+              void copyText(clipboardNames(actionNodes(node)))
+            }
+          })}>Copy name</button
+      >
+      <button
+        type="button"
+        role="menuitem"
+        onclick={() =>
+          withMenu((node) => {
+            if (node && project) {
+              void copyText(
+                clipboardPaths(
+                  project.path,
+                  actionNodes(node).map((item) => item.relPath),
+                ),
+              )
+            }
+          })}>Copy path</button
       >
       <button
         type="button"
@@ -873,8 +1103,10 @@
     color: var(--fg-muted);
     border-radius: var(--radius-sm);
     cursor: grab;
-    transition-property: background-color, box-shadow, opacity;
+    user-select: none;
+    transition-property: background-color, box-shadow, opacity, transform;
     transition-duration: var(--duration);
+    transition-timing-function: var(--ease-out);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -884,6 +1116,11 @@
   }
 
   .row:active {
+    cursor: grabbing;
+  }
+
+  .tree-scroll.is-dragging,
+  .tree-scroll.is-dragging .row {
     cursor: grabbing;
   }
 
@@ -899,7 +1136,8 @@
   }
 
   .row.source {
-    opacity: 0.45;
+    opacity: 0.4;
+    transform: scale(0.98);
   }
 
   .tree-scroll.drop-root,
@@ -909,6 +1147,7 @@
 
   .row.drop[data-kind='directory'] {
     box-shadow: inset 0 0 0 2px var(--accent);
+    transform: translateX(2px);
   }
 
   .twist {
@@ -942,6 +1181,95 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .drag-ghost {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 18;
+    pointer-events: none;
+    transform-origin: top left;
+  }
+
+  .drag-ghost-inner {
+    position: relative;
+    min-width: 8rem;
+    max-width: 16rem;
+    animation: drag-ghost-in var(--duration) var(--ease-out);
+  }
+
+  .drag-ghost.leaving .drag-ghost-inner {
+    animation: none;
+  }
+
+  .drag-ghost.copy .drag-ghost-inner {
+    outline: 1px dashed var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius);
+  }
+
+  .drag-ghost-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    height: var(--tree-row);
+    padding: 0 var(--space-2);
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--fg);
+    box-shadow: 0 var(--space-1) var(--space-3)
+      color-mix(in srgb, var(--fg) 16%, transparent);
+  }
+
+  .drag-ghost-card + .drag-ghost-card {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 100%;
+  }
+
+  .drag-ghost-card.folder .icon,
+  .drag-ghost-card.markdown .icon {
+    color: var(--accent);
+  }
+
+  .drag-ghost-count {
+    position: absolute;
+    inset-block-start: -6px;
+    inset-inline-end: -6px;
+    z-index: 4;
+    min-width: 1.25rem;
+    padding: 0 var(--space-1);
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 0.7rem;
+    line-height: 1.25rem;
+    text-align: center;
+  }
+
+  @keyframes drag-ghost-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drag-ghost-inner {
+      animation: none;
+    }
+
+    .row.drop[data-kind='directory'],
+    .row.source {
+      transform: none;
+    }
   }
 
   .rename {

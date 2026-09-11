@@ -246,14 +246,22 @@ Rust (stable), Node.js 22+, and Xcode Command Line Tools:
 git clone https://github.com/mpakus/1537paperstreet.git
 cd 1537paperstreet
 npm install
-cargo tauri dev
+./bin/test.dev
 ```
 
-Universal `.app` and DMG:
+`./bin/test.dev` installs npm deps if needed and runs the Tauri development
+window (`npm run tauri -- dev`). Extra arguments are forwarded.
+
+Release `.app` / DMG (macOS 12+):
 
 ```sh
-npm run tauri:build:universal
+./bin/build              # universal Apple Silicon + Intel
+./bin/build host         # this machine only
+./bin/build arm64        # Apple Silicon
+./bin/build x86_64       # Intel
 ```
+
+`./bin/build --help` lists targets. The same universal build is `npm run tauri:build:universal`.
 
 Before a pull request:
 

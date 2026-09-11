@@ -28,6 +28,8 @@
   --radius-sm: 4px;
   --radius: 6px;
   --duration: 120ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --font-ui: system-ui, sans-serif;
   --font-body: 'New York', 'Iowan Old Style', Palatino, serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;

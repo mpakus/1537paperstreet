@@ -20,10 +20,12 @@ notarization, and Gatekeeper verification succeed for both the app and DMG.
 1. Install Rust (rustup, stable), Node.js 22+, and Xcode Command Line Tools.
 2. Clone the repository.
 3. `npm install`
-4. `cargo tauri dev` — development window; `cargo tauri build` — `.app` for
-   the current architecture under `target/release/bundle`. Universal
-   (arm64 + x86_64, macOS 12+): `npm run tauri:build:universal` — `.app` and
-   DMG under `target/universal-apple-darwin/release/bundle`. The app icon is
+4. `./bin/test.dev` — development window (`cargo tauri dev` still works).
+   `./bin/build host` — `.app` for the current architecture under
+   `target/release/bundle`. `./bin/build` (or `./bin/build universal`) —
+   universal arm64 + x86_64, macOS 12+, `.app` and DMG under
+   `target/universal-apple-darwin/release/bundle`. Also
+   `npm run tauri:build:universal`. The app icon is
    `icon.png` at the repo root; `npx tauri icon icon.png` writes PNG/ICNS into
    `crates/ps-app/icons/`. A `v*` tag on GitHub builds the same universal DMG
    and publishes a Release.

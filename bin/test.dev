@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Build the UI and open a local development window (`cargo tauri dev`).
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  cat <<'EOF'
+usage: bin/test.dev [tauri-dev-args...]
+
+Build the UI and open a local development window.
+EOF
+  exit 0
+fi
+
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  echo "1537paperstreet is a macOS app. Run bin/test.dev on a Mac." >&2
+  exit 1
+fi
+
+if [[ ! -d node_modules/@tauri-apps/cli ]]; then
+  npm install
+fi
+
+exec npm run tauri -- dev "$@"
