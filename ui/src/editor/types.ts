@@ -1,6 +1,7 @@
-/** Options for the lazily created Markdown source editor. */
+/** Options for the lazily created source editor. */
 export type MarkdownEditorOptions = {
   doc: string
+  fileName?: string
   writable: boolean
   spellcheck: boolean
   lineNumbers: boolean
@@ -12,6 +13,7 @@ export type MarkdownEditorOptions = {
 /** Imperative handle used by the toolbar and formatting commands. */
 export type MarkdownEditor = {
   setDoc: (text: string) => void
+  setFileName: (fileName: string) => void
   setWritable: (writable: boolean) => void
   setSpellcheck: (on: boolean) => void
   setLineNumbers: (on: boolean) => void

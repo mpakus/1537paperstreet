@@ -7,9 +7,51 @@ use syntect::parsing::{SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
 use crate::blocks::SpannedEvent;
+use crate::chunks::{CLOSE_SECTION, OPEN_SECTION};
 
 static SYNTAXES: OnceLock<SyntaxSet> = OnceLock::new();
 const MAX_HIGHLIGHT_BYTES: usize = 128 * 1024;
+
+/// Renders a source file as one highlighted HTML preview chunk.
+///
+/// Unknown languages and sources larger than 128 KiB are escaped as a
+/// plain code block. The HTML is generated from the source text; it is
+/// not passed through the Markdown pipeline.
+#[must_use]
+pub fn render_source(source: &str, language: &str) -> String {
+    format!(
+        "{OPEN_SECTION}{}{CLOSE_SECTION}",
+        highlight_source(source, language)
+    )
+}
+
+fn highlight_source(source: &str, language: &str) -> String {
+    if source.len() > MAX_HIGHLIGHT_BYTES {
+        return escaped_pre(source, language);
+    }
+    let syntax_set = SYNTAXES.get_or_init(two_face::syntax::extra_newlines);
+    let Some(syntax) = syntax_for(language, syntax_set) else {
+        return escaped_pre(source, language);
+    };
+    highlighted_html(source, language, syntax, syntax_set)
+        .unwrap_or_else(|_| escaped_pre(source, language))
+}
+
+fn escaped_pre(source: &str, language: &str) -> String {
+    let mut escaped_language = String::new();
+    html::push_html(
+        &mut escaped_language,
+        [Event::Text(language.into())].into_iter(),
+    );
+    let mut escaped_source = String::new();
+    html::push_html(
+        &mut escaped_source,
+        [Event::Text(source.into())].into_iter(),
+    );
+    format!(
+        "<pre class=\"code\"><code class=\"language-{escaped_language}\">{escaped_source}</code></pre>\n"
+    )
+}
 
 pub(crate) struct Highlight<'input, I> {
     events: I,
@@ -111,13 +153,14 @@ where
 fn syntax_for<'set>(language: &str, syntax_set: &'set SyntaxSet) -> Option<&'set SyntaxReference> {
     let lowered = language.to_ascii_lowercase();
     let token = match lowered.as_str() {
-        "js" | "mjs" | "cjs" | "node" => "js",
+        "js" | "mjs" | "cjs" | "node" | "rsx" => "js",
         "ts" | "tsx" => "ts",
         "yml" => "yaml",
         "rb" => "ruby",
         "py" => "python",
         "rs" => "rust",
         "ex" | "exs" => "elixir",
+        "cs" | "csharp" | "c#" => "cs",
         "sh" | "zsh" | "bash" => "bash",
         other => other,
     };
@@ -126,6 +169,16 @@ fn syntax_for<'set>(language: &str, syntax_set: &'set SyntaxSet) -> Option<&'set
         .or_else(|| syntax_set.find_syntax_by_extension(token))
         .or_else(|| syntax_set.find_syntax_by_token(language))
         .or_else(|| syntax_set.find_syntax_by_extension(&lowered))
+        .or_else(|| {
+            syntax_set.syntaxes().iter().find(|syntax| {
+                syntax.name.eq_ignore_ascii_case(language)
+                    || syntax.name.eq_ignore_ascii_case(token)
+                    || syntax
+                        .file_extensions
+                        .iter()
+                        .any(|extension| extension.eq_ignore_ascii_case(&lowered))
+            })
+        })
 }
 
 fn highlighted_html(

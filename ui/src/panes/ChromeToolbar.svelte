@@ -80,12 +80,14 @@
   </div>
 
   {#if mode !== 'preview'}
-    <div class="rule" aria-hidden="true"></div>
-    <div class="format">
-      <EditorToolbar disabled={!canFormat} {oncommand} />
-    </div>
+    {#if canFormat}
+      <div class="rule" aria-hidden="true"></div>
+      <div class="format">
+        <EditorToolbar disabled={!canFormat} {oncommand} />
+      </div>
+    {/if}
   {:else if !hasDocument}
-    <p class="hint">Open a Markdown file to preview, edit, or export.</p>
+    <p class="hint">Open a file to preview, edit, or export.</p>
   {/if}
 
   {#if mode !== 'editor'}

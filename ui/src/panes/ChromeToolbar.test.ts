@@ -25,7 +25,7 @@ describe('ChromeToolbar', () => {
     expect(body).toContain('title="Board"')
     expect(body).toContain('>AI</button')
     expect(body).not.toContain('Settings')
-    expect(body).toContain('Open a Markdown file to preview, edit, or export.')
+    expect(body).toContain('Open a file to preview, edit, or export.')
     expect(body).toContain('aria-label="Reading"')
     expect(body).toContain('aria-label="Text size"')
     expect(body).toContain('aria-label="Larger text"')
@@ -60,5 +60,20 @@ describe('ChromeToolbar', () => {
 
     expect(body).toContain('aria-label="Editor"')
     expect(body).toContain('aria-label="Bold"')
+  })
+
+  it('hides formatting controls for source files', () => {
+    const { body } = render(ChromeToolbar, {
+      props: {
+        mode: 'editor',
+        canFormat: false,
+        hasDocument: true,
+        onmode() {},
+        oncommand() {},
+      },
+    })
+
+    expect(body).not.toContain('aria-label="Editor"')
+    expect(body).not.toContain('aria-label="Bold"')
   })
 })

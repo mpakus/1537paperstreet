@@ -73,7 +73,8 @@ you can open it again.
 
 The tree loads one directory level at a time. Expanded folders and pane widths
 persist. Icons distinguish folders, Markdown (`.md`, `.markdown`, `.mdown`,
-`.mdwn`), and other files. ⌘2 hides the tree. ⌘P quick-opens Markdown in the
+`.mdwn`), and other files. Double-click a file to open it in a tab. UTF-8 text is
+editable, with highlighting when a language mode exists. ⌘2 hides the tree. ⌘P quick-opens Markdown in the
 current project.
 
 Context menu and File / Go:
@@ -128,14 +129,15 @@ In Preview and Split, the bar has A− / A+ (reading size) and − / % / +
 
 ### Edit without giving up file control
 
-**Edit** (⌘E) and **Split** (⌘⇧E) show the Markdown source. Split places the
+**Edit** (⌘E) and **Split** (⌘⇧E) show the source. Split places the
 editor beside a live preview; drag the divider (width is remembered).
 
 The editor loads CodeMirror the first time you leave Preview. Markup marks
 (`#`, `*`, `` ` ``) are faded; headings, emphasis, links, and fenced code stay
-readable. Soft wrap and the current line are highlighted.
+readable. Other UTF-8 files use a language highlighter when one exists, or
+plain text. JSON reports parse errors. Soft wrap and the current line are highlighted.
 
-The toolbar (and Edit menu) applies formatting: bold, italic, inline code,
+The toolbar (and Edit menu) applies Markdown formatting: bold, italic, inline code,
 headings, lists, task items, quotes, links, wiki links, and images (⌘B, ⌘I,
 ⌘K, and heading shortcuts).
 

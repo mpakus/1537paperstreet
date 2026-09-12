@@ -419,6 +419,55 @@ pub fn is_markdown_path(path: &Path) -> bool {
         })
 }
 
+/// Language hint used to highlight a non-Markdown file in the preview.
+///
+/// Markdown paths return [`None`] so they go through the document renderer.
+/// Every other path returns the extension, or the lowercased file name when
+/// there is no extension (`Makefile`, `Dockerfile`). Unknown languages are
+/// still shown as escaped plain text.
+///
+/// ```
+/// use std::path::Path;
+/// use ps_core::projects::{is_editable_path, is_source_path, source_language};
+///
+/// assert_eq!(source_language(Path::new("src/main.rs")).as_deref(), Some("rs"));
+/// assert_eq!(source_language(Path::new("notes.py")).as_deref(), Some("py"));
+/// assert_eq!(source_language(Path::new("Makefile")).as_deref(), Some("makefile"));
+/// assert_eq!(source_language(Path::new("notes.md")), None);
+/// assert!(is_source_path(Path::new("notes.txt")));
+/// assert!(is_editable_path(Path::new("LICENSE")));
+/// assert!(is_editable_path(Path::new("cover.png")));
+/// assert!(!is_source_path(Path::new("notes.md")));
+/// ```
+pub fn source_language(path: &Path) -> Option<String> {
+    if is_markdown_path(path) {
+        return None;
+    }
+    Some(language_hint(path))
+}
+
+fn language_hint(path: &Path) -> String {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .map(|extension| extension.to_ascii_lowercase())
+        .or_else(|| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .map(|name| name.to_ascii_lowercase())
+        })
+        .unwrap_or_else(|| String::from("txt"))
+}
+
+/// Returns whether `path` is a non-Markdown file shown as source.
+pub fn is_source_path(path: &Path) -> bool {
+    source_language(path).is_some()
+}
+
+/// Returns whether the app will try to open `path` as a document.
+pub fn is_editable_path(path: &Path) -> bool {
+    path.file_name().is_some()
+}
+
 fn paths_refer_to_same_folder(
     stored: &Path,
     requested: &Path,

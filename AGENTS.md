@@ -85,7 +85,7 @@
 
 1. Текстовый буфер редактора — CodeMirror (ADR-008), P9.
 2. Ленивый клиентский рендер уже санитизированных шаблонов Mermaid и KaTeX (`IntersectionObserver`, `rootMargin: 400px`, `securityLevel: 'strict'`). Исходник, BLAKE3-хеш и HTML приходят из `ps-render`.
-3. Презентационные хелперы: плоский список строк дерева и подсветка поискового запроса в `ui/src/lib/tree.ts` и `text.ts`; аккорды отправки промпта Assistant в `ui/src/lib/keys.ts`. Без парсинга Markdown и без работы с путями на диске.
+3. Презентационные хелперы: плоский список строк дерева и подсветка поискового запроса в `ui/src/lib/tree.ts` и `text.ts`; язык редактора по расширению в `ui/src/editor/language.ts`; список форматов Settings в `ui/src/editor/formats.ts`; аккорды отправки промпта Assistant в `ui/src/lib/keys.ts`. Без парсинга Markdown и без работы с путями на диске.
 
 ---
 

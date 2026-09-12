@@ -5,6 +5,22 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-12
+
+### Added
+
+- Tree opens any UTF-8 file. Preview and Edit highlight JavaScript,
+  TypeScript, Ruby, Elixir, Go, Rust, C#, Java, and PHP (and other languages
+  when a grammar exists); otherwise the file edits as plain text.
+  JavaScript, TypeScript, Go, Rust, Java, and PHP underline syntax errors.
+  JSON shows parse errors. Markdown formatting stays on Markdown. Binary and
+  files larger than 8 MB remain source-only.
+- Double-click opens a file in a tab; a single click selects it. ⌘W closes
+  the active tab only; ⌘⇧W hides the window. The active tab is marked with
+  an accent underline.
+- Settings → File formats lists JavaScript, TypeScript, Ruby, Elixir, Go,
+  Rust, C#, Java, and PHP.
+
 ## [0.7.6] - 2026-09-10
 
 ### Added
@@ -324,7 +340,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.7.6...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/mpakus/1537paperstreet/compare/v0.7.6...v0.8.0
 [0.7.6]: https://github.com/mpakus/1537paperstreet/compare/v0.7.5...v0.7.6
 [0.7.5]: https://github.com/mpakus/1537paperstreet/compare/v0.7.4...v0.7.5
 [0.7.4]: https://github.com/mpakus/1537paperstreet/compare/v0.7.3...v0.7.4

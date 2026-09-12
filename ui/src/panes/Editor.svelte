@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { usesCodeEditor } from '../editor/language'
   import type { MarkdownEditor } from '../editor/types'
 
   let {
     value = $bindable(''),
     api = $bindable(null),
+    fileName = '',
     writable = true,
     spellcheck = true,
     lineNumbers = false,
@@ -13,6 +15,7 @@
   }: {
     value: string
     api?: MarkdownEditor | null
+    fileName?: string
     writable?: boolean
     spellcheck?: boolean
     lineNumbers?: boolean
@@ -37,6 +40,7 @@
       }
       instance = createMarkdownEditor(el, {
         doc: value,
+        fileName,
         writable,
         spellcheck,
         lineNumbers,
@@ -60,6 +64,9 @@
     api?.setDoc(value)
   })
   $effect(() => {
+    api?.setFileName(fileName)
+  })
+  $effect(() => {
     api?.setWritable(writable)
   })
   $effect(() => {
@@ -81,7 +88,11 @@
   })
 </script>
 
-<div class="editor" class:is-hidden={hidden}>
+<div
+  class="editor"
+  class:is-hidden={hidden}
+  class:is-code={usesCodeEditor(fileName)}
+>
   <div bind:this={host} class="cm-host"></div>
 </div>
 
@@ -96,6 +107,11 @@
 
   .editor.is-hidden {
     display: none;
+  }
+
+  .editor.is-code :global(.cm-editor),
+  .editor.is-code :global(.cm-scroller) {
+    font-family: var(--font-mono);
   }
 
   .cm-host {

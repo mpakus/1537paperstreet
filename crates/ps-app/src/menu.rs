@@ -62,6 +62,16 @@ const FILE_TRASH: MenuCommand = MenuCommand {
     title: "Move to Trash",
     accelerator: Some("CmdOrCtrl+Backspace"),
 };
+const FILE_CLOSE_TAB: MenuCommand = MenuCommand {
+    id: "file-close-tab",
+    title: "Close Tab",
+    accelerator: Some("CmdOrCtrl+W"),
+};
+const FILE_CLOSE_WINDOW: MenuCommand = MenuCommand {
+    id: "file-close-window",
+    title: "Close Window",
+    accelerator: Some("CmdOrCtrl+Shift+W"),
+};
 
 const EDIT_BOLD: MenuCommand = MenuCommand {
     id: "edit-bold",
@@ -245,6 +255,8 @@ pub(crate) fn plan_commands() -> &'static [MenuCommand] {
         FILE_SAVE,
         FILE_EXPORT,
         FILE_TRASH,
+        FILE_CLOSE_TAB,
+        FILE_CLOSE_WINDOW,
         EDIT_BOLD,
         EDIT_ITALIC,
         EDIT_LINK,
@@ -321,6 +333,8 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let export = item(app, FILE_EXPORT)?;
     let file_settings = item(app, FILE_SETTINGS)?;
     let trash = item(app, FILE_TRASH)?;
+    let close_tab = item(app, FILE_CLOSE_TAB)?;
+    let close_window = item(app, FILE_CLOSE_WINDOW)?;
     let file_about = MenuItem::with_id(
         app,
         "file-about",
@@ -347,7 +361,8 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &PredefinedMenuItem::separator(app)?,
             &trash,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::close_window(app, None)?,
+            &close_tab,
+            &close_window,
             &PredefinedMenuItem::separator(app)?,
             &file_check_updates,
             &file_about,
@@ -459,8 +474,6 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         &[
             &PredefinedMenuItem::minimize(app, None)?,
             &PredefinedMenuItem::maximize(app, None)?,
-            &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::close_window(app, None)?,
         ],
     )?;
     let help_menu = Submenu::with_id_and_items(app, HELP_SUBMENU_ID, "Help", true, &[])?;
@@ -484,6 +497,12 @@ fn item(app: &AppHandle, command: MenuCommand) -> tauri::Result<MenuItem<tauri::
 }
 
 fn on_menu_event(app: &AppHandle, id: &str) {
+    if id == FILE_CLOSE_WINDOW.id {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.close();
+        }
+        return;
+    }
     if let Some(size) = next_font_size(
         app.state::<AppState>().config_get().typography.font_size,
         id,
@@ -529,11 +548,11 @@ mod tests {
 
     use super::{
         APP_SETTINGS, EDIT_BOLD, EDIT_CODE, EDIT_FIND, EDIT_FIND_REPLACE, EDIT_ITALIC, EDIT_LINK,
-        EDIT_LIST, EDIT_QUOTE, FILE_EXPORT, FILE_NEW, FILE_NEW_FOLDER, FILE_SAVE, FILE_TRASH,
-        GO_EXTERNAL_EDITOR, GO_OPEN_FILE, GO_REVEAL, GO_SWITCH_PROJECT, HEADINGS, VIEW_ASSISTANT,
-        VIEW_FONT_LARGER, VIEW_FONT_RESET, VIEW_FONT_SMALLER, VIEW_TOGGLE_EDITOR,
-        VIEW_TOGGLE_PROJECTS, VIEW_TOGGLE_SPLIT, VIEW_TOGGLE_THEME, VIEW_TOGGLE_TREE,
-        emits_menu_action, next_font_size, plan_commands,
+        EDIT_LIST, EDIT_QUOTE, FILE_CLOSE_TAB, FILE_CLOSE_WINDOW, FILE_EXPORT, FILE_NEW,
+        FILE_NEW_FOLDER, FILE_SAVE, FILE_TRASH, GO_EXTERNAL_EDITOR, GO_OPEN_FILE, GO_REVEAL,
+        GO_SWITCH_PROJECT, HEADINGS, VIEW_ASSISTANT, VIEW_FONT_LARGER, VIEW_FONT_RESET,
+        VIEW_FONT_SMALLER, VIEW_TOGGLE_EDITOR, VIEW_TOGGLE_PROJECTS, VIEW_TOGGLE_SPLIT,
+        VIEW_TOGGLE_THEME, VIEW_TOGGLE_TREE, emits_menu_action, next_font_size, plan_commands,
     };
     use ps_core::config::Config;
 
@@ -550,6 +569,8 @@ mod tests {
             FILE_SAVE.accelerator,
             FILE_EXPORT.accelerator,
             FILE_TRASH.accelerator,
+            FILE_CLOSE_TAB.accelerator,
+            FILE_CLOSE_WINDOW.accelerator,
             EDIT_BOLD.accelerator,
             EDIT_ITALIC.accelerator,
             EDIT_LINK.accelerator,
@@ -583,7 +604,7 @@ mod tests {
             );
         }
 
-        assert_eq!(accelerators.len(), 33);
+        assert_eq!(accelerators.len(), 35);
     }
 
     #[test]
@@ -611,6 +632,15 @@ mod tests {
         assert_eq!(next_font_size(32, "view-font-larger"), Some(32));
         assert_eq!(next_font_size(10, "view-font-smaller"), Some(10));
         assert_eq!(next_font_size(16, "file-save"), None);
+    }
+
+    #[test]
+    fn close_tab_uses_the_standard_mac_shortcut() {
+        assert_eq!(FILE_CLOSE_TAB.id, "file-close-tab");
+        assert_eq!(FILE_CLOSE_TAB.title, "Close Tab");
+        assert_eq!(FILE_CLOSE_TAB.accelerator, Some("CmdOrCtrl+W"));
+        assert_eq!(FILE_CLOSE_WINDOW.accelerator, Some("CmdOrCtrl+Shift+W"));
+        assert!(emits_menu_action("file-close-tab"));
     }
 
     #[test]

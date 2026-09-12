@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  closeActiveTarget,
   closeWorkspaceTab,
   nextAfterClose,
   openWorkspaceTab,
@@ -44,6 +45,18 @@ describe('tabs', () => {
     expect(removeTab(replaced, 'a.md').map((item) => item.relPath)).toEqual([
       'b.md',
     ])
+  })
+
+  it('closes the active workspace or document tab', () => {
+    expect(closeActiveTarget('assistant', 'notes.md')).toEqual({
+      kind: 'workspace',
+      page: 'assistant',
+    })
+    expect(closeActiveTarget('document', 'notes.md')).toEqual({
+      kind: 'document',
+      relPath: 'notes.md',
+    })
+    expect(closeActiveTarget('document', null)).toEqual({ kind: 'none' })
   })
 
   it('activates a neighbor after close', () => {

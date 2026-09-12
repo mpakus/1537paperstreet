@@ -65,6 +65,7 @@
   } from './lib/open'
   import { clampPanelWidth } from './lib/panel-width'
   import {
+    closeActiveTarget,
     closeWorkspaceTab,
     nextAfterClose,
     openWorkspaceTab,
@@ -84,6 +85,7 @@
     dirsToReload,
     dropDirAtPoint,
     isDraftDirty,
+    isEditablePath,
     isHttpHref,
     isMarkdownPath,
     parseAssetHref,
@@ -262,7 +264,7 @@
           ? (docMeta.readonlyReason ??
             'This file cannot be previewed as Markdown.')
           : active
-            ? 'Select a Markdown file in the tree, or drop one onto the window.'
+            ? 'Select a file in the tree, or drop a Markdown file onto the window.'
             : 'Your Markdown projects will appear here. Drop a Markdown file or a folder to open it.',
   )
 
@@ -561,6 +563,10 @@
       }
       if (id === 'file-trash') {
         requestTrash()
+        return
+      }
+      if (id === 'file-close-tab') {
+        closeActiveTab()
         return
       }
       if (id === 'go-reveal') {
@@ -959,7 +965,7 @@
     if (!asset || !active || asset.projectId !== active.id) {
       return
     }
-    if (isMarkdownPath(asset.relPath)) {
+    if (isEditablePath(asset.relPath)) {
       revealRelPath = asset.relPath
       await openDocument(asset.relPath)
       if (asset.hash) {
@@ -1123,8 +1129,8 @@
     if (viewMode === 'preview') {
       await setViewMode('editor')
     }
-    if (!openMeta) {
-      showError('Open a document first.')
+    if (!openMeta || !isMarkdownPath(openMeta.relPath)) {
+      showError('Open a Markdown document first.')
       return
     }
     if (!docSourceMeta) {
@@ -1237,6 +1243,17 @@
     docSourceMeta = null
     draftText = ''
     docMissing = false
+  }
+
+  function closeActiveTab() {
+    const target = closeActiveTarget(workspacePage, openMeta?.relPath ?? null)
+    if (target.kind === 'workspace') {
+      closeWorkspacePage(target.page)
+      return
+    }
+    if (target.kind === 'document') {
+      closeTab(target.relPath)
+    }
   }
 
   function closeWorkspacePage(page: WorkspaceTab) {
@@ -1591,7 +1608,9 @@
       page={workspacePage}
       hasDocument={Boolean(openMeta)}
       canSave={Boolean(openMeta && docSourceMeta?.writable)}
-      canFormat={Boolean(docSourceMeta?.writable)}
+      canFormat={Boolean(
+        docSourceMeta?.writable && isMarkdownPath(openMeta?.relPath ?? ''),
+      )}
       readingZoom={previewZoom}
       onmode={(mode) => {
         workspacePage = 'document'
@@ -1921,8 +1940,10 @@
             <Editor
               bind:value={draftText}
               bind:api={editorApi}
+              fileName={openMeta?.relPath ?? ''}
               writable={docSourceMeta?.writable ?? false}
-              spellcheck={appConfig?.editor.spellcheck ?? true}
+              spellcheck={(appConfig?.editor.spellcheck ?? true) &&
+                isMarkdownPath(openMeta?.relPath ?? '')}
               lineNumbers={appConfig?.editor.line_numbers ?? false}
               softWrap={appConfig?.editor.soft_wrap ?? true}
               indentUnit={appConfig?.editor.indent_unit ?? 2}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
 
+  import { supportedFormats } from '../editor/formats'
   import {
     agentMakeServer,
     agentPresets,
@@ -19,6 +20,7 @@
     'system-ui',
   ]
   const MONO_FONTS = ['JetBrains Mono', 'SF Mono', 'Menlo', 'ui-monospace']
+  const formats = supportedFormats()
 
   let {
     config,
@@ -432,6 +434,25 @@
       </label>
     </section>
 
+    <section>
+      <h3>File formats</h3>
+      <p class="hint">
+        Markdown is rendered. These source languages are highlighted in Preview
+        and Edit. JavaScript, TypeScript, Go, Rust, Java, and PHP underline
+        syntax errors; JSON shows parse errors. Other UTF-8 still opens
+        (highlighted when a grammar exists). Binary files and files larger than
+        8 MB stay source-only.
+      </p>
+      <div class="format-list" role="list" aria-label="Supported file formats">
+        {#each formats as format (format.name)}
+          <div class="format-row" role="listitem">
+            <span class="format-name">{format.name}</span>
+            <span class="format-patterns">{format.patterns}</span>
+          </div>
+        {/each}
+      </div>
+    </section>
+
     <section id="settings-agents">
       <h3>External Agents</h3>
       <p class="hint">
@@ -662,6 +683,41 @@
     color: var(--fg-muted);
     font-size: 0.8125rem;
     line-height: 1.45;
+  }
+
+  .format-list {
+    max-height: 16rem;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+  }
+
+  .format-row {
+    display: grid;
+    grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr);
+    gap: var(--space-3);
+    min-height: 32px;
+    padding: 0 var(--space-3);
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .format-name,
+  .format-patterns {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .format-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .format-patterns {
+    font-size: 0.75rem;
+    color: var(--fg-muted);
   }
 
   .colors {

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { markdownHighlightStyle, markdownTokenClasses } from './highlight'
+import {
+  codeHighlightStyle,
+  codeTokenClasses,
+  markdownHighlightStyle,
+  markdownTokenClasses,
+} from './highlight'
 
 describe('markdown editor highlighting', () => {
   it('maps Markdown tokens onto theme CSS classes', () => {
@@ -17,6 +22,26 @@ describe('markdown editor highlighting', () => {
     ])
     const classes = markdownHighlightStyle.specs.map((spec) => spec.class)
     for (const name of markdownTokenClasses) {
+      expect(classes).toContain(name)
+    }
+  })
+})
+
+describe('source editor highlighting', () => {
+  it('maps language tokens onto theme CSS classes', () => {
+    expect(codeTokenClasses).toEqual([
+      'cm-code-kw',
+      'cm-code-str',
+      'cm-code-num',
+      'cm-code-com',
+      'cm-code-fn',
+      'cm-code-type',
+      'cm-code-prop',
+      'cm-code-name',
+      'cm-code-punct',
+    ])
+    const classes = codeHighlightStyle.specs.map((spec) => spec.class)
+    for (const name of codeTokenClasses) {
       expect(classes).toContain(name)
     }
   })

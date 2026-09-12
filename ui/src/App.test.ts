@@ -26,7 +26,7 @@ describe('App', () => {
     expect(body).not.toContain('Dashboard')
     expect(body).not.toContain('>Assistant</button')
     expect(body).toContain('aria-label="Hide projects"')
-    expect(body).toContain('Open a Markdown file to preview, edit, or export.')
+    expect(body).toContain('Open a file to preview, edit, or export.')
     expect(body).toContain('Open Folder…')
     expect(body).toContain('aria-label="Message history"')
     expect(body).toContain('titlebar-drag')

@@ -6,7 +6,11 @@ expand a folder. Expanded folders and pane width persist across sessions.
 a slim strip remains so you can open it again.
 
 Icons distinguish folders, Markdown (`.md`, `.markdown`, `.mdown`, `.mdwn`),
-and other files.
+and other files. Double-click a file to open it in a tab; a single click
+selects it. UTF-8 text is editable. Preview and Edit highlight JavaScript,
+TypeScript, Ruby, Elixir, Go, Rust, C#, Java, and PHP (and other languages
+when a grammar exists). Binary files and files larger than 8 MB stay
+source-only.
 
 ## Actions
 
@@ -35,11 +39,15 @@ another project in the Projects list to move it there; hold ⌥ to copy.
 Themes are chosen there — light and dark palettes with a live preview
 (Solarized, Nord, Gruvbox, Catppuccin, Tokyo Night, GitHub, and Paper). You
 can also keep or hide the Dock icon after the window is hidden, and set
-preview font and colors.
+preview font and colors. File formats lists JavaScript, TypeScript, Ruby,
+Elixir, Go, Rust, C#, Java, and PHP. Other UTF-8 still opens; it is
+highlighted when a grammar exists.
 
 ⌘P quick-opens Markdown in the current project. Open files stay in tabs above
-the preview, after pinned **Dashboard** and **Assistant** tabs. The close
-control closes a document tab; Dashboard and Assistant stay in the strip.
+the preview. ⌘W closes the active tab only (a document, Dashboard, or
+Assistant — not the window). ⌘⇧W hides the window. The tab close control
+does the same for that tab. The active tab uses a stronger background and an
+accent underline.
 
 A new folder or file immediately offers a name. Clicking an already selected
 name (not a double-click — that opens) also starts rename; F2 does the same.

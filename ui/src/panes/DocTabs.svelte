@@ -88,7 +88,8 @@
   }
 
   .tab.selected {
-    background: var(--bg);
+    background: var(--bg-elev);
+    box-shadow: inset 0 -2px 0 var(--accent);
   }
 
   .tab > button[role='tab'] {
@@ -100,11 +101,12 @@
     padding: var(--space-2) var(--space-3);
     color: var(--fg-muted);
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .tab.selected > button[role='tab'] {
     color: var(--fg);
+    font-weight: 700;
   }
 
   .close {

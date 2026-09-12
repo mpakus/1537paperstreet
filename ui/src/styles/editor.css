@@ -40,3 +40,49 @@
   font-weight: 400;
   font-style: normal;
 }
+
+.cm-editor .cm-code-kw {
+  color: var(--hl-kw);
+}
+
+.cm-editor .cm-code-str {
+  color: var(--hl-str);
+}
+
+.cm-editor .cm-code-num {
+  color: var(--hl-num);
+}
+
+.cm-editor .cm-code-com {
+  color: var(--hl-com);
+  font-style: italic;
+}
+
+.cm-editor .cm-code-fn {
+  color: var(--hl-fn);
+}
+
+.cm-editor .cm-code-type {
+  color: var(--hl-type);
+}
+
+.cm-editor .cm-code-prop {
+  color: var(--fg);
+}
+
+.cm-editor .cm-code-name {
+  color: var(--fg);
+}
+
+.cm-editor .cm-code-punct {
+  color: var(--ed-syntax);
+}
+
+.cm-editor .cm-lintRange-error {
+  background-image: none;
+  background-color: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.cm-editor .cm-lintPoint-error:after {
+  border-bottom-color: var(--accent);
+}

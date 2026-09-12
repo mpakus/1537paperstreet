@@ -23,6 +23,7 @@
     clipboardPaths,
     fileIconKind,
     flattenTree,
+    isEditablePath,
     isMarkdownPath,
     joinRel,
     parentDir,
@@ -31,6 +32,7 @@
     setTreeDragCopy,
     sortDirsByDepth,
     targetDir,
+    treeClickIntent,
     treeDropSiteAt,
     acceptTreeDrop,
     dragGhostPreview,
@@ -283,9 +285,7 @@
       toggle(node)
       return
     }
-    if (isMarkdownPath(node.name)) {
-      onopen(node.relPath)
-    }
+    onopen(node.relPath)
   }
 
   function clearRenameTimer() {
@@ -314,12 +314,29 @@
       dragged = false
       return
     }
-    if (event.shiftKey) {
+    if (destMode) {
+      applySelection([node.relPath], node.relPath)
+      ontransfer(destMode, [], targetDir(node))
+      return
+    }
+    const already =
+      selectedRelPaths.length === 1 && selectedRelPaths[0] === node.relPath
+    const onName =
+      event.target instanceof Element && Boolean(event.target.closest('.name'))
+    const intent = treeClickIntent({
+      detail: event.detail,
+      shiftKey: event.shiftKey,
+      metaKey: event.metaKey,
+      ctrlKey: event.ctrlKey,
+      alreadySelected: already,
+      onName,
+    })
+    if (intent === 'range') {
       clearRenameTimer()
       applySelection(rangeRelPaths(rows, anchorRel, node.relPath), node.relPath)
       return
     }
-    if (event.metaKey || event.ctrlKey) {
+    if (intent === 'toggle') {
       clearRenameTimer()
       const next = selectedRelPaths.includes(node.relPath)
         ? selectedRelPaths.filter((path) => path !== node.relPath)
@@ -327,22 +344,18 @@
       applySelection(next, node.relPath)
       return
     }
-    if (event.detail >= 2) {
+    if (intent === 'open') {
       clearRenameTimer()
       activate(node)
       return
     }
-    const onName =
-      event.target instanceof Element && event.target.closest('.name')
-    const already =
-      selectedRelPaths.length === 1 && selectedRelPaths[0] === node.relPath
-    if (already && onName) {
+    if (intent === 'rename') {
       clearRenameTimer()
       renameTimer = setTimeout(() => beginRename(node), RENAME_CLICK_MS)
       return
     }
     clearRenameTimer()
-    activate(node)
+    applySelection([node.relPath], node.relPath)
   }
 
   function prefersReducedMotion(): boolean {
@@ -577,7 +590,7 @@
       await loadDir(parentDir(node.relPath))
       applySelection([renamed.relPath], renamed.relPath)
       onrenamed?.(node.relPath, renamed.relPath)
-      if (isMarkdownPath(renamed.name)) {
+      if (isEditablePath(renamed.name)) {
         onopen(renamed.relPath)
       }
     } catch (cause) {

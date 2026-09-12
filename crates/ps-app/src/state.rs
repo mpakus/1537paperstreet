@@ -623,6 +623,15 @@ impl AppState {
 
         let (toc, mut chunks) = if loaded.source_only {
             (Vec::new(), Vec::new())
+        } else if let Some(language) = projects::source_language(&rel_path) {
+            let html = ps_render::render_source(&loaded.source.text, &language);
+            (
+                Vec::new(),
+                ps_render::html_chunks(&html)
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
+            )
         } else {
             let rendered = ps_render::render_project_with_options(
                 &loaded.source.text,
@@ -1599,6 +1608,43 @@ mod tests {
                 .is_some_and(|chunk| chunk.contains(&first_block))
         );
         assert!(wide.remaining_chunks[0].contains(&third_block));
+
+        fs::write(project_root.join("config.json"), b"{\"ok\": true}\n").expect("json");
+        let json = state
+            .doc_open(project.id.clone(), PathBuf::from("config.json"))
+            .expect("json open");
+        assert!(!json.result.meta.source_only);
+        let json_html = json.result.first_chunk.expect("json chunk");
+        assert!(json_html.contains("<pre class=\"code\">"));
+        assert!(json_html.contains("syntax-"));
+        assert!(!json_html.contains("<p>"));
+
+        fs::write(
+            project_root.join("lib.rs"),
+            b"fn main() {\n    println!(\"hi\");\n}\n",
+        )
+        .expect("rust");
+        let rust = state
+            .doc_open(project.id.clone(), PathBuf::from("lib.rs"))
+            .expect("rust open");
+        let rust_html = rust.result.first_chunk.expect("rust chunk");
+        assert!(rust_html.contains("syntax-source syntax-rust"));
+
+        fs::write(project_root.join("notes.txt"), b"hello <plain>\n").expect("txt");
+        let txt = state
+            .doc_open(project.id.clone(), PathBuf::from("notes.txt"))
+            .expect("txt open");
+        let txt_html = txt.result.first_chunk.expect("txt chunk");
+        assert!(txt_html.contains("<pre class=\"code\">"));
+        assert!(txt_html.contains("&lt;plain&gt;"));
+        assert!(!txt_html.contains("<p>"));
+
+        fs::write(project_root.join("hi.py"), b"def hi():\n    return 1\n").expect("python");
+        let python = state
+            .doc_open(project.id.clone(), PathBuf::from("hi.py"))
+            .expect("python open");
+        let python_html = python.result.first_chunk.expect("python chunk");
+        assert!(python_html.contains("syntax-source syntax-python"));
 
         fs::write(project_root.join("binary.md"), [0xff, 0xfe]).expect("binary");
         let binary = state

@@ -53,6 +53,26 @@ export function removeTab(tabs: DocTab[], relPath: string): DocTab[] {
   return tabs.filter((tab) => tab.relPath !== relPath)
 }
 
+/** What ⌘W should close: a workspace page, the open document, or nothing. */
+export type CloseActiveTarget =
+  | { kind: 'workspace'; page: WorkspaceTab }
+  | { kind: 'document'; relPath: string }
+  | { kind: 'none' }
+
+/** Active tab closed by Close Tab (⌘W). */
+export function closeActiveTarget(
+  page: WorkspacePage,
+  openRelPath: string | null,
+): CloseActiveTarget {
+  if (page === 'assistant' || page === 'dashboard') {
+    return { kind: 'workspace', page }
+  }
+  if (openRelPath) {
+    return { kind: 'document', relPath: openRelPath }
+  }
+  return { kind: 'none' }
+}
+
 /** Tab to activate after `closed` is removed. */
 export function nextAfterClose(tabs: DocTab[], closed: string): string | null {
   const index = tabs.findIndex((tab) => tab.relPath === closed)

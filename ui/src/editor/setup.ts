@@ -1,7 +1,8 @@
-import { markdown } from '@codemirror/lang-markdown'
+import { jsonParseLinter } from '@codemirror/lang-json'
 import { indentUnit, syntaxHighlighting } from '@codemirror/language'
+import { linter } from '@codemirror/lint'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { Compartment, EditorState } from '@codemirror/state'
+import { Compartment, EditorState, type Extension } from '@codemirror/state'
 import {
   drawSelection,
   dropCursor,
@@ -12,7 +13,11 @@ import {
   lineNumbers,
 } from '@codemirror/view'
 
-import { markdownHighlightStyle } from './highlight'
+import { isMarkdownPath } from '../lib/tree'
+import { languageSupport } from './catalog'
+import { codeHighlightStyle, markdownHighlightStyle } from './highlight'
+import { usesJsonLinter, usesSyntaxLinter } from './language'
+import { syntaxErrors } from './lint'
 import type { MarkdownEditor, MarkdownEditorOptions } from './types'
 
 export type { MarkdownEditor, MarkdownEditorOptions }
@@ -78,15 +83,32 @@ function wrapExtension(on: boolean) {
   return on ? EditorView.lineWrapping : []
 }
 
-function spellcheckAttributes(on: boolean) {
+function spellcheckAttributes(on: boolean, fileName: string) {
   return EditorView.contentAttributes.of({
-    'aria-label': 'Markdown source',
+    'aria-label': isMarkdownPath(fileName) ? 'Markdown source' : 'Source',
     spellcheck: on ? 'true' : 'false',
   })
 }
 
+function highlightExtension(fileName: string): Extension {
+  const style = isMarkdownPath(fileName)
+    ? markdownHighlightStyle
+    : codeHighlightStyle
+  return syntaxHighlighting(style, { fallback: false })
+}
+
+function lintExtension(fileName: string): Extension {
+  if (usesJsonLinter(fileName)) {
+    return linter(jsonParseLinter())
+  }
+  if (usesSyntaxLinter(fileName)) {
+    return linter((view) => syntaxErrors(view.state))
+  }
+  return []
+}
+
 /**
- * Creates a CodeMirror Markdown editor. Call only after a dynamic import so
+ * Creates a CodeMirror source editor. Call only after a dynamic import so
  * Preview-only sessions never load the editor chunk.
  */
 export function createMarkdownEditor(
@@ -98,6 +120,12 @@ export function createMarkdownEditor(
   const wrap = new Compartment()
   const indent = new Compartment()
   const attrs = new Compartment()
+  const language = new Compartment()
+  const highlighting = new Compartment()
+  const lint = new Compartment()
+  let currentFileName = options.fileName ?? ''
+  let spellcheckOn = options.spellcheck
+  let languageGen = 0
 
   const view = new EditorView({
     parent,
@@ -109,14 +137,15 @@ export function createMarkdownEditor(
         dropCursor(),
         highlightActiveLine(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
-        markdown({ addKeymap: true }),
-        syntaxHighlighting(markdownHighlightStyle, { fallback: false }),
+        language.of([]),
+        highlighting.of(highlightExtension(currentFileName)),
+        lint.of(lintExtension(currentFileName)),
         editorTheme,
         writable.of(EditorState.readOnly.of(!options.writable)),
         numbers.of(lineNumberExtension(options.lineNumbers)),
         wrap.of(wrapExtension(options.softWrap)),
         indent.of(indentExtension(options.indentUnit)),
-        attrs.of(spellcheckAttributes(options.spellcheck)),
+        attrs.of(spellcheckAttributes(spellcheckOn, currentFileName)),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             options.onChange(update.state.doc.toString())
@@ -135,16 +164,45 @@ export function createMarkdownEditor(
     })
   }
 
+  function applyFileName(fileName: string) {
+    currentFileName = fileName
+    const gen = ++languageGen
+    view.dispatch({
+      effects: [
+        highlighting.reconfigure(highlightExtension(fileName)),
+        lint.reconfigure(lintExtension(fileName)),
+        attrs.reconfigure(spellcheckAttributes(spellcheckOn, fileName)),
+      ],
+    })
+    void languageSupport(fileName).then((support) => {
+      if (gen !== languageGen) {
+        return
+      }
+      view.dispatch({
+        effects: language.reconfigure(support),
+      })
+    })
+  }
+
+  applyFileName(currentFileName)
+
   return {
     setDoc,
+    setFileName(next) {
+      if (next === currentFileName) {
+        return
+      }
+      applyFileName(next)
+    },
     setWritable(on) {
       view.dispatch({
         effects: writable.reconfigure(EditorState.readOnly.of(!on)),
       })
     },
     setSpellcheck(on) {
+      spellcheckOn = on
       view.dispatch({
-        effects: attrs.reconfigure(spellcheckAttributes(on)),
+        effects: attrs.reconfigure(spellcheckAttributes(on, currentFileName)),
       })
     },
     setLineNumbers(on) {
@@ -186,6 +244,7 @@ export function createMarkdownEditor(
       view.requestMeasure()
     },
     destroy() {
+      languageGen += 1
       view.destroy()
     },
   }

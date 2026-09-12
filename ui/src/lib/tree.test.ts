@@ -5,7 +5,10 @@ import {
   ancestorDirs,
   fileIconKind,
   flattenTree,
+  isEditablePath,
   isMarkdownPath,
+  isSourcePath,
+  treeClickIntent,
   joinRel,
   parentDir,
   sortDirsByDepth,
@@ -49,6 +52,43 @@ describe('tree helpers', () => {
     expect(isMarkdownPath('readme.md')).toBe(true)
     expect(isMarkdownPath('Note.MARKDOWN')).toBe(true)
     expect(isMarkdownPath('cover.png')).toBe(false)
+  })
+
+  it('opens a file only on double click', () => {
+    const base = {
+      shiftKey: false,
+      metaKey: false,
+      ctrlKey: false,
+      alreadySelected: false,
+      onName: false,
+    }
+    expect(treeClickIntent({ ...base, detail: 1 })).toBe('select')
+    expect(treeClickIntent({ ...base, detail: 2 })).toBe('open')
+    expect(
+      treeClickIntent({
+        ...base,
+        detail: 1,
+        alreadySelected: true,
+        onName: true,
+      }),
+    ).toBe('rename')
+    expect(treeClickIntent({ ...base, detail: 1, shiftKey: true })).toBe(
+      'range',
+    )
+    expect(treeClickIntent({ ...base, detail: 1, metaKey: true })).toBe(
+      'toggle',
+    )
+  })
+
+  it('opens any named file as a document', () => {
+    expect(isSourcePath('lib.rs')).toBe(true)
+    expect(isSourcePath('notes.txt')).toBe(true)
+    expect(isSourcePath('LICENSE')).toBe(true)
+    expect(isSourcePath('readme.md')).toBe(false)
+    expect(isEditablePath('lib.rs')).toBe(true)
+    expect(isEditablePath('readme.md')).toBe(true)
+    expect(isEditablePath('cover.png')).toBe(true)
+    expect(isEditablePath('')).toBe(false)
   })
 
   it('picks distinct icons for folders, Markdown, and other files', () => {

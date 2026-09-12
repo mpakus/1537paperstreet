@@ -13,6 +13,43 @@ export function isMarkdownPath(name: string): boolean {
   return MARKDOWN_NAME.test(name)
 }
 
+/** Returns whether a file name is a non-Markdown document. */
+export function isSourcePath(name: string): boolean {
+  return name.length > 0 && !isMarkdownPath(name)
+}
+
+/** Returns whether the tree should open the file in Preview or Edit. */
+export function isEditablePath(name: string): boolean {
+  return name.length > 0
+}
+
+/** What a tree mouse click should do. */
+export type TreeClickIntent = 'range' | 'toggle' | 'open' | 'rename' | 'select'
+
+/** Single click selects; double click opens a file or expands a folder. */
+export function treeClickIntent(event: {
+  detail: number
+  shiftKey: boolean
+  metaKey: boolean
+  ctrlKey: boolean
+  alreadySelected: boolean
+  onName: boolean
+}): TreeClickIntent {
+  if (event.shiftKey) {
+    return 'range'
+  }
+  if (event.metaKey || event.ctrlKey) {
+    return 'toggle'
+  }
+  if (event.detail >= 2) {
+    return 'open'
+  }
+  if (event.alreadySelected && event.onName) {
+    return 'rename'
+  }
+  return 'select'
+}
+
 /** Icon bucket for a tree row: folder, Markdown, or anything else. */
 export type FileIconKind = 'directory' | 'markdown' | 'file'
 

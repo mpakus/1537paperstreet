@@ -36,6 +36,7 @@ describe('DocTabs', () => {
     expect(body).toContain('guide.md')
     expect(body).toContain('todo.md')
     expect(body).toContain('aria-selected="true"')
+    expect(body).toMatch(/class="tab[^"]*\bselected\b/)
     expect(body).toContain('Close todo.md')
   })
 
