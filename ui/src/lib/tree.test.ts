@@ -54,19 +54,43 @@ describe('tree helpers', () => {
     expect(isMarkdownPath('cover.png')).toBe(false)
   })
 
-  it('opens a file only on double click', () => {
+  it('opens a file only on double click and a folder on one click', () => {
     const base = {
       shiftKey: false,
       metaKey: false,
       ctrlKey: false,
       alreadySelected: false,
       onName: false,
+      isDirectory: false,
     }
     expect(treeClickIntent({ ...base, detail: 1 })).toBe('select')
     expect(treeClickIntent({ ...base, detail: 2 })).toBe('open')
     expect(
       treeClickIntent({
         ...base,
+        detail: 1,
+        alreadySelected: true,
+        onName: true,
+      }),
+    ).toBe('rename')
+    expect(
+      treeClickIntent({
+        ...base,
+        isDirectory: true,
+        detail: 1,
+      }),
+    ).toBe('open')
+    expect(
+      treeClickIntent({
+        ...base,
+        isDirectory: true,
+        detail: 2,
+      }),
+    ).toBe('select')
+    expect(
+      treeClickIntent({
+        ...base,
+        isDirectory: true,
         detail: 1,
         alreadySelected: true,
         onName: true,

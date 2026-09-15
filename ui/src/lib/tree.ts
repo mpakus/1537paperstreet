@@ -26,7 +26,7 @@ export function isEditablePath(name: string): boolean {
 /** What a tree mouse click should do. */
 export type TreeClickIntent = 'range' | 'toggle' | 'open' | 'rename' | 'select'
 
-/** Single click selects; double click opens a file or expands a folder. */
+/** Single click selects a file or expands a folder; double click opens a file. */
 export function treeClickIntent(event: {
   detail: number
   shiftKey: boolean
@@ -34,12 +34,22 @@ export function treeClickIntent(event: {
   ctrlKey: boolean
   alreadySelected: boolean
   onName: boolean
+  isDirectory?: boolean
 }): TreeClickIntent {
   if (event.shiftKey) {
     return 'range'
   }
   if (event.metaKey || event.ctrlKey) {
     return 'toggle'
+  }
+  if (event.isDirectory) {
+    if (event.detail >= 2) {
+      return 'select'
+    }
+    if (event.alreadySelected && event.onName) {
+      return 'rename'
+    }
+    return 'open'
   }
   if (event.detail >= 2) {
     return 'open'

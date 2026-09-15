@@ -330,6 +330,7 @@
       ctrlKey: event.ctrlKey,
       alreadySelected: already,
       onName,
+      isDirectory: node.kind === 'directory',
     })
     if (intent === 'range') {
       clearRenameTimer()

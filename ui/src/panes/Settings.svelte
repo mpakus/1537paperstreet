@@ -416,6 +416,10 @@
         />
         Show hidden files
       </label>
+      <p class="hint">
+        Names that start with a dot, such as <code>.docs</code>, stay visible
+        unless you turn this off.
+      </p>
       <label class="check">
         <input
           type="checkbox"

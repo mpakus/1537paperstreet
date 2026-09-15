@@ -73,8 +73,10 @@ you can open it again.
 
 The tree loads one directory level at a time. Expanded folders and pane widths
 persist. Icons distinguish folders, Markdown (`.md`, `.markdown`, `.mdown`,
-`.mdwn`), and other files. Double-click a file to open it in a tab. UTF-8 text is
-editable, with highlighting when a language mode exists. ⌘2 hides the tree. ⌘P quick-opens Markdown in the
+`.mdwn`), and other files. Double-click a file to open it in a tab; a single
+click expands a folder. UTF-8 text is
+editable, with highlighting when a language mode exists. Hidden names such as
+`.docs` are visible unless you turn them off in Settings. ⌘2 hides the tree. ⌘P quick-opens Markdown in the
 current project.
 
 Context menu and File / Go:
@@ -96,7 +98,7 @@ another project in the Projects list to move it there; hold ⌥ to copy.
 Name clashes offer Replace, Keep Both, or Skip (optionally apply to all).
 ⇧ and ⌘ select several nodes for group copy, move, duplicate, and trash.
 
-Settings can show hidden files and require confirmation before Trash.
+Settings can hide dot-prefixed names and require confirmation before Trash.
 
 ### Read rich Markdown
 
@@ -163,7 +165,8 @@ Reload discards unsaved edits in this app.
 - Preview & Split reading font, size, and optional custom colors (empty / `0`
   means the theme)
 - keep the Dock icon when the window is hidden
-- table of contents, confirm Trash, show hidden files
+- table of contents, confirm Trash, show hidden files (on by default, including
+  `.docs`)
 - render Mermaid diagrams and KaTeX mathematics
 - **External Agents** — add OpenCode, Claude, or Codex if they are on `PATH`
   (`codex` runs as `app-server --stdio`), or a custom ACP command

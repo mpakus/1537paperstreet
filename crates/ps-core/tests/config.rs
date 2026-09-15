@@ -18,6 +18,7 @@ fn defaults_match_the_product_plan() {
     assert_eq!(config.history.interval_min, 5);
     assert_eq!(config.history.global_cap_mb, 2048);
     assert_eq!(config.files.export_ignore.len(), 4);
+    assert!(config.files.show_hidden);
     assert_eq!(config.window.width, 1180);
     assert_eq!(config.window.toc_w, 224);
     assert!(config.window.show_in_dock);
@@ -32,6 +33,16 @@ fn defaults_match_the_product_plan() {
         ps_core::agents::AgentPermission::Allowance
     );
     config.validate().expect("valid defaults");
+}
+
+#[test]
+fn missing_show_hidden_defaults_on_without_a_schema_bump() {
+    let files: ps_core::config::Files = serde_json::from_value(serde_json::json!({
+        "export_ignore": [".git"],
+        "confirm_delete": true
+    }))
+    .expect("files");
+    assert!(files.show_hidden);
 }
 
 #[test]

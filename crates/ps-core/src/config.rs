@@ -261,6 +261,7 @@ impl Default for History {
 #[serde(default)]
 pub struct Files {
     /// Whether hidden files are visible.
+    #[serde(default = "default_true")]
     pub show_hidden: bool,
     /// Ignore patterns applied during export.
     pub export_ignore: Vec<String>,
@@ -271,7 +272,7 @@ pub struct Files {
 impl Default for Files {
     fn default() -> Self {
         Self {
-            show_hidden: false,
+            show_hidden: true,
             export_ignore: vec![".git", "node_modules", ".DS_Store", "*.zip"]
                 .into_iter()
                 .map(String::from)

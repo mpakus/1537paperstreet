@@ -86,5 +86,7 @@ describe('Settings', () => {
     expect(body).toContain('PHP')
     expect(body).toContain('.ex, .exs')
     expect(body).toContain('syntax errors')
+    expect(body).toContain('Show hidden files')
+    expect(body).toContain('.docs')
   })
 })

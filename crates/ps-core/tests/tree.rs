@@ -68,13 +68,15 @@ fn hidden_filter_can_be_disabled_explicitly() {
     fs::create_dir(&root).expect("project directory");
     fs::write(root.join("visible.md"), b"").expect("visible file");
     fs::write(root.join(".hidden.md"), b"").expect("hidden file");
+    fs::create_dir(root.join(".docs")).expect("hidden folder");
 
     let filtered = tree::read_dir(&root, Path::new(""), false).expect("filtered tree");
     let visible = tree::read_dir(&root, Path::new(""), true).expect("complete tree");
 
     assert_eq!(filtered.len(), 1);
-    assert_eq!(visible.len(), 2);
+    assert_eq!(visible.len(), 3);
     assert!(visible.iter().any(|node| node.name == ".hidden.md"));
+    assert!(visible.iter().any(|node| node.name == ".docs"));
 }
 
 #[cfg(unix)]

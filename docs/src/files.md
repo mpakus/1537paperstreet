@@ -7,10 +7,11 @@ a slim strip remains so you can open it again.
 
 Icons distinguish folders, Markdown (`.md`, `.markdown`, `.mdown`, `.mdwn`),
 and other files. Double-click a file to open it in a tab; a single click
-selects it. UTF-8 text is editable. Preview and Edit highlight JavaScript,
+selects it and expands a folder. UTF-8 text is editable. Preview and Edit highlight JavaScript,
 TypeScript, Ruby, Elixir, Go, Rust, C#, Java, and PHP (and other languages
 when a grammar exists). Binary files and files larger than 8 MB stay
-source-only.
+source-only. Hidden names such as `.docs` are shown unless you turn them off
+in Settings.
 
 ## Actions
 
@@ -50,7 +51,7 @@ does the same for that tab. The active tab uses a stronger background and an
 accent underline.
 
 A new folder or file immediately offers a name. Clicking an already selected
-name (not a double-click — that opens) also starts rename; F2 does the same.
+name (not a double-click on a file — that opens it) also starts rename; F2 does the same.
 Dragging in the tree moves into a folder (drop on a file targets that file's
 folder); ⌥ copies; hovering a folder expands it. A stacked ghost of the
 dragged names follows the pointer and eases into the folder. Copy name and

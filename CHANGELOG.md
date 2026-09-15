@@ -5,6 +5,13 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-15
+
+### Changed
+
+- A single click expands a folder; a double click still opens a file.
+- Hidden names such as `.docs` are visible by default. Settings can hide them.
+
 ## [0.8.0] - 2026-09-12
 
 ### Added
@@ -340,7 +347,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/mpakus/1537paperstreet/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/mpakus/1537paperstreet/compare/v0.7.6...v0.8.0
 [0.7.6]: https://github.com/mpakus/1537paperstreet/compare/v0.7.5...v0.7.6
 [0.7.5]: https://github.com/mpakus/1537paperstreet/compare/v0.7.4...v0.7.5

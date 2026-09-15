@@ -339,7 +339,7 @@
     "keep_daily_days": 90
   },
   "files": {
-    "show_hidden": false,
+    "show_hidden": true,
     "export_ignore": [".git", "node_modules", ".DS_Store", "*.zip"],
     "confirm_delete": true
   },

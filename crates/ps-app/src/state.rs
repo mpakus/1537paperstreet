@@ -1423,18 +1423,21 @@ mod tests {
         assert!(names.contains(&"note 2.md"));
 
         fs::write(project_root.join(".hidden.md"), b"secret").expect("hidden");
-        let filtered = state
-            .tree_read_dir(project.id.clone(), PathBuf::new())
-            .expect("filtered tree");
-        assert!(filtered.iter().all(|node| node.name != ".hidden.md"));
-
-        let mut config = state.config_get();
-        config.files.show_hidden = true;
-        state.config_set(config).expect("show hidden");
+        fs::create_dir(project_root.join(".docs")).expect("dot folder");
         let shown = state
             .tree_read_dir(project.id.clone(), PathBuf::new())
             .expect("complete tree");
         assert!(shown.iter().any(|node| node.name == ".hidden.md"));
+        assert!(shown.iter().any(|node| node.name == ".docs"));
+
+        let mut config = state.config_get();
+        config.files.show_hidden = false;
+        state.config_set(config).expect("hide hidden");
+        let filtered = state
+            .tree_read_dir(project.id.clone(), PathBuf::new())
+            .expect("filtered tree");
+        assert!(filtered.iter().all(|node| node.name != ".hidden.md"));
+        assert!(filtered.iter().all(|node| node.name != ".docs"));
 
         assert!(
             state
