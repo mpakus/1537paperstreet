@@ -82,7 +82,11 @@
   import { recordMessage, TOAST_MS, type AppMessage } from './lib/messages'
   import { exportDocumentPdf } from './lib/print'
   import { windowTitle } from './lib/text'
-  import { nextPreviewZoom } from './lib/zoom'
+  import {
+    DIAGRAM_FRAME_DEFAULT_HEIGHT,
+    DIAGRAM_FRAME_DEFAULT_WIDTH,
+    nextPreviewZoom,
+  } from './lib/zoom'
   import { classifyPreviewHref } from './lib/preview-nav'
   import {
     dirsToReload,
@@ -138,6 +142,10 @@
   let treeWidth = $state(260)
   let tocWidth = $state(224)
   let editorWidth = $state(480)
+  let diagramWidth = $state(DIAGRAM_FRAME_DEFAULT_WIDTH)
+  let diagramHeight = $state(DIAGRAM_FRAME_DEFAULT_HEIGHT)
+  let diagramZoom = $state(1)
+  let diagramChromeTimer: ReturnType<typeof setTimeout> | undefined
   let workspaceEl = $state<HTMLDivElement | undefined>()
   let treeHidden = $state(false)
   let viewMode = $state<ViewMode>('preview')
@@ -275,6 +283,9 @@
     treeWidth = config.window.tree_w
     tocWidth = config.window.toc_w
     editorWidth = config.window.editor_w
+    diagramWidth = config.window.diagram_w
+    diagramHeight = config.window.diagram_h
+    diagramZoom = config.window.diagram_zoom
     fontSize = config.typography.font_size
     lineHeight = config.typography.line_height
     measureCh = config.typography.measure_ch
@@ -485,6 +496,58 @@
       config.window.editor_w = pixels
     }
     await configSet(config)
+  }
+
+  async function persistDiagramChrome(next: {
+    width: number
+    height: number
+    zoom: number
+  }) {
+    const width = Math.round(next.width)
+    const height = Math.round(next.height)
+    const zoom = next.zoom
+    diagramWidth = width
+    diagramHeight = height
+    diagramZoom = zoom
+    if (appConfig) {
+      appConfig.window.diagram_w = width
+      appConfig.window.diagram_h = height
+      appConfig.window.diagram_zoom = zoom
+    }
+    const config = await configGet()
+    config.window.diagram_w = width
+    config.window.diagram_h = height
+    config.window.diagram_zoom = zoom
+    await configSet(config)
+  }
+
+  function rememberDiagramChrome(
+    next: { width: number; height: number; zoom: number },
+    immediate: boolean,
+  ) {
+    diagramWidth = Math.round(next.width)
+    diagramHeight = Math.round(next.height)
+    diagramZoom = next.zoom
+    if (diagramChromeTimer !== undefined) {
+      clearTimeout(diagramChromeTimer)
+      diagramChromeTimer = undefined
+    }
+    if (immediate) {
+      void persistDiagramChrome(next).catch((cause) => {
+        showError(errorMessage(cause))
+      })
+      return
+    }
+    diagramChromeTimer = setTimeout(() => {
+      diagramChromeTimer = undefined
+      void persistDiagramChrome({
+        width: diagramWidth,
+        height: diagramHeight,
+        zoom: diagramZoom,
+      }).catch((cause) => {
+        showError(errorMessage(cause))
+      })
+    }, 300)
   }
 
   function applyPanelDrag(
@@ -2000,6 +2063,9 @@
               previewBg={appConfig?.viewer.preview_bg ?? ''}
               previewFg={appConfig?.viewer.preview_fg ?? ''}
               readingZoom={previewZoom}
+              {diagramWidth}
+              {diagramHeight}
+              {diagramZoom}
               bind:articleEl
               onnavigate={(href) => {
                 void navigate(href).catch((cause) => {
@@ -2012,6 +2078,9 @@
               ontocresize={(event) => {
                 event.preventDefault()
                 resizeStart = { kind: 'toc', x: event.clientX, width: tocWidth }
+              }}
+              ondiagramchrome={(next) => {
+                rememberDiagramChrome(next, next.immediate)
               }}
             />
           {/if}

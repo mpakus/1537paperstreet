@@ -304,6 +304,18 @@ pub struct Window {
     /// Editor column width in Split, in logical pixels.
     #[serde(default = "default_editor_w", deserialize_with = "deserialize_px")]
     pub editor_w: u32,
+    /// Mermaid diagram-window width in logical pixels.
+    #[serde(default = "default_diagram_w", deserialize_with = "deserialize_px")]
+    pub diagram_w: u32,
+    /// Mermaid diagram-window height in logical pixels.
+    #[serde(default = "default_diagram_h", deserialize_with = "deserialize_px")]
+    pub diagram_h: u32,
+    /// Mermaid diagram-window zoom factor.
+    #[serde(
+        default = "default_diagram_zoom",
+        deserialize_with = "deserialize_diagram_zoom"
+    )]
+    pub diagram_zoom: f64,
     /// Whether the Dock icon stays visible after the window is hidden.
     #[serde(default = "default_true")]
     pub show_in_dock: bool,
@@ -318,6 +330,9 @@ impl Default for Window {
             tree_w: 260,
             toc_w: 224,
             editor_w: 480,
+            diagram_w: 896,
+            diagram_h: 576,
+            diagram_zoom: 1.0,
             show_in_dock: true,
         }
     }
@@ -345,6 +360,41 @@ fn default_toc_w() -> u32 {
 
 fn default_editor_w() -> u32 {
     480
+}
+
+fn default_diagram_w() -> u32 {
+    896
+}
+
+fn default_diagram_h() -> u32 {
+    576
+}
+
+fn default_diagram_zoom() -> f64 {
+    1.0
+}
+
+fn deserialize_diagram_zoom<'de, D>(deserializer: D) -> std::result::Result<f64, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Zoom {
+        F64(f64),
+        U64(u64),
+        I64(i64),
+    }
+
+    let raw = match Zoom::deserialize(deserializer)? {
+        Zoom::F64(value) => value,
+        Zoom::U64(value) => value as f64,
+        Zoom::I64(value) => value as f64,
+    };
+    if !raw.is_finite() {
+        return Ok(1.0);
+    }
+    Ok(raw.clamp(0.25, 32.0))
 }
 
 fn deserialize_px<'de, D>(deserializer: D) -> std::result::Result<u32, D::Error>

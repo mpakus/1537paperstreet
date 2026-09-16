@@ -1,21 +1,40 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
+
   import { copySvg, savePng } from '../lib/diagrams'
   import { errorMessage } from '../lib/ipc'
   import {
+    DIAGRAM_FRAME_DEFAULT_HEIGHT,
+    DIAGRAM_FRAME_DEFAULT_WIDTH,
     DIAGRAM_ZOOM_MAX,
     DIAGRAM_ZOOM_MIN,
+    clampDiagramZoom,
     nextDiagramZoom,
+    panAfterZoom,
     wheelDiagramZoom,
   } from '../lib/zoom'
 
   let {
     svg,
+    width = DIAGRAM_FRAME_DEFAULT_WIDTH,
+    height = DIAGRAM_FRAME_DEFAULT_HEIGHT,
+    zoom: initialZoom = 1,
     onclose,
     onerror,
+    onchrome,
   }: {
     svg: string
+    width?: number
+    height?: number
+    zoom?: number
     onclose: () => void
     onerror?: (message: string) => void
+    onchrome?: (next: {
+      width: number
+      height: number
+      zoom: number
+      immediate: boolean
+    }) => void
   } = $props()
 
   const minWidth = 360
@@ -23,7 +42,7 @@
   const edges = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] as const
   type Edge = (typeof edges)[number]
 
-  let zoom = $state(1)
+  let zoom = $state(untrack(() => clampDiagramZoom(initialZoom)))
   let panX = $state(0)
   let panY = $state(0)
   let panDrag = $state<{
@@ -57,15 +76,36 @@
   }
 
   function defaultFrame() {
+    return frameFromSize(width, height)
+  }
+
+  function frameFromSize(nextWidth: number, nextHeight: number) {
     const { width: vw, height: vh } = viewport()
-    const width = Math.min(896, Math.max(minWidth, vw - 48))
-    const height = Math.min(576, Math.max(minHeight, vh - 48))
-    return {
-      left: Math.max(16, (vw - width) / 2),
-      top: Math.max(16, (vh - height) / 2),
-      width,
-      height,
-    }
+    return clampFrame({
+      left: (vw - nextWidth) / 2,
+      top: (vh - nextHeight) / 2,
+      width: nextWidth,
+      height: nextHeight,
+    })
+  }
+
+  function rememberChrome(immediate: boolean) {
+    onchrome?.({
+      width: Math.round(frame.width),
+      height: Math.round(frame.height),
+      zoom,
+      immediate,
+    })
+  }
+
+  function close() {
+    rememberChrome(true)
+    onclose()
+  }
+
+  function setZoom(next: number) {
+    zoom = clampDiagramZoom(next)
+    rememberChrome(true)
   }
 
   function clampFrame(next: {
@@ -186,12 +226,12 @@
   tabindex="-1"
   onclick={(event) => {
     if (event.target === event.currentTarget) {
-      onclose()
+      close()
     }
   }}
   onkeydown={(event) => {
     if (event.key === 'Escape') {
-      onclose()
+      close()
     }
   }}
 >
@@ -284,7 +324,7 @@
           aria-label="Zoom out"
           disabled={zoom <= DIAGRAM_ZOOM_MIN}
           onclick={() => {
-            zoom = nextDiagramZoom(zoom, -1)
+            setZoom(nextDiagramZoom(zoom, -1))
           }}
         >
           <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -312,7 +352,7 @@
           aria-label="Zoom in"
           disabled={zoom >= DIAGRAM_ZOOM_MAX}
           onclick={() => {
-            zoom = nextDiagramZoom(zoom, 1)
+            setZoom(nextDiagramZoom(zoom, 1))
           }}
         >
           <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -339,7 +379,7 @@
         class="diagram-icon diagram-close"
         title="Close"
         aria-label="Close"
-        onclick={onclose}
+        onclick={close}
       >
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path
@@ -357,7 +397,29 @@
       role="presentation"
       onwheel={(event) => {
         event.preventDefault()
-        zoom = wheelDiagramZoom(zoom, event.deltaY)
+        const next = wheelDiagramZoom(zoom, event.deltaY, event.deltaMode)
+        if (next === zoom) {
+          return
+        }
+        const stage = event.currentTarget
+        if (!(stage instanceof HTMLElement)) {
+          zoom = next
+          rememberChrome(false)
+          return
+        }
+        const rect = stage.getBoundingClientRect()
+        const pan = panAfterZoom(
+          panX,
+          panY,
+          event.clientX - rect.left,
+          event.clientY - rect.top,
+          zoom,
+          next,
+        )
+        zoom = next
+        panX = pan.x
+        panY = pan.y
+        rememberChrome(false)
       }}
       onpointerdown={(event) => {
         if (event.button !== 0) {
@@ -400,9 +462,11 @@
         onpointermove={onResizePointerMove}
         onpointerup={() => {
           sizeDrag = null
+          rememberChrome(true)
         }}
         onpointercancel={() => {
           sizeDrag = null
+          rememberChrome(true)
         }}
       ></div>
     {/each}

@@ -5,6 +5,15 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-09-16
+
+### Changed
+
+- The Mermaid diagram window remembers its size and zoom in `config.json`
+  (`window.diagram_w`, `diagram_h`, `diagram_zoom`) without a schema bump.
+  Trackpad and mouse-wheel zoom scale continuously instead of jumping a full
+  1.25× step per tick.
+
 ## [0.8.5] - 2026-09-16
 
 ### Fixed
@@ -378,7 +387,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.5...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.6...HEAD
+[0.8.6]: https://github.com/mpakus/1537paperstreet/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/mpakus/1537paperstreet/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/mpakus/1537paperstreet/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/mpakus/1537paperstreet/compare/v0.8.2...v0.8.3
