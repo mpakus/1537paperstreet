@@ -450,7 +450,7 @@
       </label>
       <p class="hint">
         When a newer GitHub Release exists, the app downloads it, installs it,
-        and asks you to restart.
+        and restarts.
       </p>
     </section>
 

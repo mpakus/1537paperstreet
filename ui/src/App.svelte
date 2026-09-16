@@ -333,7 +333,7 @@
       aboutCheckSeq += 1
       aboutOpen = true
     } catch (cause) {
-      console.warn(errorMessage(cause))
+      showError(errorMessage(cause))
     }
   }
 

@@ -60,11 +60,17 @@ async function invokeIpc<T>(
 
 /** Turns an IPC failure into a user-visible message. */
 export function errorMessage(cause: unknown): string {
-  if (typeof cause === 'string') {
+  if (typeof cause === 'string' && cause.trim()) {
     return cause
   }
-  if (cause instanceof Error) {
+  if (cause instanceof Error && cause.message.trim()) {
     return cause.message
+  }
+  if (cause && typeof cause === 'object' && 'message' in cause) {
+    const message = (cause as { message: unknown }).message
+    if (typeof message === 'string' && message.trim()) {
+      return message
+    }
   }
   return String(cause)
 }

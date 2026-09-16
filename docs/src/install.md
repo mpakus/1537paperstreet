@@ -38,5 +38,5 @@ File → About 1537paperstreet (and About in the application menu) opens a sheet
 with the logo, version, and a link to [aomega.co](https://aomega.co).
 Check for Updates in that sheet and File → Check for Updates… ask GitHub
 Releases. If a newer version exists, the app downloads the universal zip,
-installs it over the running `.app`, and asks you to restart. Settings →
+installs it over the running `.app`, and restarts. Settings →
 Updates can skip the launch check. Homebrew cask is not available yet.

@@ -212,7 +212,7 @@ Click it to show the window again. Quit from that menu or ⌘Q.
 File → About 1537paperstreet shows version and a link to aomega.co.
 File → Check for Updates… (same control in About) compares your version to
 GitHub Releases, downloads the macOS zip when a newer build exists, installs
-it, and asks you to restart. Settings can disable the launch check.
+it, and restarts. Settings can disable the launch check.
 
 Documents never leave the computer unless you run an External Agent you
 installed yourself. Logs record actions and errors, not Markdown contents.

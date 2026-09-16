@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
 
   import { errorMessage } from '../lib/ipc'
+  import { isBackdropEvent } from '../lib/overlay'
   import type { UpdateCheck, UpdateInstall } from '../lib/ipc'
 
   let {
@@ -46,6 +47,9 @@
       result = await oncheck()
       if (result.available && result.can_install && !installed) {
         await runInstall()
+        if (installed) {
+          await runRelaunch()
+        }
       }
     } catch (cause) {
       checkError = errorMessage(cause)
@@ -95,7 +99,15 @@
   }}
 />
 
-<div class="scrim" role="presentation" onclick={onclose}>
+<div
+  class="scrim"
+  role="presentation"
+  onclick={(event) => {
+    if (isBackdropEvent(event)) {
+      onclose()
+    }
+  }}
+>
   <div
     class="sheet"
     role="dialog"
@@ -122,13 +134,15 @@
       }}>{site.replace('https://', '')}</a
     >
     {#if installing}
-      <p class="status" role="status">Downloading and installing the update…</p>
+      <p class="status" role="status" aria-live="polite">
+        Downloading and installing the update…
+      </p>
     {:else if checking}
-      <p class="status" role="status">Checking for updates…</p>
+      <p class="status" role="status" aria-live="polite">Checking for updates…</p>
     {:else if checkError}
-      <p class="status" role="status">{checkError}</p>
+      <p class="status is-error" role="status" aria-live="polite">{checkError}</p>
     {:else if result}
-      <p class="status" role="status">{result.message}</p>
+      <p class="status" role="status" aria-live="polite">{result.message}</p>
     {/if}
     <div class="actions">
       <button
@@ -235,8 +249,12 @@
 
   .status {
     margin: 0;
-    color: var(--fg-muted);
+    color: var(--fg);
     font-size: 0.8125rem;
+  }
+
+  .status.is-error {
+    color: var(--accent);
   }
 
   .actions {
