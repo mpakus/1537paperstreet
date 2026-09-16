@@ -44,6 +44,23 @@ describe('MessageToasts', () => {
     expect(body).toContain("Couldn't open the folder.")
     expect(body).toContain('aria-label="Dismiss"')
     expect(body).toContain('role="status"')
+    expect(body).not.toContain('class="badge"')
+  })
+
+  it('badges unread messages when the list is closed', () => {
+    const { body } = render(MessageToasts, {
+      props: {
+        toast: '',
+        history: [
+          { id: 1, text: 'First', at: 1_000 },
+          { id: 2, text: 'Second', at: 2_000 },
+        ],
+        open: false,
+        ondismiss() {},
+        ontoggle() {},
+        onclose() {},
+      },
+    })
     expect(body).toContain('>2</span')
   })
 })

@@ -28,6 +28,8 @@
     diagramWidth = DIAGRAM_FRAME_DEFAULT_WIDTH,
     diagramHeight = DIAGRAM_FRAME_DEFAULT_HEIGHT,
     diagramZoom = 1,
+    diagramLeft = null,
+    diagramTop = null,
     articleEl = $bindable(),
     onnavigate,
     onerror,
@@ -50,6 +52,8 @@
     diagramWidth?: number
     diagramHeight?: number
     diagramZoom?: number
+    diagramLeft?: number | null
+    diagramTop?: number | null
     articleEl?: HTMLElement | undefined
     onnavigate: (href: string) => void
     onerror?: (message: string) => void
@@ -58,6 +62,8 @@
       width: number
       height: number
       zoom: number
+      left: number
+      top: number
       immediate: boolean
     }) => void
   } = $props()
@@ -310,6 +316,8 @@
     width={diagramWidth}
     height={diagramHeight}
     zoom={diagramZoom}
+    left={diagramLeft}
+    top={diagramTop}
     onchrome={ondiagramchrome}
     onclose={() => {
       modalSvg = null

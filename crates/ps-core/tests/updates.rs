@@ -1,4 +1,6 @@
-use ps_core::updates::{from_github_json, install_ready_message};
+use ps_core::updates::{
+    from_github_json, from_github_tag, install_ready_message, tag_from_release_location,
+};
 
 fn release_json(tag: &str, url: &str) -> String {
     format!(r#"{{"tag_name":"{tag}","html_url":"{url}"}}"#)
@@ -188,6 +190,38 @@ fn rejects_invalid_release_payloads() {
         .is_err()
     );
     assert!(from_github_json("0.2.1", &release_json("nightly", &release_page("nightly"))).is_err());
+}
+
+#[test]
+fn tag_from_release_location_reads_the_github_latest_redirect() {
+    assert_eq!(
+        tag_from_release_location("https://github.com/mpakus/1537paperstreet/releases/tag/v0.8.6")
+            .expect("tag"),
+        "v0.8.6"
+    );
+    assert!(tag_from_release_location("https://evil.example/releases/tag/v1.0").is_err());
+    assert!(
+        tag_from_release_location(
+            "https://github.com/mpakus/1537paperstreet/releases/tag/v0.8.6/../secret"
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn github_tag_check_does_not_require_api_assets() {
+    let newer = from_github_tag("0.8.6", "v0.8.7").expect("newer");
+    assert!(newer.available);
+    assert!(!newer.can_install);
+    assert_eq!(newer.latest, "0.8.7");
+    assert_eq!(
+        newer.release_url,
+        "https://github.com/mpakus/1537paperstreet/releases/tag/v0.8.7"
+    );
+
+    let current = from_github_tag("0.8.7", "v0.8.7").expect("same");
+    assert!(!current.available);
+    assert_eq!(current.message, "You're up to date (0.8.7).");
 }
 
 #[test]

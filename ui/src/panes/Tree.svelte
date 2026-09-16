@@ -71,7 +71,7 @@
     watchDirs?: string[]
     externalDropRel?: string | null
     onerror: (message: string) => void
-    onopen: (relPath: string) => void
+    onopen: (relPath: string, mode?: 'preview' | 'pin') => void
     onselect: (nodes: TreeNode[]) => void
     onexpanded: (paths: string[]) => void
     ontrashed?: (relPaths: string[]) => void
@@ -275,7 +275,7 @@
     return [node]
   }
 
-  function activate(node: TreeNode) {
+  function activate(node: TreeNode, mode: 'preview' | 'pin' = 'pin') {
     applySelection([node.relPath], node.relPath)
     if (destMode) {
       ontransfer(destMode, [], targetDir(node))
@@ -285,7 +285,7 @@
       toggle(node)
       return
     }
-    onopen(node.relPath)
+    onopen(node.relPath, mode)
   }
 
   function clearRenameTimer() {
@@ -347,7 +347,12 @@
     }
     if (intent === 'open') {
       clearRenameTimer()
-      activate(node)
+      activate(node, 'pin')
+      return
+    }
+    if (intent === 'preview') {
+      clearRenameTimer()
+      activate(node, 'preview')
       return
     }
     if (intent === 'rename') {
@@ -592,7 +597,7 @@
       applySelection([renamed.relPath], renamed.relPath)
       onrenamed?.(node.relPath, renamed.relPath)
       if (isEditablePath(renamed.name)) {
-        onopen(renamed.relPath)
+        onopen(renamed.relPath, 'pin')
       }
     } catch (cause) {
       onerror(errorMessage(cause))

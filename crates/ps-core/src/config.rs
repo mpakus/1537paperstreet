@@ -316,6 +316,12 @@ pub struct Window {
         deserialize_with = "deserialize_diagram_zoom"
     )]
     pub diagram_zoom: f64,
+    /// Mermaid diagram-window left edge in logical pixels. `None` centers it.
+    #[serde(default, deserialize_with = "deserialize_diagram_pos")]
+    pub diagram_x: Option<i32>,
+    /// Mermaid diagram-window top edge in logical pixels. `None` centers it.
+    #[serde(default, deserialize_with = "deserialize_diagram_pos")]
+    pub diagram_y: Option<i32>,
     /// Whether the Dock icon stays visible after the window is hidden.
     #[serde(default = "default_true")]
     pub show_in_dock: bool,
@@ -333,6 +339,8 @@ impl Default for Window {
             diagram_w: 896,
             diagram_h: 576,
             diagram_zoom: 1.0,
+            diagram_x: None,
+            diagram_y: None,
             show_in_dock: true,
         }
     }
@@ -372,6 +380,39 @@ fn default_diagram_h() -> u32 {
 
 fn default_diagram_zoom() -> f64 {
     1.0
+}
+
+fn deserialize_diagram_pos<'de, D>(deserializer: D) -> std::result::Result<Option<i32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Raw {
+        F64(f64),
+        I64(i64),
+        U64(u64),
+    }
+
+    match Option::<Raw>::deserialize(deserializer)? {
+        None => Ok(None),
+        Some(Raw::I64(value)) => i32::try_from(value)
+            .map(Some)
+            .map_err(serde::de::Error::custom),
+        Some(Raw::U64(value)) => i32::try_from(value)
+            .map(Some)
+            .map_err(serde::de::Error::custom),
+        Some(Raw::F64(value)) => {
+            if !value.is_finite() {
+                return Ok(None);
+            }
+            let rounded = value.round();
+            if rounded < f64::from(i32::MIN) || rounded > f64::from(i32::MAX) {
+                return Err(serde::de::Error::custom("diagram position is out of range"));
+            }
+            Ok(Some(rounded as i32))
+        }
+    }
 }
 
 fn deserialize_diagram_zoom<'de, D>(deserializer: D) -> std::result::Result<f64, D::Error>

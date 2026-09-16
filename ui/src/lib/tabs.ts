@@ -30,6 +30,8 @@ export type DocTab = {
   docMeta: DocumentMeta | null
   docSourceMeta: DocumentSource | null
   draftText: string
+  /** Temporary single-click tab; the next preview click replaces it. */
+  preview: boolean
 }
 
 /** File name used as the tab label. */
@@ -46,6 +48,54 @@ export function upsertTab(tabs: DocTab[], tab: DocTab): DocTab[] {
   const next = tabs.slice()
   next[index] = tab
   return next
+}
+
+/** How a document should land in the tab strip. */
+export type TabOpenMode = 'preview' | 'pin' | 'keep'
+
+/** True when editor text diverges from the loaded source. */
+export function tabHasUnsavedDraft(tab: DocTab): boolean {
+  return Boolean(tab.docSourceMeta && tab.draftText !== tab.docSourceMeta.text)
+}
+
+/** Places a tab as a temporary preview, a pinned tab, or an in-place refresh. */
+export function placeDocTab(
+  tabs: DocTab[],
+  tab: DocTab,
+  mode: TabOpenMode,
+): DocTab[] {
+  const existing = tabs.find((item) => item.relPath === tab.relPath)
+  if (mode === 'keep') {
+    return upsertTab(tabs, {
+      ...tab,
+      preview: existing?.preview ?? false,
+    })
+  }
+  if (mode === 'pin' || (existing && !existing.preview)) {
+    return upsertTab(tabs, { ...tab, preview: false })
+  }
+  let next = tabs
+  const dirtyPreview = next.find(
+    (item) =>
+      item.preview && item.relPath !== tab.relPath && tabHasUnsavedDraft(item),
+  )
+  if (dirtyPreview) {
+    next = upsertTab(next, { ...dirtyPreview, preview: false })
+  }
+  const previewIndex = next.findIndex((item) => item.preview)
+  if (previewIndex >= 0 && next[previewIndex]?.relPath !== tab.relPath) {
+    const placed = next.slice()
+    const same = placed.findIndex((item) => item.relPath === tab.relPath)
+    if (same >= 0) {
+      placed.splice(previewIndex, 1)
+      const index = same > previewIndex ? same - 1 : same
+      placed[index] = { ...tab, preview: true }
+      return placed
+    }
+    placed[previewIndex] = { ...tab, preview: true }
+    return placed
+  }
+  return upsertTab(next, { ...tab, preview: true })
 }
 
 /** Drops a tab. */

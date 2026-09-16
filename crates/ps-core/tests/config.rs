@@ -24,6 +24,8 @@ fn defaults_match_the_product_plan() {
     assert_eq!(config.window.diagram_w, 896);
     assert_eq!(config.window.diagram_h, 576);
     assert_eq!(config.window.diagram_zoom, 1.0);
+    assert_eq!(config.window.diagram_x, None);
+    assert_eq!(config.window.diagram_y, None);
     assert!(config.window.show_in_dock);
     assert!(config.viewer.preview_font.is_empty());
     assert_eq!(config.viewer.preview_font_size, 0);
@@ -104,6 +106,23 @@ fn missing_diagram_chrome_defaults_without_a_schema_bump() {
     assert_eq!(window.diagram_w, 896);
     assert_eq!(window.diagram_h, 576);
     assert_eq!(window.diagram_zoom, 1.0);
+    assert_eq!(window.diagram_x, None);
+    assert_eq!(window.diagram_y, None);
+}
+
+#[test]
+fn diagram_position_round_trips_without_a_schema_bump() {
+    let window: Window = serde_json::from_value(serde_json::json!({
+        "width": 1180,
+        "height": 780,
+        "sidebar_w": 220,
+        "tree_w": 260,
+        "diagram_x": 120.4,
+        "diagram_y": -24
+    }))
+    .expect("window");
+    assert_eq!(window.diagram_x, Some(120));
+    assert_eq!(window.diagram_y, Some(-24));
 }
 
 #[test]

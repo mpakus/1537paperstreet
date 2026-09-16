@@ -62,7 +62,7 @@
 - Публичные типы, пересекающие IPC-границу, экспортируются в TypeScript через генератор. Ручное дублирование типов — ошибка ревью.
 - Логи (`ps-core::log`) не содержат текст документов и **не содержат текст промптов Assistant**. Только действия, пути служебных файлов, ошибки.
 - CSS тем генерируется в Rust (`themes_css`). JSON тем — kebab-case токены; IPC `ThemeInfo` — camelCase. UI не собирает карту токенов сам.
-- `window.show_in_dock` (по умолчанию true), `window.diagram_w` / `diagram_h` / `diagram_zoom` (896×576, zoom 1), `files.show_hidden` (по умолчанию true), `viewer.preview_*` (пусто / `0` = тема) и `agents` добавляются в `config.json` без bump `schema_version`.
+- `window.show_in_dock` (по умолчанию true), `window.diagram_w` / `diagram_h` / `diagram_zoom` (896×576, zoom 1), `window.diagram_x` / `diagram_y` (null = центр), `files.show_hidden` (по умолчанию true), `viewer.preview_*` (пусто / `0` = тема) и `agents` добавляются в `config.json` без bump `schema_version`.
 - Кэш Mermaid: ключ = blake3(`source_hash + "\0" + theme_id`); хеш — 64 hex-символа; `theme_id` — slug (ASCII-буквы, цифры, дефис). Не-SVG и файлы > 2 MB отклоняются.
 - Codex: spawn `codex app-server --stdio` (пресет Codex или `command` basename `codex` с args `["acp"]`). Это не `codex acp` (TUI). Диалект `AgentWire::CodexApp`. `login_path()` дополняет PATH (`~/.local/bin`, Homebrew и т.п.).
 - История промптов Assistant (`PromptHistory` / `agents/prompts.json`) — не P10 (история документов). IPC: `agent_prompt_history`, `agent_prompt_history_remove`, `agent_prompt_history_clear`. Удаление — явное действие пользователя, снимок `pre_*` не требуется.

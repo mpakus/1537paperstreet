@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { formatMessageTime, type AppMessage } from '../lib/messages'
+  import {
+    formatMessageTime,
+    lastHistoryId,
+    unreadBadge,
+    unreadCount,
+    type AppMessage,
+  } from '../lib/messages'
 
   let {
     toast = '',
@@ -17,13 +23,16 @@
     onclose: () => void
   } = $props()
 
-  const badge = $derived(
-    history.length === 0
-      ? ''
-      : history.length > 9
-        ? '9+'
-        : String(history.length),
-  )
+  let seenId = $state(0)
+
+  $effect(() => {
+    if (!open) {
+      return
+    }
+    seenId = Math.max(seenId, lastHistoryId(history))
+  })
+
+  const badge = $derived(unreadBadge(open ? 0 : unreadCount(history, seenId)))
   const newestFirst = $derived([...history].reverse())
   let dock = $state<HTMLDivElement | undefined>()
 </script>

@@ -29,6 +29,24 @@ export function recordMessage(
   return next.slice(next.length - HISTORY_LIMIT)
 }
 
+/** Newest history id, or `0` when the list is empty. */
+export function lastHistoryId(history: AppMessage[]): number {
+  return history.at(-1)?.id ?? 0
+}
+
+/** Messages added after the user last opened the history panel. */
+export function unreadCount(history: AppMessage[], lastSeenId: number): number {
+  return history.filter((entry) => entry.id > lastSeenId).length
+}
+
+/** Badge label for unread messages; empty when everything has been read. */
+export function unreadBadge(unread: number): string {
+  if (unread <= 0) {
+    return ''
+  }
+  return unread > 9 ? '9+' : String(unread)
+}
+
 /** `HH:MM` in the user's locale, for the history list. */
 export function formatMessageTime(at: number): string {
   const date = new Date(at)

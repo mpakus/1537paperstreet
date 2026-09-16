@@ -37,6 +37,8 @@ const config = {
     diagram_w: 896,
     diagram_h: 576,
     diagram_zoom: 1,
+    diagram_x: null,
+    diagram_y: null,
     show_in_dock: true,
   },
   editor: { spellcheck: true },

@@ -6,11 +6,14 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 
-use ps_core::updates::{UpdateCheck, UpdateInstall, install_ready_message};
+use ps_core::updates::{
+    UpdateCheck, UpdateInstall, install_ready_message, tag_from_release_location,
+};
 use sha2::{Digest, Sha256};
 
 const LATEST_RELEASE_URL: &str =
     "https://api.github.com/repos/mpakus/1537paperstreet/releases/latest";
+const LATEST_RELEASE_PAGE: &str = "https://github.com/mpakus/1537paperstreet/releases/latest";
 const USER_AGENT: &str = concat!(
     "1537paperstreet/",
     env!("CARGO_PKG_VERSION"),
@@ -24,19 +27,13 @@ const APP_BUNDLE_ID: &str = "org.paperstreet1537.reader";
 
 /// Downloads the GitHub `releases/latest` JSON body.
 pub(crate) fn fetch_latest_release_json() -> Result<String, String> {
-    let agent = ureq::AgentBuilder::new()
-        .timeout(Duration::from_secs(10))
-        .redirects(0)
-        .build();
-    let response = agent
-        .get(LATEST_RELEASE_URL)
-        .set("User-Agent", USER_AGENT)
-        .set("Accept", "application/vnd.github+json")
-        .set("X-GitHub-Api-Version", "2022-11-28")
-        .call()
-        .map_err(|_| unreachable_message())?;
+    let response = match github_get(LATEST_RELEASE_URL, "application/vnd.github+json", 0) {
+        GithubFetch::Response(response) => *response,
+        GithubFetch::Redirect(_) => return Err(unreachable_message()),
+        GithubFetch::Failed(message) => return Err(message),
+    };
     if response.status() != 200 {
-        return Err(unreachable_message());
+        return Err(github_status_message(response.status()));
     }
     let mut body = String::new();
     response
@@ -48,6 +45,78 @@ pub(crate) fn fetch_latest_release_json() -> Result<String, String> {
         return Err("GitHub did not return a release.".to_owned());
     }
     Ok(body)
+}
+
+/// Reads the latest GitHub Release tag from the HTML latest-release redirect.
+pub(crate) fn fetch_latest_tag() -> Result<String, String> {
+    let location = match github_get(LATEST_RELEASE_PAGE, "text/html", 0) {
+        GithubFetch::Redirect(location) => location,
+        GithubFetch::Response(response) => {
+            return Err(github_status_message(response.status()));
+        }
+        GithubFetch::Failed(message) => return Err(message),
+    };
+    tag_from_release_location(&location).map_err(|error| error.to_string())
+}
+
+fn github_get(url: &str, accept: &str, redirects: u32) -> GithubFetch {
+    let agent = ureq::AgentBuilder::new()
+        .timeout(Duration::from_secs(10))
+        .redirects(redirects)
+        .build();
+    match agent
+        .get(url)
+        .set("User-Agent", USER_AGENT)
+        .set("Accept", accept)
+        .set("Accept-Encoding", "identity")
+        .set("X-GitHub-Api-Version", "2022-11-28")
+        .call()
+    {
+        Ok(response) => {
+            if let Some(location) = response.header("location") {
+                GithubFetch::Redirect(location.to_owned())
+            } else {
+                GithubFetch::Response(Box::new(response))
+            }
+        }
+        Err(error) => {
+            if let Some(location) = redirect_location(&error) {
+                GithubFetch::Redirect(location)
+            } else {
+                GithubFetch::Failed(github_error(error))
+            }
+        }
+    }
+}
+
+enum GithubFetch {
+    Response(Box<ureq::Response>),
+    Redirect(String),
+    Failed(String),
+}
+
+fn github_error(error: ureq::Error) -> String {
+    match error {
+        ureq::Error::Status(status, _) => github_status_message(status),
+        ureq::Error::Transport(_) => unreachable_message(),
+    }
+}
+
+fn redirect_location(error: &ureq::Error) -> Option<String> {
+    match error {
+        ureq::Error::Status(status, response) if (300..400).contains(status) => {
+            response.header("location").map(str::to_owned)
+        }
+        _ => None,
+    }
+}
+
+pub(crate) fn github_status_message(status: u16) -> String {
+    match status {
+        403 | 429 => "GitHub asked the app to wait before checking for updates.".to_owned(),
+        404 => "GitHub did not return a release.".to_owned(),
+        status => format!("GitHub returned HTTP {status} when checking for updates."),
+    }
 }
 
 /// Downloads the latest macOS zip, verifies it, and replaces the running `.app`.
@@ -133,9 +202,9 @@ fn download_release_zip(url: &str, dest: &Path) -> Result<(), String> {
         .set("User-Agent", USER_AGENT)
         .set("Accept", "application/octet-stream")
         .call()
-        .map_err(|_| unreachable_message())?;
+        .map_err(github_error)?;
     if response.status() != 200 {
-        return Err(unreachable_message());
+        return Err(github_status_message(response.status()));
     }
     let mut file =
         File::create(dest).map_err(|source| io_message("save the update", dest, source))?;
@@ -346,6 +415,22 @@ mod tests {
     #[test]
     fn hex_lower_encodes_sha256_bytes() {
         assert_eq!(hex_lower(&[0x01, 0xab, 0xff]), "01abff");
+    }
+
+    #[test]
+    fn github_status_message_explains_rate_limits() {
+        assert_eq!(
+            github_status_message(403),
+            "GitHub asked the app to wait before checking for updates."
+        );
+        assert_eq!(
+            github_status_message(404),
+            "GitHub did not return a release."
+        );
+        assert_eq!(
+            github_status_message(502),
+            "GitHub returned HTTP 502 when checking for updates."
+        );
     }
 
     #[test]

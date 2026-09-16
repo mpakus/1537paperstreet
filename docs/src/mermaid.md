@@ -13,8 +13,8 @@ graph TD
 
 Click a diagram to open a window: drag the title to move it, resize from the
 edges, wheel or icon-zoom (up to 3200%), pan the drawing, Copy SVG, Save PNG
-(native save dialog). Size and zoom are stored in `config.json` and restored
-the next time you open a diagram.
+(native save dialog). Size, zoom, and window position are stored in
+`config.json` and restored the next time you open a diagram.
 
 If the syntax is invalid, a message and the source appear under the block.
 The same error is added to the toast in the corner (Dismiss, or it clears

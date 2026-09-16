@@ -71,11 +71,12 @@
     closeWorkspaceTab,
     nextAfterClose,
     openWorkspaceTab,
+    placeDocTab,
     removeTab,
     retitleTab,
     tabTitle,
-    upsertTab,
     type DocTab,
+    type TabOpenMode,
     type WorkspacePage,
     type WorkspaceTab,
   } from './lib/tabs'
@@ -145,6 +146,8 @@
   let diagramWidth = $state(DIAGRAM_FRAME_DEFAULT_WIDTH)
   let diagramHeight = $state(DIAGRAM_FRAME_DEFAULT_HEIGHT)
   let diagramZoom = $state(1)
+  let diagramLeft = $state<number | null>(null)
+  let diagramTop = $state<number | null>(null)
   let diagramChromeTimer: ReturnType<typeof setTimeout> | undefined
   let workspaceEl = $state<HTMLDivElement | undefined>()
   let treeHidden = $state(false)
@@ -286,6 +289,8 @@
     diagramWidth = config.window.diagram_w
     diagramHeight = config.window.diagram_h
     diagramZoom = config.window.diagram_zoom
+    diagramLeft = config.window.diagram_x
+    diagramTop = config.window.diagram_y
     fontSize = config.typography.font_size
     lineHeight = config.typography.line_height
     measureCh = config.typography.measure_ch
@@ -502,32 +507,50 @@
     width: number
     height: number
     zoom: number
+    left: number
+    top: number
   }) {
     const width = Math.round(next.width)
     const height = Math.round(next.height)
+    const left = Math.round(next.left)
+    const top = Math.round(next.top)
     const zoom = next.zoom
     diagramWidth = width
     diagramHeight = height
     diagramZoom = zoom
+    diagramLeft = left
+    diagramTop = top
     if (appConfig) {
       appConfig.window.diagram_w = width
       appConfig.window.diagram_h = height
       appConfig.window.diagram_zoom = zoom
+      appConfig.window.diagram_x = left
+      appConfig.window.diagram_y = top
     }
     const config = await configGet()
     config.window.diagram_w = width
     config.window.diagram_h = height
     config.window.diagram_zoom = zoom
+    config.window.diagram_x = left
+    config.window.diagram_y = top
     await configSet(config)
   }
 
   function rememberDiagramChrome(
-    next: { width: number; height: number; zoom: number },
+    next: {
+      width: number
+      height: number
+      zoom: number
+      left: number
+      top: number
+    },
     immediate: boolean,
   ) {
     diagramWidth = Math.round(next.width)
     diagramHeight = Math.round(next.height)
     diagramZoom = next.zoom
+    diagramLeft = Math.round(next.left)
+    diagramTop = Math.round(next.top)
     if (diagramChromeTimer !== undefined) {
       clearTimeout(diagramChromeTimer)
       diagramChromeTimer = undefined
@@ -544,6 +567,8 @@
         width: diagramWidth,
         height: diagramHeight,
         zoom: diagramZoom,
+        left: diagramLeft ?? 0,
+        top: diagramTop ?? 0,
       }).catch((cause) => {
         showError(errorMessage(cause))
       })
@@ -1047,7 +1072,7 @@
       return
     }
     revealRelPath = action.relPath
-    await openDocument(action.relPath)
+    await openDocument(action.relPath, false, 'preview')
     if (action.hash) {
       requestAnimationFrame(() => {
         articleEl
@@ -1226,17 +1251,22 @@
     })
   }
 
-  async function openDocument(relPath: string, forceReload = false) {
+  async function openDocument(
+    relPath: string,
+    forceReload = false,
+    mode: TabOpenMode = 'keep',
+  ) {
     if (!active) {
       return
     }
     workspacePage = 'document'
     const leaving = snapshotCurrentTab()
     if (leaving && leaving.relPath !== relPath) {
-      tabs = upsertTab(tabs, leaving)
+      tabs = placeDocTab(tabs, leaving, 'keep')
       const cached = tabs.find((tab) => tab.relPath === relPath)
       if (!forceReload && cached?.docMeta) {
         restoreTab(cached)
+        tabs = placeDocTab(tabs, cached, mode)
         return
       }
     }
@@ -1262,7 +1292,7 @@
       }
       const snap = snapshotCurrentTab()
       if (snap) {
-        tabs = upsertTab(tabs, snap)
+        tabs = placeDocTab(tabs, snap, mode)
       }
     } catch (cause) {
       html = ''
@@ -1286,6 +1316,8 @@
       docMeta,
       docSourceMeta,
       draftText,
+      preview:
+        tabs.find((tab) => tab.relPath === openMeta?.relPath)?.preview ?? false,
     }
   }
 
@@ -1824,8 +1856,8 @@
                 closeTab(relPath)
               }
             }}
-            onopen={(relPath) => {
-              void openDocument(relPath).catch((cause) => {
+            onopen={(relPath, mode = 'preview') => {
+              void openDocument(relPath, false, mode).catch((cause) => {
                 showError(errorMessage(cause))
               })
             }}
@@ -1893,6 +1925,11 @@
         onclosepage={closeWorkspacePage}
         onselect={(relPath) => {
           void openDocument(relPath).catch((cause) => {
+            showError(errorMessage(cause))
+          })
+        }}
+        onpin={(relPath) => {
+          void openDocument(relPath, false, 'pin').catch((cause) => {
             showError(errorMessage(cause))
           })
         }}
@@ -2066,6 +2103,8 @@
               {diagramWidth}
               {diagramHeight}
               {diagramZoom}
+              {diagramLeft}
+              {diagramTop}
               bind:articleEl
               onnavigate={(href) => {
                 void navigate(href).catch((cause) => {
@@ -2138,7 +2177,7 @@
       projectId={active.id}
       onopen={(relPath) => {
         revealRelPath = relPath
-        void openDocument(relPath).catch((cause) => {
+        void openDocument(relPath, false, 'pin').catch((cause) => {
           showError(errorMessage(cause))
         })
       }}

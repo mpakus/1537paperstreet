@@ -343,7 +343,7 @@
     "export_ignore": [".git", "node_modules", ".DS_Store", "*.zip"],
     "confirm_delete": true
   },
-  "window": { "width": 1180, "height": 780, "sidebar_w": 220, "tree_w": 260, "toc_w": 224, "editor_w": 480, "diagram_w": 896, "diagram_h": 576, "diagram_zoom": 1, "show_in_dock": true },
+  "window": { "width": 1180, "height": 780, "sidebar_w": 220, "tree_w": 260, "toc_w": 224, "editor_w": 480, "diagram_w": 896, "diagram_h": 576, "diagram_zoom": 1, "diagram_x": null, "diagram_y": null, "show_in_dock": true },
   "updates": { "check_on_launch": true },
   "agents": {
     "servers": [],

@@ -205,6 +205,14 @@ diagram_h: number,
  */
 diagram_zoom: number, 
 /**
+ * Mermaid diagram-window left edge in logical pixels. `None` centers it.
+ */
+diagram_x: number | null, 
+/**
+ * Mermaid diagram-window top edge in logical pixels. `None` centers it.
+ */
+diagram_y: number | null, 
+/**
  * Whether the Dock icon stays visible after the window is hidden.
  */
 show_in_dock: boolean, };

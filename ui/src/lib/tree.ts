@@ -24,9 +24,10 @@ export function isEditablePath(name: string): boolean {
 }
 
 /** What a tree mouse click should do. */
-export type TreeClickIntent = 'range' | 'toggle' | 'open' | 'rename' | 'select'
+export type TreeClickIntent =
+  'range' | 'toggle' | 'open' | 'preview' | 'rename' | 'select'
 
-/** Single click selects a file or expands a folder; double click opens a file. */
+/** Single click previews a file; double click pins a tab. Folders expand on one click. */
 export function treeClickIntent(event: {
   detail: number
   shiftKey: boolean
@@ -57,7 +58,7 @@ export function treeClickIntent(event: {
   if (event.alreadySelected && event.onName) {
     return 'rename'
   }
-  return 'select'
+  return 'preview'
 }
 
 /** Icon bucket for a tree row: folder, Markdown, or anything else. */

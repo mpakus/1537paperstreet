@@ -15,6 +15,7 @@
     onclosepage,
     onselect,
     onclose,
+    onpin,
   }: {
     tabs: DocTab[]
     workspaceTabs?: WorkspaceTab[]
@@ -24,6 +25,7 @@
     onclosepage: (page: WorkspaceTab) => void
     onselect: (relPath: string) => void
     onclose: (relPath: string) => void
+    onpin?: (relPath: string) => void
   } = $props()
 </script>
 
@@ -48,13 +50,14 @@
   {/each}
   {#each tabs as tab (tab.relPath)}
     {@const selected = page === 'document' && tab.relPath === activeRelPath}
-    <div class="tab" class:selected>
+    <div class="tab" class:selected class:preview={tab.preview}>
       <button
         type="button"
         role="tab"
         aria-selected={selected}
-        title={tab.relPath}
+        title={tab.preview ? `${tab.relPath} (preview)` : tab.relPath}
         onclick={() => onselect(tab.relPath)}
+        ondblclick={() => onpin?.(tab.relPath)}
         >{tab.title || tabTitle(tab.relPath)}</button
       >
       <button
@@ -90,6 +93,11 @@
   .tab.selected {
     background: var(--bg-elev);
     box-shadow: inset 0 -2px 0 var(--accent);
+  }
+
+  .tab.preview > button[role='tab'] {
+    font-style: italic;
+    font-weight: 500;
   }
 
   .tab > button[role='tab'] {

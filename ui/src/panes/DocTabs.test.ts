@@ -12,6 +12,7 @@ function tab(relPath: string): DocTab {
     docMeta: null,
     docSourceMeta: null,
     draftText: '',
+    preview: false,
   }
 }
 
@@ -38,6 +39,23 @@ describe('DocTabs', () => {
     expect(body).toContain('aria-selected="true"')
     expect(body).toMatch(/class="tab[^"]*\bselected\b/)
     expect(body).toContain('Close todo.md')
+  })
+
+  it('marks a preview tab', () => {
+    const { body } = render(DocTabs, {
+      props: {
+        tabs: [{ ...tab('scratch.md'), preview: true }],
+        workspaceTabs: [],
+        page: 'document',
+        activeRelPath: 'scratch.md',
+        onpage() {},
+        onclosepage() {},
+        onselect() {},
+        onclose() {},
+      },
+    })
+    expect(body).toMatch(/class="tab[^"]*\bpreview\b/)
+    expect(body).toContain('scratch.md (preview)')
   })
 
   it('selects the Assistant workspace tab', () => {

@@ -6,8 +6,9 @@ expand a folder. Expanded folders and pane width persist across sessions.
 a slim strip remains so you can open it again.
 
 Icons distinguish folders, Markdown (`.md`, `.markdown`, `.mdown`, `.mdwn`),
-and other files. Double-click a file to open it in a tab; a single click
-selects it and expands a folder. UTF-8 text is editable. Preview and Edit highlight JavaScript,
+and other files. A single click opens a file in a preview tab (the next
+single-click file replaces it). Double-click pins a permanent tab. A single
+click expands a folder. UTF-8 text is editable. Preview and Edit highlight JavaScript,
 TypeScript, Ruby, Elixir, Go, Rust, C#, Java, and PHP (and other languages
 when a grammar exists). Binary files and files larger than 8 MB stay
 source-only. Folders such as `.docs` and `.git` are always listed. Hidden
@@ -51,7 +52,7 @@ does the same for that tab. The active tab uses a stronger background and an
 accent underline.
 
 A new folder or file immediately offers a name. Clicking an already selected
-name (not a double-click on a file — that opens it) also starts rename; F2 does the same.
+name (not a double-click on a file — that pins a tab) also starts rename; F2 does the same.
 Dragging in the tree moves into a folder (drop on a file targets that file's
 folder); ⌥ copies; hovering a folder expands it. A stacked ghost of the
 dragged names follows the pointer and eases into the folder. Copy name and

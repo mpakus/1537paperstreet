@@ -54,7 +54,7 @@ describe('tree helpers', () => {
     expect(isMarkdownPath('cover.png')).toBe(false)
   })
 
-  it('opens a file only on double click and a folder on one click', () => {
+  it('previews a file on one click and pins a tab on double click', () => {
     const base = {
       shiftKey: false,
       metaKey: false,
@@ -63,7 +63,7 @@ describe('tree helpers', () => {
       onName: false,
       isDirectory: false,
     }
-    expect(treeClickIntent({ ...base, detail: 1 })).toBe('select')
+    expect(treeClickIntent({ ...base, detail: 1 })).toBe('preview')
     expect(treeClickIntent({ ...base, detail: 2 })).toBe('open')
     expect(
       treeClickIntent({

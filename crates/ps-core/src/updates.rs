@@ -56,6 +56,50 @@ struct GithubAsset {
     digest: Option<String>,
 }
 
+/// Parses the `Location` header from `GET /releases/latest` (a 302 to the tag page).
+pub fn tag_from_release_location(location: &str) -> Result<String> {
+    const PREFIX: &str = "https://github.com/mpakus/1537paperstreet/releases/tag/";
+    let location = location.trim();
+    if !is_trusted_release_url(location) {
+        return Err(Error::InvalidUpdateRelease);
+    }
+    let Some(tag) = location.strip_prefix(PREFIX) else {
+        return Err(Error::InvalidUpdateRelease);
+    };
+    if tag.is_empty() || tag.contains('/') || tag.contains("..") {
+        return Err(Error::InvalidUpdateRelease);
+    }
+    Ok(tag.to_owned())
+}
+
+/// Compares `current` to a GitHub tag from the latest-release redirect.
+pub fn from_github_tag(current: &str, tag: &str) -> Result<UpdateCheck> {
+    let current_version = parse_version(current)?;
+    let latest_version = parse_version(tag)?;
+    let latest = display_version(tag).to_owned();
+    let available = latest_version > current_version;
+    let release_url = if available {
+        trusted_release_url(&format!("{RELEASE_URL_PREFIX}tag/v{latest}"))
+    } else {
+        String::new()
+    };
+    let message = if available {
+        format!("Version {latest} is available.")
+    } else {
+        format!("You're up to date ({current}).")
+    };
+    Ok(UpdateCheck {
+        available,
+        can_install: false,
+        current: current.to_owned(),
+        latest,
+        release_url,
+        asset_url: String::new(),
+        asset_sha256: String::new(),
+        message,
+    })
+}
+
 /// Parses a GitHub Releases JSON payload and compares it to `current`.
 pub fn from_github_json(current: &str, json: &str) -> Result<UpdateCheck> {
     let release: GithubRelease =

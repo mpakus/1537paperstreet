@@ -5,6 +5,22 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.7] - 2026-09-16
+
+### Fixed
+
+- Check for Updates no longer treats every GitHub failure as unreachable.
+  Rate limits and HTTP errors are named, gzip JSON is accepted, and a
+  `releases/latest` redirect is used when the API payload cannot be read.
+- Opening message history clears the unread badge. The list itself stays.
+
+### Changed
+
+- The Mermaid diagram window also remembers its position (`window.diagram_x`,
+  `diagram_y`) without a schema bump.
+- A single click in the tree opens a preview tab that the next single-click
+  file replaces. Double-click pins a permanent tab.
+
 ## [0.8.6] - 2026-09-16
 
 ### Changed
@@ -387,7 +403,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.6...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.7...HEAD
+[0.8.7]: https://github.com/mpakus/1537paperstreet/compare/v0.8.6...v0.8.7
 [0.8.6]: https://github.com/mpakus/1537paperstreet/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/mpakus/1537paperstreet/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/mpakus/1537paperstreet/compare/v0.8.3...v0.8.4

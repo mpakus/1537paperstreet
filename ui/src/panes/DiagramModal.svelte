@@ -19,6 +19,8 @@
     width = DIAGRAM_FRAME_DEFAULT_WIDTH,
     height = DIAGRAM_FRAME_DEFAULT_HEIGHT,
     zoom: initialZoom = 1,
+    left = null,
+    top = null,
     onclose,
     onerror,
     onchrome,
@@ -27,12 +29,16 @@
     width?: number
     height?: number
     zoom?: number
+    left?: number | null
+    top?: number | null
     onclose: () => void
     onerror?: (message: string) => void
     onchrome?: (next: {
       width: number
       height: number
       zoom: number
+      left: number
+      top: number
       immediate: boolean
     }) => void
   } = $props()
@@ -81,9 +87,13 @@
 
   function frameFromSize(nextWidth: number, nextHeight: number) {
     const { width: vw, height: vh } = viewport()
+    const nextLeft =
+      left === null || left === undefined ? (vw - nextWidth) / 2 : left
+    const nextTop =
+      top === null || top === undefined ? (vh - nextHeight) / 2 : top
     return clampFrame({
-      left: (vw - nextWidth) / 2,
-      top: (vh - nextHeight) / 2,
+      left: nextLeft,
+      top: nextTop,
       width: nextWidth,
       height: nextHeight,
     })
@@ -93,6 +103,8 @@
     onchrome?.({
       width: Math.round(frame.width),
       height: Math.round(frame.height),
+      left: Math.round(frame.left),
+      top: Math.round(frame.top),
       zoom,
       immediate,
     })
@@ -256,6 +268,7 @@
         onpointermove={onTitlePointerMove}
         onpointerup={() => {
           moveDrag = null
+          rememberChrome(true)
         }}
         onpointercancel={() => {
           moveDrag = null

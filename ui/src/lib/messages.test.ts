@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest'
 import {
   formatMessageTime,
   HISTORY_LIMIT,
+  lastHistoryId,
   recordMessage,
   TOAST_MS,
+  unreadBadge,
+  unreadCount,
 } from './messages'
 
 describe('messages', () => {
@@ -34,5 +37,16 @@ describe('messages', () => {
       /^\d{2}:\d{2}$/,
     )
     expect(TOAST_MS).toBe(8_000)
+  })
+
+  it('counts only messages newer than the last seen id', () => {
+    const history = recordMessage(recordMessage([], 'one', 1), 'two', 2)
+    expect(lastHistoryId(history)).toBe(2)
+    expect(unreadCount(history, 0)).toBe(2)
+    expect(unreadCount(history, 2)).toBe(0)
+    expect(unreadCount(history, 1)).toBe(1)
+    expect(unreadBadge(0)).toBe('')
+    expect(unreadBadge(2)).toBe('2')
+    expect(unreadBadge(12)).toBe('9+')
   })
 })
