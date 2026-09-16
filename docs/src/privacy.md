@@ -17,7 +17,8 @@ and does not install agents from a registry. Assistant History stores only
 prompts you typed, on this Mac; × and Clear History delete that file’s entries
 and do not send anything off-device.
 
-`asset://` serves files only from registered project roots. `javascript:`,
-`data:`, and local `file:` links in a document are not used as navigation.
+`asset://` serves files only from registered project roots. `javascript:` and
+`data:` links are not followed. A `file:` link opens only when it points at a
+file inside the current project; otherwise it is ignored.
 
 Logs record actions and errors, not Markdown contents.

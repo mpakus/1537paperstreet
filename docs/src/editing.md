@@ -26,7 +26,8 @@ Preview renders GitHub Flavored Markdown: tables, strikethrough, task lists,
 footnotes, alerts (`> [!NOTE]`), definition lists. YAML front matter at the
 top of the file (`---` … `---`) shows as a key/value card, not as horizontal
 rules. `[[Note]]` and `[[Note|label]]` open `Note.md` in the project (next to
-the document or at the root); missing links are drawn dashed. Fenced code is
+the document or at the root); missing links are drawn dashed. Click a link to
+another file in the project once to open it. Fenced code is
 highlighted (Rust, Python, Ruby, Elixir, YAML, JS/TS, and others) with
 quiet colors mixed into the body text.
 

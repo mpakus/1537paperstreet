@@ -83,14 +83,12 @@
   import { exportDocumentPdf } from './lib/print'
   import { windowTitle } from './lib/text'
   import { nextPreviewZoom } from './lib/zoom'
+  import { classifyPreviewHref } from './lib/preview-nav'
   import {
     dirsToReload,
     dropDirAtPoint,
     isDraftDirty,
-    isEditablePath,
-    isHttpHref,
     isMarkdownPath,
-    parseAssetHref,
     peekTreeDrag,
     peekTreeDragCopy,
     projectIdAtPoint,
@@ -967,30 +965,32 @@
   }
 
   async function navigate(href: string) {
-    if (href.startsWith('#')) {
+    const action = classifyPreviewHref(href, {
+      projectId: active?.id ?? null,
+      projectPath: active?.path ?? null,
+      currentRelPath: openMeta?.relPath ?? null,
+    })
+    if (action.kind === 'hash') {
       articleEl
-        ?.querySelector(`#${CSS.escape(href.slice(1))}`)
+        ?.querySelector(`#${CSS.escape(action.id)}`)
         ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
       return
     }
-    if (isHttpHref(href)) {
-      await openUrl(href)
+    if (action.kind === 'http') {
+      await openUrl(action.url)
       return
     }
-    const asset = parseAssetHref(href)
-    if (!asset || !active || asset.projectId !== active.id) {
+    if (action.kind !== 'document' || !active) {
       return
     }
-    if (isEditablePath(asset.relPath)) {
-      revealRelPath = asset.relPath
-      await openDocument(asset.relPath)
-      if (asset.hash) {
-        requestAnimationFrame(() => {
-          articleEl
-            ?.querySelector(`#${CSS.escape(asset.hash)}`)
-            ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-        })
-      }
+    revealRelPath = action.relPath
+    await openDocument(action.relPath)
+    if (action.hash) {
+      requestAnimationFrame(() => {
+        articleEl
+          ?.querySelector(`#${CSS.escape(action.hash)}`)
+          ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+      })
     }
   }
 

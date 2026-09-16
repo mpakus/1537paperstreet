@@ -45,7 +45,8 @@ Reader (current product):
 14. Preview: TOC, jump to an anchor, read-only banner, images without layout
     jump, broken / too large / binary file — a clear error, not a crash.
 15. Links: `.md` inside the project opens in the viewer; http(s) in the
-    browser; `javascript:` and `file:` do not open.
+    browser; `javascript:` does not open. A `file:` link opens only if it is
+    inside the current project.
 16. ⌘F searches the preview; ⌘, opens Settings; ⌘1 / ⌘2 hide panes.
 17. Themes: ⌘⌥T follows the system or the session and does not rewrite the
     light/dark pair in config; user JSON from `~/.1537paperstreet/themes/`

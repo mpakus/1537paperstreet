@@ -248,7 +248,7 @@
       <div
         class="preview"
         role="presentation"
-        onclick={(event) => {
+        onclickcapture={(event) => {
           const figure = (event.target as HTMLElement | null)?.closest(
             'figure.mermaid',
           )
