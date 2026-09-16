@@ -5,6 +5,13 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-09-16
+
+### Changed
+
+- The Mermaid diagram window is draggable by its title, resizable from the
+  edges, uses icon buttons (including Close), and zooms up to 3200%.
+
 ## [0.8.2] - 2026-09-15
 
 ### Added
@@ -357,7 +364,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.2...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.3...HEAD
+[0.8.3]: https://github.com/mpakus/1537paperstreet/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/mpakus/1537paperstreet/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/mpakus/1537paperstreet/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/mpakus/1537paperstreet/compare/v0.7.6...v0.8.0

@@ -3,9 +3,9 @@
 
   import type { TocEntry } from '../lib/generated/core'
   import { enhanceCodeBlocks } from '../lib/code'
-  import { copySvg, observeMermaid, savePng } from '../lib/diagrams'
-  import { errorMessage } from '../lib/ipc'
+  import { observeMermaid } from '../lib/diagrams'
   import { observeMath } from '../lib/math'
+  import DiagramModal from './DiagramModal.svelte'
 
   let {
     html,
@@ -47,15 +47,6 @@
 
   let activeId = $state<string | null>(null)
   let modalSvg = $state<string | null>(null)
-  let zoom = $state(1)
-  let panX = $state(0)
-  let panY = $state(0)
-  let dragging = $state<{
-    x: number
-    y: number
-    panX: number
-    panY: number
-  } | null>(null)
   const collapsed = new SvelteSet<string>()
   let expanded = $state(false)
 
@@ -269,9 +260,6 @@
             const svg = figure.querySelector('svg')?.outerHTML
             if (svg) {
               modalSvg = svg
-              zoom = 1
-              panX = 0
-              panY = 0
             }
             return
           }
@@ -300,87 +288,13 @@
 </div>
 
 {#if modalSvg}
-  <div
-    class="diagram-scrim"
-    role="dialog"
-    tabindex="-1"
-    aria-label="Diagram"
-    onclick={(event) => {
-      if (event.target === event.currentTarget) {
-        modalSvg = null
-      }
+  <DiagramModal
+    svg={modalSvg}
+    onclose={() => {
+      modalSvg = null
     }}
-    onkeydown={(event) => {
-      if (event.key === 'Escape') {
-        modalSvg = null
-      }
-    }}
-  >
-    <div class="diagram-sheet" role="document">
-      <div class="diagram-toolbar">
-        <button
-          type="button"
-          onclick={() => {
-            void copySvg(modalSvg ?? '').catch((cause) => {
-              onerror?.(errorMessage(cause))
-            })
-          }}>Copy SVG</button
-        >
-        <button
-          type="button"
-          onclick={() => {
-            void savePng(modalSvg ?? '').catch((cause) => {
-              onerror?.(errorMessage(cause))
-            })
-          }}>Save PNG</button
-        >
-        <button type="button" onclick={() => (zoom = Math.min(4, zoom + 0.25))}
-          >Zoom in</button
-        >
-        <button
-          type="button"
-          onclick={() => (zoom = Math.max(0.25, zoom - 0.25))}>Zoom out</button
-        >
-        <button type="button" onclick={() => (modalSvg = null)}>Close</button>
-      </div>
-      <div
-        class="diagram-stage"
-        role="presentation"
-        onwheel={(event) => {
-          event.preventDefault()
-          zoom = Math.min(
-            4,
-            Math.max(0.25, zoom + (event.deltaY < 0 ? 0.1 : -0.1)),
-          )
-        }}
-        onpointerdown={(event) => {
-          dragging = { x: event.clientX, y: event.clientY, panX, panY }
-        }}
-        onpointermove={(event) => {
-          if (!dragging) {
-            return
-          }
-          panX = dragging.panX + event.clientX - dragging.x
-          panY = dragging.panY + event.clientY - dragging.y
-        }}
-        onpointerup={() => {
-          dragging = null
-        }}
-        onpointerleave={() => {
-          dragging = null
-        }}
-      >
-        <div
-          class="diagram-pan"
-          style:transform="translate({panX}px, {panY}px) scale({zoom})"
-        >
-          <!-- SVG was produced by Mermaid with securityLevel: strict. -->
-          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-          {@html modalSvg}
-        </div>
-      </div>
-    </div>
-  </div>
+    {onerror}
+  />
 {/if}
 
 <style>
@@ -538,54 +452,5 @@
     margin: 0 auto;
     padding: var(--space-6) var(--space-4);
     color: var(--fg-muted);
-  }
-
-  .diagram-scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 40;
-    display: grid;
-    place-items: center;
-    padding: var(--space-4);
-    background: color-mix(in srgb, var(--fg) 20%, transparent);
-  }
-
-  .diagram-sheet {
-    display: grid;
-    grid-template-rows: auto 1fr;
-    width: min(56rem, 100%);
-    height: min(36rem, 100%);
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-
-  .diagram-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    padding: var(--space-2);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .diagram-toolbar button {
-    padding: var(--space-1) var(--space-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg);
-    color: var(--fg);
-  }
-
-  .diagram-stage {
-    overflow: hidden;
-    cursor: grab;
-    background: var(--bg);
-  }
-
-  .diagram-pan {
-    transform-origin: 0 0;
-    width: max-content;
-    padding: var(--space-4);
   }
 </style>

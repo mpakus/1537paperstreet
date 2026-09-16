@@ -11,7 +11,8 @@ graph TD
 ```
 ````
 
-Click a diagram to open a modal: wheel zoom, drag to pan, Copy SVG, Save PNG
+Click a diagram to open a window: drag the title to move it, resize from the
+edges, wheel or icon-zoom (up to 3200%), pan the drawing, Copy SVG, Save PNG
 (native save dialog).
 
 If the syntax is invalid, a message and the source appear under the block.
