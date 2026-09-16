@@ -27,7 +27,8 @@ use commands::{
     mermaid_cache_get, mermaid_cache_put, open_dropped_paths, open_external, open_url,
     projects_add, projects_list, projects_relocate, projects_remove, projects_rename,
     reveal_in_finder, save_user_file, themes_css, themes_list, tree_expanded_get,
-    tree_expanded_set, tree_read_dir, updates_check, watch_set_expanded, watch_start, watch_stop,
+    tree_expanded_set, tree_read_dir, updates_check, updates_install, updates_relaunch,
+    watch_set_expanded, watch_start, watch_stop,
 };
 use fs_watch::WatchHub;
 use state::AppState;
@@ -96,6 +97,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             files_search,
             open_url,
             updates_check,
+            updates_install,
+            updates_relaunch,
             watch_start,
             watch_set_expanded,
             watch_stop,

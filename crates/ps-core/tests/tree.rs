@@ -62,21 +62,26 @@ fn natural_sort_compares_equal_digit_runs_then_the_rest_of_the_name() {
 }
 
 #[test]
-fn hidden_filter_can_be_disabled_explicitly() {
+fn hidden_filter_keeps_dot_directories() {
     let temp = tempfile::tempdir().expect("temporary directory");
     let root = temp.path().join("project");
     fs::create_dir(&root).expect("project directory");
     fs::write(root.join("visible.md"), b"").expect("visible file");
     fs::write(root.join(".hidden.md"), b"").expect("hidden file");
-    fs::create_dir(root.join(".docs")).expect("hidden folder");
+    fs::create_dir(root.join(".docs")).expect("docs folder");
+    fs::create_dir(root.join(".git")).expect("git folder");
 
     let filtered = tree::read_dir(&root, Path::new(""), false).expect("filtered tree");
-    let visible = tree::read_dir(&root, Path::new(""), true).expect("complete tree");
+    let names: Vec<_> = filtered.iter().map(|node| node.name.as_str()).collect();
+    assert!(names.contains(&"visible.md"));
+    assert!(names.contains(&".docs"));
+    assert!(names.contains(&".git"));
+    assert!(!names.contains(&".hidden.md"));
 
-    assert_eq!(filtered.len(), 1);
-    assert_eq!(visible.len(), 3);
+    let visible = tree::read_dir(&root, Path::new(""), true).expect("complete tree");
     assert!(visible.iter().any(|node| node.name == ".hidden.md"));
     assert!(visible.iter().any(|node| node.name == ".docs"));
+    assert!(visible.iter().any(|node| node.name == ".git"));
 }
 
 #[cfg(unix)]

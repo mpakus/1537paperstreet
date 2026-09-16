@@ -28,6 +28,7 @@ import type {
   PromptHistoryEntry,
   DashboardSnapshot,
   UpdateCheck,
+  UpdateInstall,
 } from './generated/core'
 
 type InvokeFn = (
@@ -374,6 +375,16 @@ export function updatesCheck(): Promise<UpdateCheck> {
   return invokeIpc('updates_check')
 }
 
+/** Downloads the latest macOS zip, verifies it, and replaces the running app. */
+export function updatesInstall(): Promise<UpdateInstall> {
+  return invokeIpc('updates_install')
+}
+
+/** Relaunches the app so the installed update can start. */
+export function updatesRelaunch(): Promise<void> {
+  return invokeIpc('updates_relaunch')
+}
+
 /** Starts watching the active project for tree updates. */
 export function watchStart(projectId: string): Promise<void> {
   return invokeIpc('watch_start', { project_id: projectId })
@@ -536,4 +547,5 @@ export type {
   ThemeAppearance,
   WrittenDocument,
   UpdateCheck,
+  UpdateInstall,
 }

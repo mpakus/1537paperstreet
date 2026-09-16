@@ -10,8 +10,8 @@ and other files. Double-click a file to open it in a tab; a single click
 selects it and expands a folder. UTF-8 text is editable. Preview and Edit highlight JavaScript,
 TypeScript, Ruby, Elixir, Go, Rust, C#, Java, and PHP (and other languages
 when a grammar exists). Binary files and files larger than 8 MB stay
-source-only. Hidden names such as `.docs` are shown unless you turn them off
-in Settings.
+source-only. Folders such as `.docs` and `.git` are always listed. Hidden
+files stay behind Settings → Show hidden files.
 
 ## Actions
 

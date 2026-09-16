@@ -49,7 +49,8 @@ struct SortableNode {
 /// Reads exactly one directory level inside a project.
 ///
 /// Directories sort before other nodes, followed by a case-insensitive natural
-/// name order. Names beginning with `.` are omitted unless `show_hidden` is true.
+/// name order. Dot-prefixed **files** are omitted unless `show_hidden` is true.
+/// Dot-prefixed **directories** such as `.docs` and `.git` are always listed.
 pub fn read_dir(project_root: &Path, rel_path: &Path, show_hidden: bool) -> Result<Vec<TreeNode>> {
     let canonical_root = project_root
         .canonicalize()
@@ -84,13 +85,13 @@ pub fn read_dir(project_root: &Path, rel_path: &Path, show_hidden: bool) -> Resu
             })?
             .nfc()
             .collect::<String>();
-        if !show_hidden && name.starts_with('.') {
-            continue;
-        }
         let file_type = entry
             .file_type()
             .map_err(|source| Error::io("inspect a tree entry", entry.path(), source))?;
         let kind = kind_from_file_type(file_type);
+        if !show_hidden && name.starts_with('.') && kind != TreeNodeKind::Directory {
+            continue;
+        }
         nodes.push(SortableNode {
             folded_name: name.to_lowercase(),
             node: TreeNode {

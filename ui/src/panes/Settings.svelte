@@ -417,8 +417,8 @@
         Show hidden files
       </label>
       <p class="hint">
-        Names that start with a dot, such as <code>.docs</code>, stay visible
-        unless you turn this off.
+        Folders such as <code>.docs</code> and <code>.git</code> are always in the
+        tree. This setting only hides dot-prefixed files.
       </p>
       <label class="check">
         <input
@@ -436,6 +436,22 @@
         />
         Render mathematics
       </label>
+    </section>
+
+    <section>
+      <h3>Updates</h3>
+      <label class="check">
+        <input
+          type="checkbox"
+          bind:checked={draft.updates.check_on_launch}
+          onchange={persist}
+        />
+        Check for updates when the app starts
+      </label>
+      <p class="hint">
+        When a newer GitHub Release exists, the app downloads it, installs it,
+        and asks you to restart.
+      </p>
     </section>
 
     <section>

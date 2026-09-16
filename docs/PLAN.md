@@ -872,10 +872,12 @@ strip = "symbols"
 - **Подпись:** Developer ID Application, hardened runtime, минимальные entitlements.
 - **Нотаризация:** `xcrun notarytool submit --wait` → `xcrun stapler staple`.
 - **DMG:** фон, симлинк на `/Applications`, размер ≤ 22 MB.
-- **Обновления:** пока без подписи — File → Check for Updates… и кнопка в About
-  сравнивают текущую версию с GitHub Releases и открывают страницу загрузки.
-  `tauri-plugin-updater` с Ed25519 (T-155) появится после Developer ID.
-  Плюс Homebrew cask.
+- **Обновления:** File → Check for Updates…, кнопка в About и (если включено)
+  проверка при запуске сравнивают версию с GitHub Releases, скачивают
+  `1537paperstreet-*-macos-universal.zip`, сверяют SHA-256 из API и подпись
+  Developer ID, подменяют `.app` и просят перезапуск. Страница загрузки —
+  запасной путь, если zip нет. `tauri-plugin-updater` с Ed25519 (T-155) ещё
+  впереди. Плюс Homebrew cask.
 - **CI:** GitHub Actions, раннеры `macos-14` (arm64). Джобы: `fmt` → `clippy -D warnings` → `test` → `coverage` → `bench-regression` → `build-universal` → (по тегу) `sign-notarize-release`.
 - **Секреты:** сертификат, пароли, ключ обновлений — только в GitHub Secrets.
 

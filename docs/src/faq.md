@@ -21,9 +21,10 @@ newer signed release. From source, use `cargo tauri dev`.
 intentional. Click the icon to show the window; Quit in its menu or ⌘Q
 quits the process.
 
-**Is there a cloud, account, or telemetry?** No. Update checking runs only
-when you choose File → Check for Updates… or the button in About; it asks
-GitHub Releases and does not send documents.
+**Is there a cloud, account, or telemetry?** No. Update checking runs at
+launch (unless you turn it off in Settings) and when you choose File → Check
+for Updates… or the button in About. It talks to GitHub Releases, downloads
+the installer zip when a newer version exists, and does not send documents.
 
 **How do I send an Assistant prompt?** Shift+Enter, Ctrl+Enter, or ⌘Enter.
 Plain Enter is a new line. While the agent is working, Stop cancels the turn.

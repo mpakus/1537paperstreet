@@ -5,12 +5,22 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-09-15
+
+### Added
+
+- Check for Updates downloads the GitHub macOS zip, verifies its SHA-256 and
+  Developer ID signature, replaces the running app, and asks you to restart.
+  Settings can turn off the launch check. Open Download remains if the release
+  has no installable zip.
+
 ## [0.8.1] - 2026-09-15
 
 ### Changed
 
 - A single click expands a folder; a double click still opens a file.
-- Hidden names such as `.docs` are visible by default. Settings can hide them.
+- Dot-prefixed folders such as `.docs` and `.git` are always listed. Hidden
+  files stay behind Settings → Show hidden files.
 
 ## [0.8.0] - 2026-09-12
 
@@ -347,7 +357,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.2...HEAD
+[0.8.2]: https://github.com/mpakus/1537paperstreet/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/mpakus/1537paperstreet/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/mpakus/1537paperstreet/compare/v0.7.6...v0.8.0
 [0.7.6]: https://github.com/mpakus/1537paperstreet/compare/v0.7.5...v0.7.6

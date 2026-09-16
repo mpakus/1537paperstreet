@@ -64,8 +64,8 @@ Reader (current product):
     text.
 24. Dock icon is `icon.png`; File → About and About in the application menu
     show the logo, version, “Made in Austin ✩ Texas”, and open aomega.co in
-    the browser. File → Check for Updates… opens About and asks GitHub
-    Releases.
+    the browser. File → Check for Updates… opens About, asks GitHub Releases,
+    and installs a newer zip when one exists (then Restart to Update).
 25. The red traffic light hides the window; the icon stays on the right of
     the menu bar; click shows the window; Quit in that menu / ⌘Q quit the
     process.

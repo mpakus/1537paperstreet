@@ -30,6 +30,8 @@
     treeExpandedGet,
     treeExpandedSet,
     updatesCheck,
+    updatesInstall,
+    updatesRelaunch,
     watchStart,
     type Config,
     type ConflictStrategy,
@@ -321,6 +323,20 @@
       }
     }
     return ''
+  }
+
+  async function checkUpdatesOnLaunch() {
+    try {
+      const check = await updatesCheck()
+      if (!check.available) {
+        return
+      }
+      aboutAutocheck = true
+      aboutCheckSeq += 1
+      aboutOpen = true
+    } catch (cause) {
+      console.warn(errorMessage(cause))
+    }
   }
 
   async function openSettings(opts?: { agents?: boolean }) {
@@ -1372,6 +1388,9 @@
         if (active) {
           await activateProject(active)
         }
+        if (config.updates.check_on_launch) {
+          void checkUpdatesOnLaunch()
+        }
       } catch (cause) {
         showError(errorMessage(cause))
       }
@@ -2109,6 +2128,8 @@
           })
         }}
         oncheck={() => updatesCheck()}
+        oninstall={() => updatesInstall()}
+        onrelaunch={() => updatesRelaunch()}
       />
     {/key}
   {/if}

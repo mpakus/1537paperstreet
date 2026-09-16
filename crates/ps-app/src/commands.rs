@@ -15,7 +15,7 @@ use ps_core::fsops::{ConflictStrategy, UntitledKind};
 use ps_core::projects::{OpenDropResult, Project, ProjectsListQuery, ProjectsListResult};
 use ps_core::themes::ThemeInfo;
 use ps_core::tree::TreeNode;
-use ps_core::updates::UpdateCheck;
+use ps_core::updates::{UpdateCheck, UpdateInstall};
 use tauri::{Emitter, State};
 
 use crate::fs_watch::{self, WatchHub};
@@ -495,6 +495,19 @@ pub(crate) async fn updates_check() -> Result<UpdateCheck, String> {
     .await
     .map_err(|error| error.to_string())
     .and_then(|result| result)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn updates_install() -> Result<UpdateInstall, String> {
+    tauri::async_runtime::spawn_blocking(crate::updates::install_latest_update)
+        .await
+        .map_err(|error| error.to_string())
+        .and_then(|result| result)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) fn updates_relaunch(app: tauri::AppHandle) {
+    app.restart();
 }
 
 #[tauri::command(rename_all = "snake_case")]

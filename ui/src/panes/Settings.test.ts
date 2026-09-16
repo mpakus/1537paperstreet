@@ -28,6 +28,7 @@ const config = {
     preview_fg: '',
   },
   files: { confirm_delete: true, show_hidden: false },
+  updates: { check_on_launch: true },
   window: {
     sidebar_w: 220,
     tree_w: 260,
@@ -88,5 +89,7 @@ describe('Settings', () => {
     expect(body).toContain('syntax errors')
     expect(body).toContain('Show hidden files')
     expect(body).toContain('.docs')
+    expect(body).toContain('.git')
+    expect(body).toContain('Check for updates when the app starts')
   })
 })

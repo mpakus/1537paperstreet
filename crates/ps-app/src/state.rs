@@ -1437,7 +1437,7 @@ mod tests {
             .tree_read_dir(project.id.clone(), PathBuf::new())
             .expect("filtered tree");
         assert!(filtered.iter().all(|node| node.name != ".hidden.md"));
-        assert!(filtered.iter().all(|node| node.name != ".docs"));
+        assert!(filtered.iter().any(|node| node.name == ".docs"));
 
         assert!(
             state

@@ -336,7 +336,7 @@
 - [ ] **T-152** Подпись Developer ID + hardened runtime + минимальные entitlements. (← T-008)
 - [ ] **T-153** Нотаризация (`notarytool` + `stapler`) в CI по тегу. (← T-152)
 - [ ] **T-154** DMG с фоном и симлинком на `/Applications`. (← T-153)
-- [ ] **T-155** Авто-обновления (`tauri-plugin-updater`, подпись Ed25519), выключаемо в настройках. Check-only уже есть: GitHub Releases через `updates_check`, File → Check for Updates… и кнопка в About.
+- [ ] **T-155** Авто-обновления (`tauri-plugin-updater`, подпись Ed25519), выключаемо в настройках. Сейчас: GitHub zip + SHA-256 + codesign, установка поверх `.app`, запрос Restart; `updates.check_on_launch`. Check-only / Open Download — запасной путь.
 - [ ] **T-156** Homebrew cask.
 - [ ] **T-157** Релизный workflow: тег → сборка → подпись → нотаризация → GitHub Release с `CHANGELOG`.
 - [ ] **T-158** Установка и проверка на чистой машине без установленных dev-инструментов. Пройти `docs/release-checklist.md`. (← T-145)

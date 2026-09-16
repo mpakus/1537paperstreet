@@ -75,8 +75,8 @@ The tree loads one directory level at a time. Expanded folders and pane widths
 persist. Icons distinguish folders, Markdown (`.md`, `.markdown`, `.mdown`,
 `.mdwn`), and other files. Double-click a file to open it in a tab; a single
 click expands a folder. UTF-8 text is
-editable, with highlighting when a language mode exists. Hidden names such as
-`.docs` are visible unless you turn them off in Settings. ⌘2 hides the tree. ⌘P quick-opens Markdown in the
+editable, with highlighting when a language mode exists. Folders such as
+`.docs` and `.git` are always listed. ⌘2 hides the tree. ⌘P quick-opens Markdown in the
 current project.
 
 Context menu and File / Go:
@@ -98,7 +98,7 @@ another project in the Projects list to move it there; hold ⌥ to copy.
 Name clashes offer Replace, Keep Both, or Skip (optionally apply to all).
 ⇧ and ⌘ select several nodes for group copy, move, duplicate, and trash.
 
-Settings can hide dot-prefixed names and require confirmation before Trash.
+Settings can hide dot-prefixed files and require confirmation before Trash.
 
 ### Read rich Markdown
 
@@ -165,8 +165,8 @@ Reload discards unsaved edits in this app.
 - Preview & Split reading font, size, and optional custom colors (empty / `0`
   means the theme)
 - keep the Dock icon when the window is hidden
-- table of contents, confirm Trash, show hidden files (on by default, including
-  `.docs`)
+- table of contents, confirm Trash, show hidden files (dot folders such as
+  `.docs` and `.git` are always listed)
 - render Mermaid diagrams and KaTeX mathematics
 - **External Agents** — add OpenCode, Claude, or Codex if they are on `PATH`
   (`codex` runs as `app-server --stdio`), or a custom ACP command
@@ -211,7 +211,8 @@ Click it to show the window again. Quit from that menu or ⌘Q.
 
 File → About 1537paperstreet shows version and a link to aomega.co.
 File → Check for Updates… (same control in About) compares your version to
-GitHub Releases and can open the download page. It does not install in place.
+GitHub Releases, downloads the macOS zip when a newer build exists, installs
+it, and asks you to restart. Settings can disable the launch check.
 
 Documents never leave the computer unless you run an External Agent you
 installed yourself. Logs record actions and errors, not Markdown contents.

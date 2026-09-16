@@ -781,6 +781,10 @@ export type UpdateCheck = {
  */
 available: boolean, 
 /**
+ * Whether the latest release includes a trusted macOS zip the app can install.
+ */
+can_install: boolean, 
+/**
  * Version of the running app, without a `v` prefix.
  */
 current: string, 
@@ -792,6 +796,24 @@ latest: string,
  * HTTPS GitHub Releases URL to open when an update is available.
  */
 release_url: string, 
+/**
+ * HTTPS GitHub asset URL for the macOS universal zip; empty when install is not possible.
+ */
+asset_url: string, 
+/**
+ * Lowercase hex SHA-256 of that zip; empty when GitHub omitted a digest.
+ */
+asset_sha256: string, 
+/**
+ * User-facing status line; the UI displays this without further formatting.
+ */
+message: string, };
+
+export type UpdateInstall = { 
+/**
+ * Installed GitHub Release version, without a `v` prefix.
+ */
+version: string, 
 /**
  * User-facing status line; the UI displays this without further formatting.
  */

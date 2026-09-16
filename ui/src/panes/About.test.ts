@@ -13,9 +13,12 @@ describe('About', () => {
         async oncheck() {
           return {
             available: false,
+            can_install: false,
             current: '0.1.0',
             latest: '0.1.0',
             release_url: '',
+            asset_url: '',
+            asset_sha256: '',
             message: "You're up to date (0.1.0).",
           }
         },

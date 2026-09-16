@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
 
   import { errorMessage } from '../lib/ipc'
-  import type { UpdateCheck } from '../lib/ipc'
+  import type { UpdateCheck, UpdateInstall } from '../lib/ipc'
 
   let {
     version,
@@ -10,17 +10,24 @@
     onclose,
     onopen,
     oncheck,
+    oninstall,
+    onrelaunch,
   }: {
     version: string
     autocheck?: boolean
     onclose: () => void
     onopen: (url: string) => void
     oncheck: () => Promise<UpdateCheck>
+    oninstall?: () => Promise<UpdateInstall>
+    onrelaunch?: () => Promise<void>
   } = $props()
 
   const site = 'https://aomega.co'
 
   let checking = $state(false)
+  let installing = $state(false)
+  let installed = $state(false)
+  let installFailed = $state(false)
   let result = $state<UpdateCheck | null>(null)
   let checkError = $state('')
 
@@ -34,12 +41,48 @@
     checking = true
     checkError = ''
     result = null
+    installFailed = false
     try {
       result = await oncheck()
+      if (result.available && result.can_install && !installed) {
+        await runInstall()
+      }
     } catch (cause) {
       checkError = errorMessage(cause)
     } finally {
       checking = false
+    }
+  }
+
+  async function runInstall() {
+    if (!oninstall) {
+      return
+    }
+    installing = true
+    checkError = ''
+    installFailed = false
+    try {
+      const done = await oninstall()
+      installed = true
+      if (result) {
+        result = { ...result, message: done.message, can_install: false }
+      }
+    } catch (cause) {
+      installFailed = true
+      checkError = errorMessage(cause)
+    } finally {
+      installing = false
+    }
+  }
+
+  async function runRelaunch() {
+    if (!onrelaunch) {
+      return
+    }
+    try {
+      await onrelaunch()
+    } catch (cause) {
+      checkError = errorMessage(cause)
     }
   }
 </script>
@@ -59,7 +102,7 @@
     aria-modal="true"
     tabindex="-1"
     aria-label="About 1537paperstreet"
-    aria-busy={checking}
+    aria-busy={checking || installing}
     onpointerdown={(event) => event.stopPropagation()}
   >
     <div class="logo-stripe">
@@ -78,7 +121,9 @@
         onopen(site)
       }}>{site.replace('https://', '')}</a
     >
-    {#if checking}
+    {#if installing}
+      <p class="status" role="status">Downloading and installing the update…</p>
+    {:else if checking}
       <p class="status" role="status">Checking for updates…</p>
     {:else if checkError}
       <p class="status" role="status">{checkError}</p>
@@ -86,10 +131,22 @@
       <p class="status" role="status">{result.message}</p>
     {/if}
     <div class="actions">
-      <button type="button" disabled={checking} onclick={() => void runCheck()}>
+      <button
+        type="button"
+        disabled={checking || installing}
+        onclick={() => void runCheck()}
+      >
         Check for Updates
       </button>
-      {#if result?.available && result.release_url}
+      {#if installed}
+        <button
+          type="button"
+          disabled={installing}
+          onclick={() => void runRelaunch()}
+        >
+          Restart to Update
+        </button>
+      {:else if result?.available && result.release_url && (!result.can_install || installFailed)}
         <button
           type="button"
           onclick={() => {
