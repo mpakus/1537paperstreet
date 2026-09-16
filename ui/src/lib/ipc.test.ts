@@ -27,9 +27,9 @@ describe('ipc helpers', () => {
   it('turns failures into a user-visible string', () => {
     expect(errorMessage('disk full')).toBe('disk full')
     expect(errorMessage(new Error('not found'))).toBe('not found')
-    expect(errorMessage({ message: "Couldn't reach GitHub to check for updates." })).toBe(
-      "Couldn't reach GitHub to check for updates.",
-    )
+    expect(
+      errorMessage({ message: "Couldn't reach GitHub to check for updates." }),
+    ).toBe("Couldn't reach GitHub to check for updates.")
     expect(errorMessage(12)).toBe('12')
   })
 

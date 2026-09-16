@@ -138,9 +138,13 @@
         Downloading and installing the update…
       </p>
     {:else if checking}
-      <p class="status" role="status" aria-live="polite">Checking for updates…</p>
+      <p class="status" role="status" aria-live="polite">
+        Checking for updates…
+      </p>
     {:else if checkError}
-      <p class="status is-error" role="status" aria-live="polite">{checkError}</p>
+      <p class="status is-error" role="status" aria-live="polite">
+        {checkError}
+      </p>
     {:else if result}
       <p class="status" role="status" aria-live="polite">{result.message}</p>
     {/if}

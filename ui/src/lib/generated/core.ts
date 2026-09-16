@@ -193,6 +193,18 @@ toc_w: number,
  */
 editor_w: number, 
 /**
+ * Mermaid diagram-window width in logical pixels.
+ */
+diagram_w: number, 
+/**
+ * Mermaid diagram-window height in logical pixels.
+ */
+diagram_h: number, 
+/**
+ * Mermaid diagram-window zoom factor.
+ */
+diagram_zoom: number, 
+/**
  * Whether the Dock icon stays visible after the window is hidden.
  */
 show_in_dock: boolean, };

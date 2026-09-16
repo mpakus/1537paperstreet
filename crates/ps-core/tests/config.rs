@@ -21,6 +21,9 @@ fn defaults_match_the_product_plan() {
     assert!(config.files.show_hidden);
     assert_eq!(config.window.width, 1180);
     assert_eq!(config.window.toc_w, 224);
+    assert_eq!(config.window.diagram_w, 896);
+    assert_eq!(config.window.diagram_h, 576);
+    assert_eq!(config.window.diagram_zoom, 1.0);
     assert!(config.window.show_in_dock);
     assert!(config.viewer.preview_font.is_empty());
     assert_eq!(config.viewer.preview_font_size, 0);
@@ -84,6 +87,60 @@ fn fractional_panel_widths_round_to_u32() {
     }))
     .expect("window");
     assert_eq!(window.editor_w, 128);
+}
+
+#[test]
+fn missing_diagram_chrome_defaults_without_a_schema_bump() {
+    let window: Window = serde_json::from_value(serde_json::json!({
+        "width": 1180,
+        "height": 780,
+        "sidebar_w": 220,
+        "tree_w": 260,
+        "toc_w": 224,
+        "editor_w": 480,
+        "show_in_dock": true
+    }))
+    .expect("window");
+    assert_eq!(window.diagram_w, 896);
+    assert_eq!(window.diagram_h, 576);
+    assert_eq!(window.diagram_zoom, 1.0);
+}
+
+#[test]
+fn diagram_zoom_clamps_and_accepts_integers() {
+    let high: Window = serde_json::from_value(serde_json::json!({
+        "width": 1180,
+        "height": 780,
+        "sidebar_w": 220,
+        "tree_w": 260,
+        "diagram_zoom": 100
+    }))
+    .expect("window");
+    assert_eq!(high.diagram_zoom, 32.0);
+
+    let low: Window = serde_json::from_value(serde_json::json!({
+        "width": 1180,
+        "height": 780,
+        "sidebar_w": 220,
+        "tree_w": 260,
+        "diagram_zoom": 0.1
+    }))
+    .expect("window");
+    assert_eq!(low.diagram_zoom, 0.25);
+
+    let stepped: Window = serde_json::from_value(serde_json::json!({
+        "width": 1180,
+        "height": 780,
+        "sidebar_w": 220,
+        "tree_w": 260,
+        "diagram_w": 640.4,
+        "diagram_h": 400.6,
+        "diagram_zoom": 2
+    }))
+    .expect("window");
+    assert_eq!(stepped.diagram_w, 640);
+    assert_eq!(stepped.diagram_h, 401);
+    assert_eq!(stepped.diagram_zoom, 2.0);
 }
 
 #[test]

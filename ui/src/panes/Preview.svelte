@@ -5,6 +5,10 @@
   import { enhanceCodeBlocks } from '../lib/code'
   import { observeMermaid } from '../lib/diagrams'
   import { observeMath } from '../lib/math'
+  import {
+    DIAGRAM_FRAME_DEFAULT_HEIGHT,
+    DIAGRAM_FRAME_DEFAULT_WIDTH,
+  } from '../lib/zoom'
   import DiagramModal from './DiagramModal.svelte'
 
   let {
@@ -21,10 +25,14 @@
     previewBg = '',
     previewFg = '',
     readingZoom = 1,
+    diagramWidth = DIAGRAM_FRAME_DEFAULT_WIDTH,
+    diagramHeight = DIAGRAM_FRAME_DEFAULT_HEIGHT,
+    diagramZoom = 1,
     articleEl = $bindable(),
     onnavigate,
     onerror,
     ontocresize,
+    ondiagramchrome,
   }: {
     html: string
     emptyMessage: string
@@ -39,10 +47,19 @@
     previewBg?: string
     previewFg?: string
     readingZoom?: number
+    diagramWidth?: number
+    diagramHeight?: number
+    diagramZoom?: number
     articleEl?: HTMLElement | undefined
     onnavigate: (href: string) => void
     onerror?: (message: string) => void
     ontocresize?: (event: PointerEvent) => void
+    ondiagramchrome?: (next: {
+      width: number
+      height: number
+      zoom: number
+      immediate: boolean
+    }) => void
   } = $props()
 
   let activeId = $state<string | null>(null)
@@ -290,6 +307,10 @@
 {#if modalSvg}
   <DiagramModal
     svg={modalSvg}
+    width={diagramWidth}
+    height={diagramHeight}
+    zoom={diagramZoom}
+    onchrome={ondiagramchrome}
     onclose={() => {
       modalSvg = null
     }}
