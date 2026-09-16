@@ -4,6 +4,7 @@ use std::fs::{self, File};
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::Arc;
 use std::time::Duration;
 
 use ps_core::updates::{
@@ -60,10 +61,10 @@ pub(crate) fn fetch_latest_tag() -> Result<String, String> {
 }
 
 fn github_get(url: &str, accept: &str, redirects: u32) -> GithubFetch {
-    let agent = ureq::AgentBuilder::new()
-        .timeout(Duration::from_secs(10))
-        .redirects(redirects)
-        .build();
+    let agent = match http_agent(10, redirects) {
+        Ok(agent) => agent,
+        Err(message) => return GithubFetch::Failed(message),
+    };
     match agent
         .get(url)
         .set("User-Agent", USER_AGENT)
@@ -89,6 +90,16 @@ fn github_get(url: &str, accept: &str, redirects: u32) -> GithubFetch {
     }
 }
 
+fn http_agent(timeout_secs: u64, redirects: u32) -> Result<ureq::Agent, String> {
+    let tls = ureq::native_tls::TlsConnector::new()
+        .map_err(|error| format!("Couldn't set up HTTPS ({error})."))?;
+    Ok(ureq::AgentBuilder::new()
+        .timeout(Duration::from_secs(timeout_secs))
+        .redirects(redirects)
+        .tls_connector(Arc::new(tls))
+        .build())
+}
+
 enum GithubFetch {
     Response(Box<ureq::Response>),
     Redirect(String),
@@ -98,7 +109,9 @@ enum GithubFetch {
 fn github_error(error: ureq::Error) -> String {
     match error {
         ureq::Error::Status(status, _) => github_status_message(status),
-        ureq::Error::Transport(_) => unreachable_message(),
+        ureq::Error::Transport(transport) => {
+            format!("Couldn't reach GitHub to check for updates ({transport}).")
+        }
     }
 }
 
@@ -117,6 +130,22 @@ pub(crate) fn github_status_message(status: u16) -> String {
         404 => "GitHub did not return a release.".to_owned(),
         status => format!("GitHub returned HTTP {status} when checking for updates."),
     }
+}
+
+/// Compares `current` to the latest GitHub Release (API, then latest-tag redirect).
+pub(crate) fn check_latest(current: &str) -> Result<UpdateCheck, String> {
+    match fetch_latest_release_json() {
+        Ok(body) => match ps_core::updates::from_github_json(current, &body) {
+            Ok(check) => Ok(check),
+            Err(error) => check_latest_from_tag(current).or(Err(error.to_string())),
+        },
+        Err(api_error) => check_latest_from_tag(current).or(Err(api_error)),
+    }
+}
+
+fn check_latest_from_tag(current: &str) -> Result<UpdateCheck, String> {
+    let tag = fetch_latest_tag()?;
+    ps_core::updates::from_github_tag(current, &tag).map_err(|error| error.to_string())
 }
 
 /// Downloads the latest macOS zip, verifies it, and replaces the running `.app`.
@@ -193,11 +222,7 @@ fn work_dir() -> Result<PathBuf, String> {
 }
 
 fn download_release_zip(url: &str, dest: &Path) -> Result<(), String> {
-    let agent = ureq::AgentBuilder::new()
-        .timeout(Duration::from_secs(180))
-        .redirects(8)
-        .build();
-    let response = agent
+    let response = http_agent(180, 8)?
         .get(url)
         .set("User-Agent", USER_AGENT)
         .set("Accept", "application/octet-stream")
@@ -430,6 +455,45 @@ mod tests {
         assert_eq!(
             github_status_message(502),
             "GitHub returned HTTP 502 when checking for updates."
+        );
+    }
+
+    #[test]
+    fn https_handshake_runs_instead_of_skipping_tls() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
+        let port = listener.local_addr().expect("addr").port();
+        let server = std::thread::spawn(move || {
+            let _ = listener.accept();
+        });
+        let result = http_agent(2, 0)
+            .expect("native tls")
+            .get(&format!("https://127.0.0.1:{port}/"))
+            .set("User-Agent", USER_AGENT)
+            .call();
+        let _ = server.join();
+        let message = match &result {
+            Ok(_) => String::new(),
+            Err(error) => error.to_string(),
+        };
+        assert!(
+            !message.contains("no TLS backend is configured"),
+            "{message}"
+        );
+        assert!(result.is_err(), "plain TCP must not finish HTTPS");
+    }
+
+    #[test]
+    fn check_latest_returns_a_github_release_status() {
+        let check = check_latest("0.0.1").expect("check");
+        assert!(check.available, "{}", check.message);
+        assert!(!check.latest.is_empty());
+        assert!(check.message.contains("is available"), "{}", check.message);
+        let current = check_latest(&check.latest).expect("up to date");
+        assert!(!current.available, "{}", current.message);
+        assert!(
+            current.message.contains("up to date"),
+            "{}",
+            current.message
         );
     }
 

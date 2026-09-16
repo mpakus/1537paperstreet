@@ -5,6 +5,14 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.8] - 2026-09-16
+
+### Fixed
+
+- Check for Updates can reach GitHub over HTTPS using the system TLS
+  stack. Enabling ureq's `native-tls` feature is not enough; the agent now
+  installs a `TlsConnector`.
+
 ## [0.8.7] - 2026-09-16
 
 ### Fixed
@@ -403,7 +411,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.7...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.8...HEAD
+[0.8.8]: https://github.com/mpakus/1537paperstreet/compare/v0.8.7...v0.8.8
 [0.8.7]: https://github.com/mpakus/1537paperstreet/compare/v0.8.6...v0.8.7
 [0.8.6]: https://github.com/mpakus/1537paperstreet/compare/v0.8.5...v0.8.6
 [0.8.5]: https://github.com/mpakus/1537paperstreet/compare/v0.8.4...v0.8.5

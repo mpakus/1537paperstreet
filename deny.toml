@@ -25,7 +25,6 @@ ignore = true
 
 [advisories]
 ignore = [
-  { id = "RUSTSEC-2024-0370", reason = "Transitive through gtk3-macros/glib-macros (Tauri); unmaintained advisory has no safe upgrade and reports no vulnerability" },
   { id = "RUSTSEC-2025-0141", reason = "Required by syntect default-syntaxes; unmaintained advisory has no safe upgrade and reports no vulnerability" },
   { id = "RUSTSEC-2025-0075", reason = "Transitive through current Tauri; advisory reports no safe upgrade" },
   { id = "RUSTSEC-2025-0080", reason = "Transitive through current Tauri; advisory reports no safe upgrade" },
