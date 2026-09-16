@@ -487,24 +487,10 @@ pub(crate) async fn open_url(url: String) -> Result<(), String> {
 
 #[tauri::command(rename_all = "snake_case")]
 pub(crate) async fn updates_check() -> Result<UpdateCheck, String> {
-    tauri::async_runtime::spawn_blocking(|| {
-        let current = env!("CARGO_PKG_VERSION");
-        let from_tag = || {
-            crate::updates::fetch_latest_tag().and_then(|tag| {
-                ps_core::updates::from_github_tag(current, &tag).map_err(to_command_error)
-            })
-        };
-        match crate::updates::fetch_latest_release_json() {
-            Ok(body) => match ps_core::updates::from_github_json(current, &body) {
-                Ok(check) => Ok(check),
-                Err(error) => from_tag().or(Err(to_command_error(error))),
-            },
-            Err(api_error) => from_tag().or(Err(api_error)),
-        }
-    })
-    .await
-    .map_err(|error| error.to_string())
-    .and_then(|result| result)
+    tauri::async_runtime::spawn_blocking(|| crate::updates::check_latest(env!("CARGO_PKG_VERSION")))
+        .await
+        .map_err(|error| error.to_string())
+        .and_then(|result| result)
 }
 
 #[tauri::command(rename_all = "snake_case")]
