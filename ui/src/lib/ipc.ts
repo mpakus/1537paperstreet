@@ -10,6 +10,7 @@ import type {
   Project,
   ProjectsListQuery,
   ProjectsListResult,
+  TextDiagnostic,
   TocEntry,
   TreeNode,
   UntitledKind,
@@ -211,6 +212,19 @@ export function docStat(
   relPath: string,
 ): Promise<DocumentStat> {
   return invokeIpc('doc_stat', { project_id: projectId, rel_path: relPath })
+}
+
+/** Pretty-prints Markdown tables or JSON in the editor buffer. */
+export function textFormat(relPath: string, text: string): Promise<string> {
+  return invokeIpc('text_format', { rel_path: relPath, text })
+}
+
+/** Returns Markdown/JSON issues for the editor buffer. */
+export function textLint(
+  relPath: string,
+  text: string,
+): Promise<TextDiagnostic[]> {
+  return invokeIpc('text_lint', { rel_path: relPath, text })
 }
 
 /** Writes a document, restoring BOM, EOL, and a trailing newline. */

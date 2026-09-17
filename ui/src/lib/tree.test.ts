@@ -6,6 +6,7 @@ import {
   fileIconKind,
   flattenTree,
   isEditablePath,
+  isJsonPath,
   isMarkdownPath,
   isSourcePath,
   treeClickIntent,
@@ -65,6 +66,8 @@ describe('tree helpers', () => {
     expect(isMarkdownPath('readme.md')).toBe(true)
     expect(isMarkdownPath('Note.MARKDOWN')).toBe(true)
     expect(isMarkdownPath('cover.png')).toBe(false)
+    expect(isJsonPath('config.json')).toBe(true)
+    expect(isJsonPath('notes.md')).toBe(false)
   })
 
   it('previews a file on one click and pins a tab on double click', () => {

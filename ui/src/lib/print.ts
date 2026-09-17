@@ -21,11 +21,18 @@ article a { color: var(--accent); }
 article img, article video, article svg { max-width: 100%; height: auto; }
 article pre, article code { font-family: var(--font-mono); background: var(--code-bg); }
 article pre { padding: 12px; overflow: auto; border-radius: 6px; }
-article table { border-collapse: collapse; width: 100%; }
+article table { border-collapse: collapse; width: max-content; min-width: 100%; }
+article .table-scroll { max-width: 100%; overflow-x: auto; }
 article th, article td {
   border: 1px solid var(--border);
   padding: 6px 10px;
   text-align: left;
+  vertical-align: top;
+}
+article .cell {
+  max-width: 24em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 article figure.mermaid {
   margin: 16px 0;

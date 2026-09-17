@@ -151,6 +151,14 @@ pub enum Error {
         disk_hash: String,
     },
 
+    /// Format Document does not support this file type.
+    #[error("Format is available for Markdown and JSON.")]
+    FormatUnavailable,
+
+    /// JSON in the editor could not be parsed.
+    #[error("This file is not valid JSON.")]
+    InvalidJsonBuffer,
+
     /// A Finder drop contained no paths.
     #[error("Drop a Markdown file or a folder onto the window to open it.")]
     EmptyDrop,
@@ -228,6 +236,14 @@ mod tests {
         assert_eq!(
             Error::UnsupportedUrl.to_string(),
             "Only http and https links can be opened."
+        );
+        assert_eq!(
+            Error::FormatUnavailable.to_string(),
+            "Format is available for Markdown and JSON."
+        );
+        assert_eq!(
+            Error::InvalidJsonBuffer.to_string(),
+            "This file is not valid JSON."
         );
         assert!(
             Error::EmptyDrop

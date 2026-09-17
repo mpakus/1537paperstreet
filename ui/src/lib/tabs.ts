@@ -104,6 +104,17 @@ export function removeTab(tabs: DocTab[], relPath: string): DocTab[] {
   return tabs.filter((tab) => tab.relPath !== relPath)
 }
 
+/** Writes the tab we are leaving back into the strip, if it is still open. */
+export function persistLeavingTab(
+  tabs: DocTab[],
+  leaving: DocTab | null,
+): DocTab[] {
+  if (!leaving || !tabs.some((tab) => tab.relPath === leaving.relPath)) {
+    return tabs
+  }
+  return placeDocTab(tabs, leaving, 'keep')
+}
+
 /** What ⌘W should close: a workspace page, the open document, or nothing. */
 export type CloseActiveTarget =
   | { kind: 'workspace'; page: WorkspaceTab }

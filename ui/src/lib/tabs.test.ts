@@ -8,6 +8,7 @@ import {
   followOpenRename,
   nextAfterClose,
   openWorkspaceTab,
+  persistLeavingTab,
   placeDocTab,
   promptAfterRename,
   removeTab,
@@ -70,6 +71,22 @@ describe('tabs', () => {
     expect(nextAfterClose(tabs, 'b.md')).toBe('c.md')
     expect(nextAfterClose(tabs, 'c.md')).toBe('b.md')
     expect(nextAfterClose([tab('a.md')], 'a.md')).toBeNull()
+  })
+
+  it('does not put a just-closed tab back when leaving it', () => {
+    const leaving = { ...tab('a.md'), html: '<p>draft</p>' }
+    expect(
+      persistLeavingTab([tab('b.md'), tab('c.md')], leaving).map(
+        (item) => item.relPath,
+      ),
+    ).toEqual(['b.md', 'c.md'])
+  })
+
+  it('keeps the tab being left when it is still in the strip', () => {
+    const leaving = { ...tab('a.md'), html: '<p>draft</p>' }
+    const next = persistLeavingTab([tab('a.md'), tab('b.md')], leaving)
+    expect(next.map((item) => item.relPath)).toEqual(['a.md', 'b.md'])
+    expect(next[0]?.html).toBe('<p>draft</p>')
   })
 
   it('renames a tab path', () => {

@@ -443,12 +443,14 @@
   }
 
   .preview article {
+    width: 100%;
+    max-width: calc(var(--measure-ch) * 1ch);
+    min-width: 0;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-4);
     font-family: var(--read-font, var(--font-body));
     font-size: var(--read-size, var(--font-size));
     line-height: var(--line-height);
-    max-width: calc(var(--measure-ch) * 1ch);
-    margin: 0 auto;
-    padding: var(--space-6) var(--space-4);
     color: inherit;
   }
 

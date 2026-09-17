@@ -10,6 +10,9 @@ bar shows what you can do with the document:
   change editor width (stored as `window.editor_w`).
 - **Save** — write the file (⌘S); the button is disabled until a file is open
   and writable
+- **Format** — align Markdown tables or pretty-print JSON
+- **Lint** — table/fence issues in Markdown, JSON parse errors, or syntax
+  errors in source files
 - **Export** — PDF of the current document (⌘⌥E); the Save dialog picks the
   folder
 - **Board** — Dashboard tab (local counts; no telemetry)
@@ -23,7 +26,8 @@ link, wiki link `[[Note]]`, task item `- [ ]`, heading, and so on). Source
 files hide those commands.
 
 Preview renders GitHub Flavored Markdown: tables, strikethrough, task lists,
-footnotes, alerts (`> [!NOTE]`), definition lists. YAML front matter at the
+footnotes, alerts (`> [!NOTE]`), definition lists. Wide tables scroll inside
+the reading column; long cell text wraps. YAML front matter at the
 top of the file (`---` … `---`) shows as a key/value card, not as horizontal
 rules. `[[Note]]` and `[[Note|label]]` open `Note.md` in the project (next to
 the document or at the root); missing links are drawn dashed. Click a link to
@@ -42,7 +46,9 @@ Other files use a language highlighter when one is available. JavaScript,
 TypeScript, Go, Rust, Java, and PHP underline syntax errors; JSON shows parse
 errors; otherwise they edit as plain text in the monospace font.
 Settings → File formats lists the first-class source languages.
-Save with ⌘S or Save. Renaming the file in the tree does not reload it from
+Save with ⌘S or Save. Format aligns Markdown tables or pretty-prints JSON;
+Lint marks table/fence issues, JSON parse errors, and source syntax errors.
+Renaming the file in the tree does not reload it from
 disk, so unsaved edits stay in the editor. An external editor is still
 available (⌘⇧O). If that editor (or another program) saves the open file, a
 dialog asks whether to reload it.

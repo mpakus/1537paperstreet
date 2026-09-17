@@ -44,7 +44,10 @@
         class="close"
         title="Close"
         aria-label="Close {title}"
-        onclick={() => onclosepage(workspaceTab)}>×</button
+        onclick={(event) => {
+          event.stopPropagation()
+          onclosepage(workspaceTab)
+        }}>×</button
       >
     </div>
   {/each}
@@ -65,7 +68,10 @@
         class="close"
         title="Close"
         aria-label="Close {tab.title}"
-        onclick={() => onclose(tab.relPath)}>×</button
+        onclick={(event) => {
+          event.stopPropagation()
+          onclose(tab.relPath)
+        }}>×</button
       >
     </div>
   {/each}
@@ -97,7 +103,6 @@
 
   .tab.preview > button[role='tab'] {
     font-style: italic;
-    font-weight: 500;
   }
 
   .tab > button[role='tab'] {
@@ -109,12 +114,11 @@
     padding: var(--space-2) var(--space-3);
     color: var(--fg-muted);
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .tab.selected > button[role='tab'] {
     color: var(--fg);
-    font-weight: 700;
   }
 
   .close {

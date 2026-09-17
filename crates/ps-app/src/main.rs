@@ -26,9 +26,9 @@ use commands::{
     fs_create_untitled, fs_import, fs_mkdir, fs_move, fs_rename, fs_transfer, fs_trash,
     mermaid_cache_get, mermaid_cache_put, open_dropped_paths, open_external, open_url,
     projects_add, projects_list, projects_relocate, projects_remove, projects_rename,
-    reveal_in_finder, save_user_file, themes_css, themes_list, tree_expanded_get,
-    tree_expanded_set, tree_read_dir, updates_check, updates_install, updates_relaunch,
-    watch_set_expanded, watch_start, watch_stop,
+    reveal_in_finder, save_user_file, text_format, text_lint, themes_css, themes_list,
+    tree_expanded_get, tree_expanded_set, tree_read_dir, updates_check, updates_install,
+    updates_relaunch, watch_set_expanded, watch_start, watch_stop,
 };
 use fs_watch::WatchHub;
 use state::AppState;
@@ -106,6 +106,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             doc_save,
             doc_source,
             doc_stat,
+            text_format,
+            text_lint,
             export_pdf,
             agent_presets,
             agent_make_server,

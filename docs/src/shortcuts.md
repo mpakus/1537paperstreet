@@ -25,9 +25,10 @@ Working in the reader:
 | ⌘⌫ | Move to Trash |
 
 The same actions appear in the title bar: Preview / Edit / Split,
-Save, Export, Board, AI. In Preview and Split on the right — A− / A+ (type
-size) and − / % / + (preview zoom). Full size sits in the preview corner.
-Formatting (⌘B / ⌘I / ⌘K) appears in Edit. Settings — File → Settings… or ⌘,.
+Save, Format, Lint, Export, Board, AI. In Preview and Split on the right —
+A− / A+ (type size) and − / % / + (preview zoom). Full size sits in the
+preview corner. Format and Lint are also in the Edit menu. Markdown markup
+(⌘B / ⌘I / ⌘K) appears in Edit. Settings — File → Settings… or ⌘,.
 Find and replace (⌘⌥F) is still ahead.
 
 In the Assistant composer: Shift+Enter, Ctrl+Enter, or ⌘Enter send; Enter

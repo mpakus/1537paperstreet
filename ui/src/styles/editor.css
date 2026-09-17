@@ -83,6 +83,15 @@
   background-color: color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
-.cm-editor .cm-lintPoint-error:after {
-  border-bottom-color: var(--accent);
+.cm-editor .cm-lintRange-warning {
+  background-image: none;
+  background-color: color-mix(in srgb, var(--hl-type) 16%, transparent);
+}
+
+.cm-editor .cm-lint-marker-error {
+  color: var(--accent);
+}
+
+.cm-editor .cm-lint-marker-warning {
+  color: var(--hl-type);
 }

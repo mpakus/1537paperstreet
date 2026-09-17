@@ -14,6 +14,7 @@ use crate::docio::{
     DocChunkEvent, DocDoneEvent, DocOpenResult, DocumentEncoding, DocumentMeta, DocumentSource,
     DocumentStat, LineEnding, RestoreTraits, TocEntry, WrittenDocument,
 };
+use crate::edit::{DiagnosticSeverity, TextDiagnostic};
 use crate::fsops::{ConflictStrategy, UntitledKind};
 use crate::projects::{OpenDropResult, Project, ProjectsListQuery, ProjectsListResult};
 use crate::themes::{ThemeAppearance, ThemeInfo};
@@ -80,6 +81,8 @@ pub fn ipc_typescript() -> String {
         ThemeInfo::decl(&ts),
         UpdateCheck::decl(&ts),
         UpdateInstall::decl(&ts),
+        DiagnosticSeverity::decl(&ts),
+        TextDiagnostic::decl(&ts),
     ];
 
     let mut module = String::from(HEADER);

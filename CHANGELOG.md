@@ -5,6 +5,21 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.10] - 2026-09-17
+
+### Added
+
+- Format and Lint on the title bar (and Edit menu). Format aligns Markdown
+  tables and pretty-prints JSON. Lint reports mismatched table rows, unclosed
+  fences, JSON parse errors, and the editor's source syntax errors.
+
+### Fixed
+
+- Preview tables wrap long cell text and scroll horizontally when they are
+  wider than the reading column.
+- Closing a tab no longer reinserts it at the end of the strip, so the first
+  click closes it and the remaining tabs do not jump.
+
 ## [0.8.9] - 2026-09-17
 
 ### Fixed
@@ -418,7 +433,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.9...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.10...HEAD
+[0.8.10]: https://github.com/mpakus/1537paperstreet/compare/v0.8.9...v0.8.10
 [0.8.9]: https://github.com/mpakus/1537paperstreet/compare/v0.8.8...v0.8.9
 [0.8.8]: https://github.com/mpakus/1537paperstreet/compare/v0.8.7...v0.8.8
 [0.8.7]: https://github.com/mpakus/1537paperstreet/compare/v0.8.6...v0.8.7

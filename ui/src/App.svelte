@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, tick } from 'svelte'
 
   import {
     configGet,
@@ -27,6 +27,8 @@
     startWindowDrag,
     themesCss,
     themesList,
+    textFormat,
+    textLint,
     treeExpandedGet,
     treeExpandedSet,
     updatesCheck,
@@ -72,6 +74,7 @@
     followOpenRename,
     nextAfterClose,
     openWorkspaceTab,
+    persistLeavingTab,
     placeDocTab,
     promptAfterRename,
     removeTab,
@@ -83,7 +86,7 @@
   } from './lib/tabs'
   import { recordMessage, TOAST_MS, type AppMessage } from './lib/messages'
   import { exportDocumentPdf } from './lib/print'
-  import { windowTitle } from './lib/text'
+  import { windowTitle, offsetAt } from './lib/text'
   import {
     DIAGRAM_FRAME_DEFAULT_HEIGHT,
     DIAGRAM_FRAME_DEFAULT_WIDTH,
@@ -95,6 +98,7 @@
     dropDirAtPoint,
     followRenamedPath,
     isDraftDirty,
+    isJsonPath,
     isMarkdownPath,
     peekTreeDrag,
     peekTreeDragCopy,
@@ -720,6 +724,14 @@
         await saveDocument()
         return
       }
+      if (id === 'edit-format') {
+        await formatDocument()
+        return
+      }
+      if (id === 'edit-lint') {
+        await lintDocument()
+        return
+      }
       if (id === 'file-export') {
         if (!openMeta) {
           showError('Open a document first.')
@@ -1231,6 +1243,95 @@
     }
   }
 
+  async function waitForEditor(ms = 1500): Promise<boolean> {
+    if (editorApi) {
+      return true
+    }
+    await tick()
+    const deadline = Date.now() + ms
+    while (!editorApi && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    }
+    return Boolean(editorApi)
+  }
+
+  async function ensureEditorSource(): Promise<boolean> {
+    if (!active || !openMeta) {
+      showError('Open a document first.')
+      return false
+    }
+    if (viewMode === 'preview') {
+      await setViewMode('editor')
+    }
+    if (!docSourceMeta) {
+      await loadSource(openMeta.relPath)
+    }
+    await waitForEditor()
+    return Boolean(openMeta && docSourceMeta)
+  }
+
+  async function formatDocument() {
+    if (!(await ensureEditorSource()) || !openMeta || !docSourceMeta) {
+      return
+    }
+    if (!docSourceMeta.writable) {
+      showError(
+        docSourceMeta.readonlyReason ?? 'This file cannot be formatted.',
+      )
+      return
+    }
+    const formatted = await textFormat(openMeta.relPath, draftText)
+    if (formatted === draftText) {
+      showError('Already formatted.')
+      return
+    }
+    const caret = editorApi?.selection()?.start ?? draftText.length
+    draftText = formatted
+    const next = Math.min(caret, formatted.length)
+    editorApi?.setTextAndSelection(formatted, next, next)
+    showError('Formatted.')
+  }
+
+  async function lintDocument() {
+    if (!(await ensureEditorSource()) || !openMeta) {
+      return
+    }
+    const relPath = openMeta.relPath
+    if (isMarkdownPath(relPath) || isJsonPath(relPath)) {
+      const issues = await textLint(relPath, draftText)
+      const mapped = issues.map((issue) => {
+        const from = offsetAt(draftText, issue.line, issue.column)
+        const to = offsetAt(draftText, issue.endLine, issue.endColumn)
+        return {
+          from,
+          to: Math.max(from + 1, to),
+          message: issue.message,
+          severity: issue.severity,
+        }
+      })
+      editorApi?.setLintDiagnostics(mapped)
+      if (mapped.length === 0) {
+        showError('No issues.')
+        return
+      }
+      if (editorApi) {
+        editorApi.openLint()
+        return
+      }
+      showError(mapped[0]?.message ?? 'This file has issues.')
+      return
+    }
+    if (!editorApi) {
+      showError('Open the editor to lint this file.')
+      return
+    }
+    if (editorApi.lintCount() === 0) {
+      showError('No issues.')
+      return
+    }
+    editorApi.openLint()
+  }
+
   async function applyEditorCommand(id: string) {
     if (viewMode === 'preview') {
       await setViewMode('editor')
@@ -1264,7 +1365,7 @@
     workspacePage = 'document'
     const leaving = snapshotCurrentTab()
     if (leaving && leaving.relPath !== relPath) {
-      tabs = placeDocTab(tabs, leaving, 'keep')
+      tabs = persistLeavingTab(tabs, leaving)
       const cached = tabs.find((tab) => tab.relPath === relPath)
       if (!forceReload && cached?.docMeta) {
         restoreTab(cached)
@@ -1369,11 +1470,17 @@
 
   function closeTab(relPath: string) {
     const next = nextAfterClose(tabs, relPath)
+    const wasActive = openMeta?.relPath === relPath
     tabs = removeTab(tabs, relPath)
-    if (openMeta?.relPath !== relPath) {
+    if (!wasActive) {
       return
     }
     if (next) {
+      const cached = tabs.find((tab) => tab.relPath === next)
+      if (cached) {
+        restoreTab(cached)
+        return
+      }
       void openDocument(next).catch((cause) => {
         showError(errorMessage(cause))
       })
@@ -1756,6 +1863,12 @@
       canFormat={Boolean(
         docSourceMeta?.writable && isMarkdownPath(openMeta?.relPath ?? ''),
       )}
+      canFormatDocument={Boolean(
+        openMeta &&
+        (docSourceMeta?.writable ?? docMeta?.writable) &&
+        (isMarkdownPath(openMeta.relPath) || isJsonPath(openMeta.relPath)),
+      )}
+      canLint={Boolean(openMeta)}
       readingZoom={previewZoom}
       onmode={(mode) => {
         workspacePage = 'document'

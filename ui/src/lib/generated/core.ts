@@ -838,3 +838,31 @@ version: string,
  * User-facing status line; the UI displays this without further formatting.
  */
 message: string, };
+
+export type DiagnosticSeverity = "error" | "warning";
+
+export type TextDiagnostic = { 
+/**
+ * First line of the span, starting at 1.
+ */
+line: number, 
+/**
+ * First column of the span, starting at 1.
+ */
+column: number, 
+/**
+ * Last line of the span, starting at 1.
+ */
+endLine: number, 
+/**
+ * Column after the last character, starting at 1.
+ */
+endColumn: number, 
+/**
+ * Whether the issue is an error or a warning.
+ */
+severity: DiagnosticSeverity, 
+/**
+ * User-facing explanation.
+ */
+message: string, };

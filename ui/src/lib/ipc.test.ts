@@ -11,6 +11,8 @@ import {
   mermaidCachePut,
   saveUserFile,
   exportPdf,
+  textFormat,
+  textLint,
   themesCss,
   themesList,
   treeExpandedGet,
@@ -151,5 +153,25 @@ describe('ipc helpers', () => {
       project_id: 'proj',
       rel_paths: ['note.md'],
     })
+  })
+
+  it('forwards format and lint of the editor buffer', async () => {
+    const calls: Array<{ cmd: string; args?: Record<string, unknown> }> = []
+    mockIpc({
+      text_format: (args) => {
+        calls.push({ cmd: 'text_format', args })
+        return '| A |\n| - |\n'
+      },
+      text_lint: (args) => {
+        calls.push({ cmd: 'text_lint', args })
+        return []
+      },
+    })
+    await expect(textFormat('note.md', '|A|')).resolves.toContain('| A |')
+    await expect(textLint('note.md', '|A|')).resolves.toEqual([])
+    expect(calls).toEqual([
+      { cmd: 'text_format', args: { rel_path: 'note.md', text: '|A|' } },
+      { cmd: 'text_lint', args: { rel_path: 'note.md', text: '|A|' } },
+    ])
   })
 })

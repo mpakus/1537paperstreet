@@ -28,6 +28,8 @@ describe('print', () => {
     expect(html).toContain('Architecture &lt;draft&gt;')
     expect(html).toContain('<h1>Hello</h1>')
     expect(html).toContain('--font-size:16px')
+    expect(html).toContain('table-scroll')
+    expect(html).toContain('overflow-wrap: anywhere')
   })
 
   it('builds a pdf name from a markdown path', () => {

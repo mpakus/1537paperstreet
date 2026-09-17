@@ -2,9 +2,9 @@
 source: crates/ps-render/tests/snapshots.rs
 expression: "render(include_str! (\"corpus/tables.md\"))"
 ---
-<section class="chunk"><section data-block="0" data-src-line="1" data-hash="502701b2dc72cdfbe807fae4598e5c957f0ab0fb925c13ddf87aa36c06c277f7"><table><thead><tr><th style="text-align: left">Name</th><th style="text-align: right">Status</th></tr></thead><tbody>
-<tr><td style="text-align: left">Alpha</td><td style="text-align: right">Ready</td></tr>
-<tr><td style="text-align: left">Beta</td><td style="text-align: right">Waiting</td></tr>
-</tbody></table>
+<section class="chunk"><section data-block="0" data-src-line="1" data-hash="8c7f66665a7d9a1c72798a1f78b1a2ef7ea5b6dd3b58cd1e5088d871ecfb7088"><div class="table-scroll"><table><thead><tr><th style="text-align: left"><div class="cell">Name</div></th><th style="text-align: right"><div class="cell">Status</div></th><th><div class="cell">Notes</div></th></tr></thead><tbody>
+<tr><td style="text-align: left"><div class="cell">Alpha</div></td><td style="text-align: right"><div class="cell">Ready</div></td><td><div class="cell">short</div></td></tr>
+<tr><td style="text-align: left"><div class="cell">Beta</div></td><td style="text-align: right"><div class="cell">Waiting</div></td><td><div class="cell">This is a very long note that should wrap inside the cell instead of stretching the reader column, plus a-super-long-unbroken-token-that-still-needs-to-wrap-or-scroll</div></td></tr>
+</tbody></table></div>
 </section>
 </section>

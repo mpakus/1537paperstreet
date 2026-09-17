@@ -34,6 +34,21 @@ export function highlightQuery(text: string, query: string): HighlightPart[] {
   return parts
 }
 
+/** UTF-16/JS string index for a 1-based line and column. */
+export function offsetAt(text: string, line: number, column: number): number {
+  const targetLine = Math.max(1, line)
+  const targetColumn = Math.max(1, column)
+  let index = 0
+  let current = 1
+  while (current < targetLine && index < text.length) {
+    if (text[index] === '\n') {
+      current += 1
+    }
+    index += 1
+  }
+  return Math.min(text.length, index + targetColumn - 1)
+}
+
 /** Start offsets of case-insensitive matches of `needle` inside `haystack`. */
 export function findMatchOffsets(haystack: string, needle: string): number[] {
   if (!needle) {

@@ -13,6 +13,11 @@ export function isMarkdownPath(name: string): boolean {
   return MARKDOWN_NAME.test(name)
 }
 
+/** Returns whether a file name is JSON. */
+export function isJsonPath(name: string): boolean {
+  return /\.json$/i.test(name)
+}
+
 /** Returns whether a file name is a non-Markdown document. */
 export function isSourcePath(name: string): boolean {
   return name.length > 0 && !isMarkdownPath(name)

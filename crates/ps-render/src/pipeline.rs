@@ -179,8 +179,56 @@ fn finish_render<'events>(
             output = output.replacen(&format!("{prefix}{index}__"), figure, 1);
         }
     }
+    output = wrap_tables(output);
 
     (output, toc)
+}
+
+/// Wide GFM tables scroll inside the reading column; cell text still wraps.
+fn wrap_tables(html: String) -> String {
+    if !html.contains("<table") {
+        return html;
+    }
+    let html = wrap_named_cells(&html, "th");
+    let html = wrap_named_cells(&html, "td");
+    html.replace("<table", "<div class=\"table-scroll\"><table")
+        .replace("</table>", "</table></div>")
+}
+
+/// Inner wrappers make `max-width` wrap in WebKit table layout.
+fn wrap_named_cells(html: &str, tag: &str) -> String {
+    let open = format!("<{tag}");
+    let close = format!("</{tag}>");
+    let mut output = String::with_capacity(html.len().saturating_add(html.len() / 8));
+    let mut index = 0;
+    while let Some(relative) = html.get(index..).and_then(|rest| rest.find(&open)) {
+        let start = index + relative;
+        let after_name = start + open.len();
+        let next = html.get(after_name..).and_then(|rest| rest.chars().next());
+        if !matches!(next, Some(' ' | '\n' | '\t' | '\r' | '>' | '/')) {
+            output.push_str(&html[index..after_name]);
+            index = after_name;
+            continue;
+        }
+        let Some(gt_relative) = html.get(after_name..).and_then(|rest| rest.find('>')) else {
+            output.push_str(&html[index..]);
+            return output;
+        };
+        let open_end = after_name + gt_relative + 1;
+        output.push_str(&html[index..open_end]);
+        output.push_str("<div class=\"cell\">");
+        let Some(close_relative) = html.get(open_end..).and_then(|rest| rest.find(&close)) else {
+            output.push_str(&html[open_end..]);
+            return output;
+        };
+        let close_at = open_end + close_relative;
+        output.push_str(&html[open_end..close_at]);
+        output.push_str("</div>");
+        output.push_str(&close);
+        index = close_at + close.len();
+    }
+    output.push_str(&html[index..]);
+    output
 }
 
 fn render_events<'events>(

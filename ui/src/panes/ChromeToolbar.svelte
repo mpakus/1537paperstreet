@@ -13,6 +13,8 @@
     page = 'document',
     canSave = false,
     canFormat = false,
+    canFormatDocument = false,
+    canLint = false,
     hasDocument = false,
     readingZoom = 1,
     onmode,
@@ -22,6 +24,8 @@
     page?: WorkspacePage
     canSave?: boolean
     canFormat?: boolean
+    canFormatDocument?: boolean
+    canLint?: boolean
     hasDocument?: boolean
     readingZoom?: number
     onmode: (mode: ViewMode) => void
@@ -58,6 +62,18 @@
       disabled={!canSave}
       title="Save (⌘S)"
       onclick={() => oncommand('file-save')}>Save</button
+    >
+    <button
+      type="button"
+      disabled={!canFormatDocument}
+      title="Format document"
+      onclick={() => oncommand('edit-format')}>Format</button
+    >
+    <button
+      type="button"
+      disabled={!canLint}
+      title="Lint document"
+      onclick={() => oncommand('edit-lint')}>Lint</button
     >
     <button
       type="button"

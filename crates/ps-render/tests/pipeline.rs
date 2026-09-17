@@ -26,6 +26,8 @@ $$z = 1$$
 
     for expected in [
         "<h1 id=\"custom\">Title</h1>",
+        "table-scroll",
+        "class=\"cell\"",
         "<table>",
         "<del>no</del>",
         "type=\"checkbox\"",

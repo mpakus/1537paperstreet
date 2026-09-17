@@ -51,6 +51,7 @@
       }
       instance = createMarkdownEditor(el, {
         ...initial,
+        doc: value,
         onChange(text) {
           value = text
         },
