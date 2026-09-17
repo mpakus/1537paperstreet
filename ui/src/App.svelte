@@ -69,11 +69,12 @@
   import {
     closeActiveTarget,
     closeWorkspaceTab,
+    followOpenRename,
     nextAfterClose,
     openWorkspaceTab,
     placeDocTab,
+    promptAfterRename,
     removeTab,
-    retitleTab,
     tabTitle,
     type DocTab,
     type TabOpenMode,
@@ -92,6 +93,7 @@
   import {
     dirsToReload,
     dropDirAtPoint,
+    followRenamedPath,
     isDraftDirty,
     isMarkdownPath,
     peekTreeDrag,
@@ -1305,6 +1307,35 @@
     }
   }
 
+  function applyOpenRename(from: string, to: string) {
+    const snap = snapshotCurrentTab()
+    if (snap) {
+      tabs = placeDocTab(tabs, snap, 'keep')
+    }
+    const followed = followOpenRename(
+      tabs,
+      openMeta?.relPath ?? null,
+      docMeta,
+      from,
+      to,
+    )
+    tabs = followed.tabs
+    if (openMeta && followed.openRelPath) {
+      openMeta = { ...openMeta, relPath: followed.openRelPath }
+    }
+    docMeta = followed.docMeta
+    if (revealRelPath) {
+      revealRelPath = followRenamedPath(revealRelPath, from, to)
+    }
+    if (ignoredExternal) {
+      ignoredExternal = {
+        ...ignoredExternal,
+        relPath: followRenamedPath(ignoredExternal.relPath, from, to),
+      }
+    }
+    externalPrompt = promptAfterRename(externalPrompt, from, to)
+  }
+
   function snapshotCurrentTab(): DocTab | null {
     if (!openMeta) {
       return null
@@ -1862,10 +1893,7 @@
               })
             }}
             onrenamed={(from, to) => {
-              tabs = retitleTab(tabs, from, to)
-              if (openMeta?.relPath === from) {
-                openMeta = { ...openMeta, relPath: to }
-              }
+              applyOpenRename(from, to)
             }}
             onexpanded={(paths) => {
               if (!active) {

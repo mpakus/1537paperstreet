@@ -102,6 +102,25 @@ export function joinRel(dir: string, name: string): string {
   return dir ? `${dir}/${name}` : name
 }
 
+/**
+ * Project-relative path of `relPath` after renaming `from` to `to`.
+ * A folder rename also remaps nested files. Unrelated paths stay unchanged.
+ */
+export function followRenamedPath(
+  relPath: string,
+  from: string,
+  to: string,
+): string {
+  if (relPath === from) {
+    return to
+  }
+  if (from && relPath.startsWith(`${from}/`)) {
+    const rest = relPath.slice(from.length + 1)
+    return to ? `${to}/${rest}` : rest
+  }
+  return relPath
+}
+
 /** True when `from` can be moved or copied into `toDir` (project-relative). */
 export function canDropInto(from: string, toDir: string): boolean {
   if (from === toDir) {

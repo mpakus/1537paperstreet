@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
+
   import { usesCodeEditor } from '../editor/language'
   import type { MarkdownEditor } from '../editor/types'
 
@@ -34,18 +36,21 @@
     let cancelled = false
     let instance: MarkdownEditor | undefined
 
+    const initial = untrack(() => ({
+      doc: value,
+      fileName,
+      writable,
+      spellcheck,
+      lineNumbers,
+      softWrap,
+      indentUnit,
+    }))
     void import('../editor/setup').then(({ createMarkdownEditor }) => {
       if (cancelled) {
         return
       }
       instance = createMarkdownEditor(el, {
-        doc: value,
-        fileName,
-        writable,
-        spellcheck,
-        lineNumbers,
-        softWrap,
-        indentUnit,
+        ...initial,
         onChange(text) {
           value = text
         },

@@ -42,6 +42,7 @@ Other files use a language highlighter when one is available. JavaScript,
 TypeScript, Go, Rust, Java, and PHP underline syntax errors; JSON shows parse
 errors; otherwise they edit as plain text in the monospace font.
 Settings → File formats lists the first-class source languages.
-Save with ⌘S or Save. An external editor is still available (⌘⇧O). If that
-editor (or another program) saves the open file, a dialog asks whether to
-reload it.
+Save with ⌘S or Save. Renaming the file in the tree does not reload it from
+disk, so unsaved edits stay in the editor. An external editor is still
+available (⌘⇧O). If that editor (or another program) saves the open file, a
+dialog asks whether to reload it.

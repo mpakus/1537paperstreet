@@ -1,4 +1,5 @@
 import type { DocumentMeta, DocumentSource } from './generated/core'
+import { followRenamedPath } from './tree'
 
 /** Workspace page shown in the main tab strip. */
 export type WorkspacePage = 'document' | 'assistant' | 'dashboard'
@@ -134,7 +135,58 @@ export function nextAfterClose(tabs: DocTab[], closed: string): string | null {
 
 /** Keeps a tab when its file is renamed. */
 export function retitleTab(tabs: DocTab[], from: string, to: string): DocTab[] {
-  return tabs.map((tab) =>
-    tab.relPath === from ? { ...tab, relPath: to, title: tabTitle(to) } : tab,
-  )
+  if (from === to) {
+    return tabs
+  }
+  return tabs.map((tab) => {
+    const relPath = followRenamedPath(tab.relPath, from, to)
+    if (relPath === tab.relPath) {
+      return tab
+    }
+    return {
+      ...tab,
+      relPath,
+      title: tabTitle(relPath),
+      docMeta: tab.docMeta ? { ...tab.docMeta, relPath } : null,
+    }
+  })
+}
+
+/** Tab strip and open document after a project rename, without reloading disk. */
+export function followOpenRename(
+  tabs: DocTab[],
+  openRelPath: string | null,
+  docMeta: DocumentMeta | null,
+  from: string,
+  to: string,
+): {
+  tabs: DocTab[]
+  openRelPath: string | null
+  docMeta: DocumentMeta | null
+} {
+  return {
+    tabs: retitleTab(tabs, from, to),
+    openRelPath: openRelPath ? followRenamedPath(openRelPath, from, to) : null,
+    docMeta: docMeta
+      ? { ...docMeta, relPath: followRenamedPath(docMeta.relPath, from, to) }
+      : null,
+  }
+}
+
+/**
+ * Drops an external-change prompt that fired because this app renamed the file.
+ * A real delete of an unrelated path is left alone.
+ */
+export function promptAfterRename<T extends { relPath: string }>(
+  prompt: T | null,
+  from: string,
+  to: string,
+): T | null {
+  if (!prompt) {
+    return null
+  }
+  if (followRenamedPath(prompt.relPath, from, to) !== prompt.relPath) {
+    return null
+  }
+  return prompt
 }

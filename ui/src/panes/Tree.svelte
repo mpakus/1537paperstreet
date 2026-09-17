@@ -23,7 +23,6 @@
     clipboardPaths,
     fileIconKind,
     flattenTree,
-    isEditablePath,
     isMarkdownPath,
     joinRel,
     parentDir,
@@ -593,12 +592,10 @@
     try {
       const to = joinRel(parentDir(node.relPath), next)
       const renamed = await fsRename(project.id, node.relPath, to)
+      // Follow the open buffer before the tree reload; do not reopen from disk.
+      onrenamed?.(node.relPath, renamed.relPath)
       await loadDir(parentDir(node.relPath))
       applySelection([renamed.relPath], renamed.relPath)
-      onrenamed?.(node.relPath, renamed.relPath)
-      if (isEditablePath(renamed.name)) {
-        onopen(renamed.relPath, 'pin')
-      }
     } catch (cause) {
       onerror(errorMessage(cause))
     }

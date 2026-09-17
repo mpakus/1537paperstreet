@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
+import type { DocumentMeta, DocumentSource } from './generated/core'
+
 import {
   closeActiveTarget,
   closeWorkspaceTab,
+  followOpenRename,
   nextAfterClose,
   openWorkspaceTab,
+  placeDocTab,
+  promptAfterRename,
   removeTab,
   retitleTab,
   tabTitle,
   upsertTab,
-  placeDocTab,
   type DocTab,
 } from './tabs'
 
@@ -75,6 +79,99 @@ describe('tabs', () => {
         title: 'new.md',
       },
     ])
+  })
+
+  it('keeps unsaved editor text when the open file is renamed', () => {
+    const source: DocumentSource = {
+      text: 'on disk',
+      eol: 'lf',
+      bom: false,
+      trailingNewline: true,
+      encoding: 'utf8',
+      writable: true,
+      readonlyReason: null,
+    }
+    const meta: DocumentMeta = {
+      projectId: 'p',
+      relPath: 'draft.md',
+      title: 'Draft',
+      hash: 'abc',
+      size: 7,
+      writable: true,
+      readonlyReason: null,
+      sourceOnly: false,
+      chunkCount: 1,
+      toc: [],
+    }
+    const dirty: DocTab = {
+      ...tab('draft.md'),
+      html: '<p>on disk</p>',
+      docMeta: meta,
+      docSourceMeta: source,
+      draftText: 'unsaved words',
+    }
+    const stale = placeDocTab(
+      [dirty],
+      { ...dirty, draftText: 'unsaved words' },
+      'keep',
+    )
+    const followed = followOpenRename(
+      stale,
+      'draft.md',
+      meta,
+      'draft.md',
+      'renamed.md',
+    )
+    expect(followed.openRelPath).toBe('renamed.md')
+    expect(followed.docMeta?.relPath).toBe('renamed.md')
+    expect(followed.tabs).toHaveLength(1)
+    expect(followed.tabs[0]?.relPath).toBe('renamed.md')
+    expect(followed.tabs[0]?.title).toBe('renamed.md')
+    expect(followed.tabs[0]?.draftText).toBe('unsaved words')
+    expect(followed.tabs[0]?.docSourceMeta?.text).toBe('on disk')
+    expect(followed.tabs[0]?.docMeta?.relPath).toBe('renamed.md')
+    expect(followed.tabs[0]?.docMeta?.hash).toBe('abc')
+  })
+
+  it('remaps nested tabs when a parent folder is renamed', () => {
+    const nested = tab('notes/chapter.md')
+    const other = tab('readme.md')
+    const followed = followOpenRename(
+      [nested, other],
+      'notes/chapter.md',
+      null,
+      'notes',
+      'inbox',
+    )
+    expect(followed.openRelPath).toBe('inbox/chapter.md')
+    expect(followed.tabs.map((item) => item.relPath)).toEqual([
+      'inbox/chapter.md',
+      'readme.md',
+    ])
+  })
+
+  it('does not treat a prefix-sharing neighbor as the renamed file', () => {
+    const tabs = [tab('notes.md'), tab('notes/extra.md')]
+    expect(
+      retitleTab(tabs, 'notes', 'inbox').map((item) => item.relPath),
+    ).toEqual(['notes.md', 'inbox/extra.md'])
+  })
+
+  it('drops a missing-file prompt caused by our own rename', () => {
+    expect(
+      promptAfterRename(
+        { relPath: 'old.md', missing: true },
+        'old.md',
+        'new.md',
+      ),
+    ).toBeNull()
+    expect(
+      promptAfterRename(
+        { relPath: 'keep.md', missing: true },
+        'old.md',
+        'new.md',
+      ),
+    ).toEqual({ relPath: 'keep.md', missing: true })
   })
 
   it('replaces a preview tab and pins on double open', () => {

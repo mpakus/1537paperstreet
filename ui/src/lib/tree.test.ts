@@ -10,6 +10,7 @@ import {
   isSourcePath,
   treeClickIntent,
   joinRel,
+  followRenamedPath,
   parentDir,
   sortDirsByDepth,
   targetDir,
@@ -48,6 +49,18 @@ function node(relPath: string, kind: TreeNode['kind']): TreeNode {
 }
 
 describe('tree helpers', () => {
+  it('follows a renamed file or ancestor folder', () => {
+    expect(followRenamedPath('draft.md', 'draft.md', 'final.md')).toBe(
+      'final.md',
+    )
+    expect(followRenamedPath('notes/a.md', 'notes', 'inbox')).toBe('inbox/a.md')
+    expect(followRenamedPath('notes/a.md', 'notes', '')).toBe('a.md')
+    expect(followRenamedPath('notes.md', 'notes', 'inbox')).toBe('notes.md')
+    expect(followRenamedPath('other.md', 'draft.md', 'final.md')).toBe(
+      'other.md',
+    )
+  })
+
   it('recognizes Markdown file names', () => {
     expect(isMarkdownPath('readme.md')).toBe(true)
     expect(isMarkdownPath('Note.MARKDOWN')).toBe(true)

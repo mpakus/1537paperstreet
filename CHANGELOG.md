@@ -5,6 +5,13 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.9] - 2026-09-17
+
+### Fixed
+
+- Renaming a file that is open in the editor keeps unsaved text. The tab
+  follows the new path instead of reloading the on-disk copy.
+
 ## [0.8.8] - 2026-09-16
 
 ### Fixed
@@ -411,7 +418,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.8...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.9...HEAD
+[0.8.9]: https://github.com/mpakus/1537paperstreet/compare/v0.8.8...v0.8.9
 [0.8.8]: https://github.com/mpakus/1537paperstreet/compare/v0.8.7...v0.8.8
 [0.8.7]: https://github.com/mpakus/1537paperstreet/compare/v0.8.6...v0.8.7
 [0.8.6]: https://github.com/mpakus/1537paperstreet/compare/v0.8.5...v0.8.6

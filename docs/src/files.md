@@ -53,6 +53,8 @@ accent underline.
 
 A new folder or file immediately offers a name. Clicking an already selected
 name (not a double-click on a file — that pins a tab) also starts rename; F2 does the same.
+Renaming a file that is open for editing keeps the unsaved buffer; Save writes
+it under the new name. A folder rename remaps open tabs inside that folder.
 Dragging in the tree moves into a folder (drop on a file targets that file's
 folder); ⌥ copies; hovering a folder expands it. A stacked ghost of the
 dragged names follows the pointer and eases into the folder. Copy name and
