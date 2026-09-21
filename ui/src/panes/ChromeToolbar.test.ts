@@ -22,7 +22,6 @@ describe('ChromeToolbar', () => {
     expect(body).toContain('Split')
     expect(body).toContain('Save')
     expect(body).toContain('Format')
-    expect(body).toContain('Lint')
     expect(body).toContain('Export')
     expect(body).toContain('title="Board"')
     expect(body).toContain('>AI</button')

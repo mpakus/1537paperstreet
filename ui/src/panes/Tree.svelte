@@ -33,6 +33,8 @@
     targetDir,
     treeClickIntent,
     treeDropSiteAt,
+    dirsToRefresh,
+    treeMenuShowsRefresh,
     acceptTreeDrop,
     dragGhostPreview,
     type DragGhostPreview,
@@ -214,6 +216,16 @@
       }
     }
     persistExpanded()
+  }
+
+  async function refreshFromDisk(folderRelPath: string) {
+    const dirs = dirsToRefresh(
+      untrack(() => [...expanded]),
+      folderRelPath,
+    )
+    for (const dir of dirs) {
+      await loadDir(dir)
+    }
   }
 
   $effect(() => {
@@ -938,6 +950,16 @@
       onclick={() => withMenu((node) => void createUntitled('folder', node))}
       >New Folder</button
     >
+    {#if treeMenuShowsRefresh(menu.node?.kind ?? null)}
+      <button
+        type="button"
+        role="menuitem"
+        onclick={() =>
+          withMenu((node) => {
+            void refreshFromDisk(node?.relPath ?? '')
+          })}>Refresh</button
+      >
+    {/if}
     {#if menu.node}
       {#if actionNodes(menu.node).length === 1}
         <button

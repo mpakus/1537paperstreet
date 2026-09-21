@@ -1,14 +1,6 @@
 import { jsonParseLinter } from '@codemirror/lang-json'
 import { indentUnit, syntaxHighlighting } from '@codemirror/language'
-import {
-  diagnosticCount,
-  linter,
-  lintGutter,
-  nextDiagnostic,
-  openLintPanel,
-  setDiagnostics,
-  type Diagnostic,
-} from '@codemirror/lint'
+import { linter, lintGutter } from '@codemirror/lint'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { Compartment, EditorState, type Extension } from '@codemirror/state'
 import {
@@ -245,34 +237,6 @@ export function createMarkdownEditor(
         selection: { anchor: from, head: to },
         scrollIntoView: true,
       })
-    },
-    lintCount() {
-      return diagnosticCount(view.state)
-    },
-    openLint() {
-      openLintPanel(view)
-    },
-    nextLint() {
-      return nextDiagnostic(view)
-    },
-    setLintDiagnostics(
-      items: Array<{
-        from: number
-        to: number
-        message: string
-        severity: 'error' | 'warning'
-      }>,
-    ) {
-      const diagnostics: Diagnostic[] = items.map((item) => ({
-        from: clamp(item.from, view.state.doc.length),
-        to: Math.max(
-          clamp(item.from, view.state.doc.length),
-          clamp(item.to, view.state.doc.length),
-        ),
-        message: item.message,
-        severity: item.severity,
-      }))
-      view.dispatch(setDiagnostics(view.state, diagnostics))
     },
     focus() {
       view.focus()

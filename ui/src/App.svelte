@@ -28,7 +28,6 @@
     themesCss,
     themesList,
     textFormat,
-    textLint,
     treeExpandedGet,
     treeExpandedSet,
     updatesCheck,
@@ -86,7 +85,7 @@
   } from './lib/tabs'
   import { recordMessage, TOAST_MS, type AppMessage } from './lib/messages'
   import { exportDocumentPdf } from './lib/print'
-  import { windowTitle, offsetAt } from './lib/text'
+  import { windowTitle } from './lib/text'
   import {
     DIAGRAM_FRAME_DEFAULT_HEIGHT,
     DIAGRAM_FRAME_DEFAULT_WIDTH,
@@ -728,10 +727,6 @@
         await formatDocument()
         return
       }
-      if (id === 'edit-lint') {
-        await lintDocument()
-        return
-      }
       if (id === 'file-export') {
         if (!openMeta) {
           showError('Open a document first.')
@@ -1292,46 +1287,6 @@
     showError('Formatted.')
   }
 
-  async function lintDocument() {
-    if (!(await ensureEditorSource()) || !openMeta) {
-      return
-    }
-    const relPath = openMeta.relPath
-    if (isMarkdownPath(relPath) || isJsonPath(relPath)) {
-      const issues = await textLint(relPath, draftText)
-      const mapped = issues.map((issue) => {
-        const from = offsetAt(draftText, issue.line, issue.column)
-        const to = offsetAt(draftText, issue.endLine, issue.endColumn)
-        return {
-          from,
-          to: Math.max(from + 1, to),
-          message: issue.message,
-          severity: issue.severity,
-        }
-      })
-      editorApi?.setLintDiagnostics(mapped)
-      if (mapped.length === 0) {
-        showError('No issues.')
-        return
-      }
-      if (editorApi) {
-        editorApi.openLint()
-        return
-      }
-      showError(mapped[0]?.message ?? 'This file has issues.')
-      return
-    }
-    if (!editorApi) {
-      showError('Open the editor to lint this file.')
-      return
-    }
-    if (editorApi.lintCount() === 0) {
-      showError('No issues.')
-      return
-    }
-    editorApi.openLint()
-  }
-
   async function applyEditorCommand(id: string) {
     if (viewMode === 'preview') {
       await setViewMode('editor')
@@ -1868,7 +1823,6 @@
         (docSourceMeta?.writable ?? docMeta?.writable) &&
         (isMarkdownPath(openMeta.relPath) || isJsonPath(openMeta.relPath)),
       )}
-      canLint={Boolean(openMeta)}
       readingZoom={previewZoom}
       onmode={(mode) => {
         workspacePage = 'document'

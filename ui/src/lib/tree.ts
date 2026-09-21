@@ -282,6 +282,25 @@ export function dirsToReload(paths: Iterable<string>): string[] {
   return sortDirsByDepth(dirs)
 }
 
+/** True when the tree context menu should offer Refresh. */
+export function treeMenuShowsRefresh(kind: TreeNode['kind'] | null): boolean {
+  return kind === null || kind === 'directory'
+}
+
+/** Directories to re-read from disk when the user refreshes a folder. */
+export function dirsToRefresh(
+  expanded: Iterable<string>,
+  folderRelPath: string,
+): string[] {
+  if (folderRelPath === '') {
+    return sortDirsByDepth(['', ...expanded])
+  }
+  const nested = [...expanded].filter(
+    (dir) => dir === folderRelPath || dir.startsWith(`${folderRelPath}/`),
+  )
+  return sortDirsByDepth([folderRelPath, ...nested])
+}
+
 /** Inclusive range of visible tree paths between an anchor and the clicked row. */
 export function rangeRelPaths(
   rows: TreeRow[],
