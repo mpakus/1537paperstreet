@@ -5,6 +5,19 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.11] - 2026-09-17
+
+### Added
+
+- Refresh in the tree folder context menu reloads that folder (and expanded
+  children) from disk.
+
+### Changed
+
+- Preview tables fill the reading column with even column widths. Long cell
+  text still wraps.
+- The Lint title-bar button and Edit menu item are removed.
+
 ## [0.8.10] - 2026-09-17
 
 ### Added
@@ -433,7 +446,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.10...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.11...HEAD
+[0.8.11]: https://github.com/mpakus/1537paperstreet/compare/v0.8.10...v0.8.11
 [0.8.10]: https://github.com/mpakus/1537paperstreet/compare/v0.8.9...v0.8.10
 [0.8.9]: https://github.com/mpakus/1537paperstreet/compare/v0.8.8...v0.8.9
 [0.8.8]: https://github.com/mpakus/1537paperstreet/compare/v0.8.7...v0.8.8

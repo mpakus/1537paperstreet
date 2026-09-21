@@ -29,6 +29,7 @@ describe('print', () => {
     expect(html).toContain('<h1>Hello</h1>')
     expect(html).toContain('--font-size:16px')
     expect(html).toContain('table-scroll')
+    expect(html).toContain('table-layout: fixed')
     expect(html).toContain('overflow-wrap: anywhere')
   })
 

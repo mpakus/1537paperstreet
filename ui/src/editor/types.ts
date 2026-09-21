@@ -21,17 +21,6 @@ export type MarkdownEditor = {
   setIndentUnit: (spaces: number) => void
   selection: () => { start: number; end: number }
   setTextAndSelection: (text: string, start: number, end: number) => void
-  lintCount: () => number
-  openLint: () => void
-  nextLint: () => boolean
-  setLintDiagnostics: (
-    items: Array<{
-      from: number
-      to: number
-      message: string
-      severity: 'error' | 'warning'
-    }>,
-  ) => void
   focus: () => void
   refresh: () => void
   destroy: () => void

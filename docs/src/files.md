@@ -21,6 +21,7 @@ Tree context menu and File / Go:
 | Action | How |
 | --- | --- |
 | New File / New Folder | ⌘N / ⌘⇧N — in the selected folder |
+| Refresh | context menu on a folder (or empty tree) — reloads from disk |
 | Rename | click the selected name again, F2, or the context menu |
 | Duplicate | copy beside the original |
 | Copy name | basename to the clipboard |
@@ -60,7 +61,7 @@ folder); ⌥ copies; hovering a folder expands it. A stacked ghost of the
 dragged names follows the pointer and eases into the folder. Copy name and
 Copy path put the basename or the absolute path on the clipboard.
 
-The title bar: Preview / Edit / Split, Save, Export, Board, and AI;
+The title bar: Preview / Edit / Split, Save, Format, Export, Board, and AI;
 in Preview and Split — type size and zoom. Board opens the Dashboard tab; AI
 opens the Assistant. More in [editing](editing.md) and
 [assistant](assistant.md).

@@ -1,40 +1,9 @@
-//! Format and lint for Markdown and JSON editor buffers.
+//! Format for Markdown and JSON editor buffers.
 
 use std::path::Path;
 
-use serde::{Deserialize, Serialize};
-use ts_rs::TS;
-
 use crate::projects::is_markdown_path;
 use crate::{Error, Result};
-
-/// Severity of one editor diagnostic.
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, TS)]
-#[serde(rename_all = "lowercase")]
-pub enum DiagnosticSeverity {
-    /// The buffer cannot be parsed or a structure is broken.
-    Error,
-    /// The buffer is valid but looks unintentional.
-    Warning,
-}
-
-/// One issue in a text buffer, with 1-based line and column.
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, TS)]
-#[serde(rename_all = "camelCase")]
-pub struct TextDiagnostic {
-    /// First line of the span, starting at 1.
-    pub line: u32,
-    /// First column of the span, starting at 1.
-    pub column: u32,
-    /// Last line of the span, starting at 1.
-    pub end_line: u32,
-    /// Column after the last character, starting at 1.
-    pub end_column: u32,
-    /// Whether the issue is an error or a warning.
-    pub severity: DiagnosticSeverity,
-    /// User-facing explanation.
-    pub message: String,
-}
 
 /// Pretty-prints Markdown tables or JSON. Other files are left to an external editor.
 pub fn format_text(rel_path: &Path, text: &str) -> Result<String> {
@@ -45,17 +14,6 @@ pub fn format_text(rel_path: &Path, text: &str) -> Result<String> {
         return format_json(text);
     }
     Err(Error::FormatUnavailable)
-}
-
-/// Returns Markdown table/fence issues or a JSON parse error. Source files use the editor linter.
-pub fn lint_text(rel_path: &Path, text: &str) -> Vec<TextDiagnostic> {
-    if is_markdown_path(rel_path) {
-        return lint_markdown(text);
-    }
-    if is_json_path(rel_path) {
-        return lint_json(text);
-    }
-    Vec::new()
 }
 
 fn is_json_path(path: &Path) -> bool {
@@ -74,126 +32,33 @@ fn format_json(text: &str) -> Result<String> {
     Ok(pretty)
 }
 
-fn lint_json(text: &str) -> Vec<TextDiagnostic> {
-    match serde_json::from_str::<serde_json::Value>(text) {
-        Ok(_) => Vec::new(),
-        Err(error) => {
-            let line = u32::try_from(error.line()).unwrap_or(1).max(1);
-            let column = u32::try_from(error.column()).unwrap_or(1).max(1);
-            vec![TextDiagnostic {
-                line,
-                column,
-                end_line: line,
-                end_column: column.saturating_add(1),
-                severity: DiagnosticSeverity::Error,
-                message: "This file is not valid JSON.".to_owned(),
-            }]
-        }
-    }
-}
-
 fn format_markdown(text: &str) -> String {
-    rewrite_markdown_lines(text, true)
-}
-
-fn lint_markdown(text: &str) -> Vec<TextDiagnostic> {
-    let mut diagnostics = Vec::new();
-    let lines = line_slices(text);
-    let mut fence: Option<(Fence, usize)> = None;
+    let ends_with_newline = text.ends_with('\n');
+    let mut lines: Vec<String> = line_slices(text).into_iter().map(str::to_owned).collect();
+    let mut fence: Option<Fence> = None;
     let mut index = 0usize;
     while index < lines.len() {
-        let line_no = (index + 1) as u32;
-        if let Some((open, _)) = fence {
-            if closes_fence(lines[index], open) {
+        if let Some(open) = fence {
+            if closes_fence(&lines[index], open) {
                 fence = None;
             }
             index += 1;
             continue;
         }
-        if let Some(open) = opens_fence(lines[index]) {
-            fence = Some((open, index));
+        if let Some(open) = opens_fence(&lines[index]) {
+            fence = Some(open);
             index += 1;
             continue;
         }
-        if let Some(table) = parse_table(&lines, index) {
-            let header_cols = table.header.len();
-            for (row_offset, row) in table.rows.iter().enumerate() {
-                if row.len() != header_cols {
-                    let row_line = (table.start + 2 + row_offset + 1) as u32;
-                    diagnostics.push(span(
-                        row_line,
-                        1,
-                        row_line,
-                        (lines[table.start + 2 + row_offset].chars().count() as u32)
-                            .saturating_add(1),
-                        DiagnosticSeverity::Error,
-                        format!(
-                            "This table row has {} cells; the header has {header_cols}.",
-                            row.len()
-                        ),
-                    ));
-                }
-            }
-            index = table.end;
+        let slices: Vec<&str> = lines.iter().map(String::as_str).collect();
+        if let Some(table) = parse_table(&slices, index) {
+            let formatted = render_table(&table);
+            let next = table.start + formatted.len();
+            lines.splice(table.start..table.end, formatted);
+            index = next;
             continue;
-        }
-        let trailing = trailing_spaces(lines[index]);
-        if trailing > 0 && trailing != 2 {
-            let width = lines[index].chars().count() as u32;
-            diagnostics.push(span(
-                line_no,
-                width.saturating_sub(trailing).saturating_add(1),
-                line_no,
-                width.saturating_add(1),
-                DiagnosticSeverity::Warning,
-                "This line has trailing spaces.".to_owned(),
-            ));
         }
         index += 1;
-    }
-    if let Some((_, open_at)) = fence {
-        let open_line = (open_at + 1) as u32;
-        diagnostics.push(span(
-            open_line,
-            1,
-            open_line,
-            (lines[open_at].chars().count() as u32).saturating_add(1),
-            DiagnosticSeverity::Error,
-            "This code fence is not closed.".to_owned(),
-        ));
-    }
-    diagnostics
-}
-
-fn rewrite_markdown_lines(text: &str, pretty_tables: bool) -> String {
-    let ends_with_newline = text.ends_with('\n');
-    let mut lines: Vec<String> = line_slices(text).into_iter().map(str::to_owned).collect();
-    if pretty_tables {
-        let mut fence: Option<Fence> = None;
-        let mut index = 0usize;
-        while index < lines.len() {
-            if let Some(open) = fence {
-                if closes_fence(&lines[index], open) {
-                    fence = None;
-                }
-                index += 1;
-                continue;
-            }
-            if let Some(open) = opens_fence(&lines[index]) {
-                fence = Some(open);
-                index += 1;
-                continue;
-            }
-            let slices: Vec<&str> = lines.iter().map(String::as_str).collect();
-            if let Some(table) = parse_table(&slices, index) {
-                let formatted = render_table(&table);
-                let next = table.start + formatted.len();
-                lines.splice(table.start..table.end, formatted);
-                index = next;
-                continue;
-            }
-            index += 1;
-        }
     }
     let mut out = lines.join("\n");
     if ends_with_newline {
@@ -434,30 +299,5 @@ fn separator_cell(width: usize, align: Align) -> String {
         Align::Right => format!("{}:", "-".repeat(width.saturating_sub(1).max(3))),
         Align::Center => format!(":{}:", "-".repeat(width.saturating_sub(2).max(3))),
         Align::None => "-".repeat(width.max(3)),
-    }
-}
-
-fn trailing_spaces(line: &str) -> u32 {
-    line.chars()
-        .rev()
-        .take_while(|character| *character == ' ')
-        .count() as u32
-}
-
-fn span(
-    line: u32,
-    column: u32,
-    end_line: u32,
-    end_column: u32,
-    severity: DiagnosticSeverity,
-    message: String,
-) -> TextDiagnostic {
-    TextDiagnostic {
-        line,
-        column: column.max(1),
-        end_line,
-        end_column: end_column.max(column.max(1)),
-        severity,
-        message,
     }
 }

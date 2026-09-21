@@ -19,6 +19,8 @@ import {
   parseAssetHref,
   isHttpHref,
   dirsToReload,
+  dirsToRefresh,
+  treeMenuShowsRefresh,
   rangeRelPaths,
   dropDirAtPoint,
   encodeTreeDrag,
@@ -274,6 +276,21 @@ describe('tree helpers', () => {
       '',
       'chapters',
     ])
+  })
+
+  it('refreshes a folder and its expanded children from disk', () => {
+    expect(treeMenuShowsRefresh('directory')).toBe(true)
+    expect(treeMenuShowsRefresh(null)).toBe(true)
+    expect(treeMenuShowsRefresh('file')).toBe(false)
+    expect(dirsToRefresh(['notes', 'notes/ch', 'other'], 'notes')).toEqual([
+      'notes',
+      'notes/ch',
+    ])
+    expect(dirsToRefresh(['notes-old', 'notes/ch'], 'notes')).toEqual([
+      'notes',
+      'notes/ch',
+    ])
+    expect(dirsToRefresh(['notes', 'other'], '')).toEqual(['', 'notes', 'other'])
   })
 
   it('selects an inclusive range of visible rows', () => {

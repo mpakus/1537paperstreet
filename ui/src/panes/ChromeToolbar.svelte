@@ -14,7 +14,6 @@
     canSave = false,
     canFormat = false,
     canFormatDocument = false,
-    canLint = false,
     hasDocument = false,
     readingZoom = 1,
     onmode,
@@ -25,7 +24,6 @@
     canSave?: boolean
     canFormat?: boolean
     canFormatDocument?: boolean
-    canLint?: boolean
     hasDocument?: boolean
     readingZoom?: number
     onmode: (mode: ViewMode) => void
@@ -68,12 +66,6 @@
       disabled={!canFormatDocument}
       title="Format document"
       onclick={() => oncommand('edit-format')}>Format</button
-    >
-    <button
-      type="button"
-      disabled={!canLint}
-      title="Lint document"
-      onclick={() => oncommand('edit-lint')}>Lint</button
     >
     <button
       type="button"

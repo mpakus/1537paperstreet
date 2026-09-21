@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { highlightQuery, findMatchOffsets, offsetAt, windowTitle } from './text'
+import { highlightQuery, findMatchOffsets, windowTitle } from './text'
 
 describe('highlightQuery', () => {
   it('returns the whole string when the query is empty', () => {
@@ -19,14 +19,6 @@ describe('highlightQuery', () => {
     expect(findMatchOffsets('Fight Club Notes', '')).toEqual([])
     expect(findMatchOffsets('Fight Club Notes', 'club')).toEqual([6])
     expect(findMatchOffsets('aba ba', 'ba')).toEqual([1, 4])
-  })
-})
-
-describe('offsetAt', () => {
-  it('maps 1-based line and column onto a string index', () => {
-    expect(offsetAt('ab\ncd', 1, 1)).toBe(0)
-    expect(offsetAt('ab\ncd', 2, 2)).toBe(4)
-    expect(offsetAt('ab\ncd', 9, 9)).toBe(5)
   })
 })
 

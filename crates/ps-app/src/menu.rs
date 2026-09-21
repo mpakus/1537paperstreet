@@ -138,11 +138,6 @@ const EDIT_FORMAT: MenuCommand = MenuCommand {
     title: "Format Document",
     accelerator: None,
 };
-const EDIT_LINT: MenuCommand = MenuCommand {
-    id: "edit-lint",
-    title: "Lint Document",
-    accelerator: None,
-};
 const EDIT_FIND: MenuCommand = MenuCommand {
     id: "edit-find",
     title: "Find",
@@ -400,7 +395,6 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let list = item(app, EDIT_LIST)?;
     let quote = item(app, EDIT_QUOTE)?;
     let format = item(app, EDIT_FORMAT)?;
-    let lint = item(app, EDIT_LINT)?;
     let find = item(app, EDIT_FIND)?;
     let find_replace = item(app, EDIT_FIND_REPLACE)?;
     let edit_menu = Submenu::with_items(
@@ -426,7 +420,6 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &quote,
             &PredefinedMenuItem::separator(app)?,
             &format,
-            &lint,
             &PredefinedMenuItem::separator(app)?,
             &find,
             &find_replace,
@@ -546,7 +539,6 @@ fn emits_menu_action(id: &str) -> bool {
             | "app-check-updates"
             | "file-check-updates"
             | "edit-format"
-            | "edit-lint"
     ) || plan_commands().iter().any(|command| command.id == id)
 }
 
@@ -677,7 +669,6 @@ mod tests {
         assert_eq!(FILE_EXPORT.title, "Export PDF…");
         assert!(emits_menu_action("file-settings"));
         assert!(emits_menu_action("edit-format"));
-        assert!(emits_menu_action("edit-lint"));
         assert_eq!(super::FILE_SETTINGS.id, "file-settings");
         assert_eq!(super::FILE_SETTINGS.title, "Settings…");
         assert_eq!(APP_SETTINGS.title, "Settings…");
