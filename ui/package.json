@@ -1,7 +1,7 @@
 {
   "name": "@1537paperstreet/ui",
   "private": true,
-  "version": "0.8.12",
+  "version": "0.8.13",
   "type": "module",
   "scripts": {
     "build": "vite build",

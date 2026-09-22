@@ -30,8 +30,9 @@ top of the file (`---` … `---`) shows as a key/value card, not as horizontal
 rules. `[[Note]]` and `[[Note|label]]` open `Note.md` in the project (next to
 the document or at the root); a wiki target that already names a file, such as
 `[[src/main.rs]]`, opens that file. Missing links are drawn dashed. Click a
-link to another file in the project to open it in a new tab — Markdown, source,
-or any other project file. Fenced code is
+link to another file in the project to open it in a new tab. Markdown stays in
+Preview. A source file (`.rb`, `.js`, `.ex`, and the other editor languages)
+opens in the code editor with syntax highlighting. Fenced code is
 highlighted (Rust, Python, Ruby, Elixir, YAML, JS/TS, and others) with
 quiet colors mixed into the body text.
 

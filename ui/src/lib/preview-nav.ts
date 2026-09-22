@@ -1,4 +1,4 @@
-import { isHttpHref, parentDir, parseAssetHref } from './tree'
+import { isHttpHref, isMarkdownPath, parentDir, parseAssetHref } from './tree'
 
 /** What a preview click on an `<a href>` should do. */
 export type PreviewHrefAction =
@@ -53,6 +53,11 @@ export function classifyPreviewHref(
     return { kind: 'ignore' }
   }
   return { kind: 'document', relPath: relative.relPath, hash: relative.hash }
+}
+
+/** A linked text file other than Markdown opens in the code editor. */
+export function linkOpensEditor(relPath: string, sourceOnly: boolean): boolean {
+  return relPath.length > 0 && !sourceOnly && !isMarkdownPath(relPath)
 }
 
 function hasScheme(href: string): boolean {

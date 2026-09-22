@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { classifyPreviewHref } from './preview-nav'
+import { classifyPreviewHref, linkOpensEditor } from './preview-nav'
 
 describe('classifyPreviewHref', () => {
   const project = {
@@ -69,5 +69,13 @@ describe('classifyPreviewHref', () => {
     expect(
       classifyPreviewHref('asset://localhost/other/notes/guide.md', project),
     ).toEqual({ kind: 'ignore' })
+  })
+
+  it('opens linked source files in the editor and leaves Markdown in preview', () => {
+    expect(linkOpensEditor('lib/app.rb', false)).toBe(true)
+    expect(linkOpensEditor('web/app.js', false)).toBe(true)
+    expect(linkOpensEditor('lib/app.ex', false)).toBe(true)
+    expect(linkOpensEditor('notes/guide.md', false)).toBe(false)
+    expect(linkOpensEditor('assets/cover.png', true)).toBe(false)
   })
 })

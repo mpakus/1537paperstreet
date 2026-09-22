@@ -5,6 +5,13 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.13] - 2026-09-22
+
+### Changed
+
+- A link to a source file (Ruby, JavaScript, Elixir, and other text files)
+  opens that file in a new tab in the code editor, with syntax highlighting.
+
 ## [0.8.12] - 2026-09-21
 
 ### Fixed
@@ -453,7 +460,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.12...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.13...HEAD
+[0.8.13]: https://github.com/mpakus/1537paperstreet/compare/v0.8.12...v0.8.13
 [0.8.12]: https://github.com/mpakus/1537paperstreet/compare/v0.8.11...v0.8.12
 [0.8.11]: https://github.com/mpakus/1537paperstreet/compare/v0.8.10...v0.8.11
 [0.8.10]: https://github.com/mpakus/1537paperstreet/compare/v0.8.9...v0.8.10

@@ -69,9 +69,16 @@ fn opens_parent_and_source_links_inside_the_project() {
     fs::create_dir_all(project.path().join("src")).expect("src");
     fs::write(project.path().join("readme.md"), b"# Root").expect("readme");
     fs::write(project.path().join("src/main.rs"), b"fn main() {}\n").expect("source");
+    fs::write(project.path().join("src/app.rb"), b"puts :ok\n").expect("ruby");
+    fs::write(project.path().join("src/app.js"), b"console.log(1)\n").expect("js");
+    fs::write(
+        project.path().join("src/app.ex"),
+        b"defmodule App do\nend\n",
+    )
+    .expect("elixir");
 
     let html = render_project(
-        "[Root](../readme.md)\n[Code](../src/main.rs)\n[[../src/main.rs]]\n",
+        "[Root](../readme.md)\n[Code](../src/main.rs)\n[[../src/main.rs]]\n[Ruby](../src/app.rb)\n[JS](../src/app.js)\n[Elixir](../src/app.ex)\n",
         project.path(),
         Path::new("notes/chapter.md"),
         "project-1",
@@ -91,6 +98,14 @@ fn opens_parent_and_source_links_inside_the_project() {
         "{}",
         html.html
     );
+    for file in ["src/app.rb", "src/app.js", "src/app.ex"] {
+        assert!(
+            html.html
+                .contains(&format!("href=\"asset://localhost/project-1/{file}\"")),
+            "{file} missing in {}",
+            html.html
+        );
+    }
 }
 
 #[test]

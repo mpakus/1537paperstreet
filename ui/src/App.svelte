@@ -91,7 +91,7 @@
     DIAGRAM_FRAME_DEFAULT_WIDTH,
     nextPreviewZoom,
   } from './lib/zoom'
-  import { classifyPreviewHref } from './lib/preview-nav'
+  import { classifyPreviewHref, linkOpensEditor } from './lib/preview-nav'
   import {
     dirsToReload,
     dropDirAtPoint,
@@ -1082,6 +1082,13 @@
     }
     revealRelPath = action.relPath
     await openDocument(action.relPath, false, 'pin')
+    if (
+      openMeta?.relPath === action.relPath &&
+      linkOpensEditor(action.relPath, docMeta?.sourceOnly ?? false) &&
+      viewMode === 'preview'
+    ) {
+      await setViewMode('editor')
+    }
     if (action.hash) {
       requestAnimationFrame(() => {
         articleEl
