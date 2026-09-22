@@ -24,7 +24,8 @@ link, wiki link `[[Note]]`, task item `- [ ]`, heading, and so on). Source
 files hide those commands.
 
 Preview renders GitHub Flavored Markdown: tables, strikethrough, task lists,
-footnotes, alerts (`> [!NOTE]`), definition lists. Tables fill the reading
+footnotes, alerts (`> [!NOTE]`), definition lists. Click a task checkbox to
+switch that item between `[ ]` and `[x]` in the file. Tables fill the reading
 column with even column widths; long cell text wraps. YAML front matter at the
 top of the file (`---` … `---`) shows as a key/value card, not as horizontal
 rules. `[[Note]]` and `[[Note|label]]` open `Note.md` in the project (next to

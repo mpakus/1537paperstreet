@@ -62,7 +62,7 @@
     type DashboardSnapshot,
   } from './lib/ipc'
   import type { MarkdownEditor } from './editor/types'
-  import { applyMarkdownCommand } from './lib/markdown'
+  import { applyMarkdownCommand, toggleTaskAt } from './lib/markdown'
   import { modeForTab, openSession, savedViewMode } from './lib/session'
   import type { OpenSession } from './lib/ipc'
   import {
@@ -1268,6 +1268,64 @@
     }
   }
 
+  async function toggleCheckbox(byteOffset: number) {
+    if (!active || !openMeta) {
+      return
+    }
+    const projectId = active.id
+    const relPath = openMeta.relPath
+    try {
+      if (!docSourceMeta) {
+        await loadSource(relPath)
+      }
+      if (!docSourceMeta || openMeta.relPath !== relPath) {
+        return
+      }
+      if (!docSourceMeta.writable) {
+        showError(docSourceMeta.readonlyReason ?? 'This file cannot be edited.')
+        return
+      }
+      const current = viewMode === 'preview' ? docSourceMeta.text : draftText
+      const next = toggleTaskAt(current, byteOffset)
+      if (next === null) {
+        showError('That checkbox is no longer in the file.')
+        return
+      }
+      const written = await docSave(
+        projectId,
+        relPath,
+        next,
+        docMeta?.hash ?? '',
+        {
+          eol: docSourceMeta.eol,
+          bom: docSourceMeta.bom,
+          trailingNewline: docSourceMeta.trailingNewline,
+        },
+      )
+      if (docMeta && openMeta.relPath === relPath) {
+        docMeta = { ...docMeta, hash: written.hash, size: written.size }
+      }
+      ignoredExternal = { relPath, hash: written.hash }
+      if (viewMode === 'preview') {
+        await openDocument(relPath, true)
+        return
+      }
+      draftText = next
+      const caret = new TextDecoder().decode(
+        new TextEncoder().encode(next).subarray(0, byteOffset),
+      ).length
+      editorApi?.setTextAndSelection(next, caret, caret)
+      docSourceMeta = { ...docSourceMeta, text: next }
+      const opened = await docOpen(projectId, relPath)
+      if (openMeta?.relPath === relPath) {
+        html = opened.firstChunk ?? ''
+        docMeta = opened.meta
+      }
+    } catch (cause) {
+      showError(errorMessage(cause))
+    }
+  }
+
   async function saveDocument() {
     if (!active || !openMeta || !docSourceMeta) {
       showError('Open a document in the editor first.')
@@ -2330,6 +2388,9 @@
               {diagramLeft}
               {diagramTop}
               bind:articleEl
+              ontoggle={(offset) => {
+                void toggleCheckbox(offset)
+              }}
               onnavigate={(href) => {
                 void navigate(href).catch((cause) => {
                   showError(errorMessage(cause))

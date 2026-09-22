@@ -46,6 +46,14 @@ where
                     Some((Event::End(TagEnd::Item), source_range))
                 }
             }
+            Event::TaskListMarker(checked) => {
+                let checked_attr = if checked { " checked=\"\"" } else { "" };
+                let html = format!(
+                    "<input type=\"checkbox\" data-task-at=\"{}\"{checked_attr}/>\n",
+                    source_range.start
+                );
+                Some((Event::Html(html.into()), source_range))
+            }
             event => Some((event, source_range)),
         }
     }

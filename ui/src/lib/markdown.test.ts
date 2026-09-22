@@ -4,6 +4,7 @@ import {
   applyMarkdownCommand,
   toggleHeading,
   toggleLinePrefix,
+  toggleTaskAt,
   wrapInline,
 } from './markdown'
 
@@ -71,6 +72,22 @@ describe('applyMarkdownCommand', () => {
       'edit-task',
     )
     expect(cleared.text).toBe('ship')
+  })
+
+  it('toggles a task marker at a UTF-8 byte offset', () => {
+    const open = '- [ ] Open'
+    const checked = toggleTaskAt(open, open.indexOf('['))
+    expect(checked).toBe('- [x] Open')
+    expect(toggleTaskAt(checked ?? '', 2)).toBe('- [ ] Open')
+    expect(toggleTaskAt('- [X] Done', 2)).toBe('- [ ] Done')
+    const prefixed = 'café\n- [ ] item'
+    const bytes = new TextEncoder().encode(prefixed)
+    const marker = new TextEncoder().encode('[ ]')
+    const offset = bytes.findIndex((_, index) =>
+      marker.every((byte, markerIndex) => bytes[index + markerIndex] === byte),
+    )
+    expect(toggleTaskAt(prefixed, offset)).toBe('café\n- [x] item')
+    expect(toggleTaskAt(open, 0)).toBeNull()
   })
 
   it('wraps a wiki link', () => {

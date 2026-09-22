@@ -70,7 +70,11 @@
 }
 
 .preview li.task-list-item > input[type='checkbox'] {
+  width: 1rem;
+  height: 1rem;
   margin: 0 var(--space-2) 0 0;
+  accent-color: var(--accent);
+  cursor: pointer;
   vertical-align: middle;
 }
 

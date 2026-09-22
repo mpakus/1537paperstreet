@@ -5,10 +5,25 @@ use tempfile::tempdir;
 
 #[test]
 fn renders_gfm_task_lists_with_item_class() {
-    let html = render("- [x] Parsed\n- [ ] Open\n");
+    let markdown = "- [x] Parsed\n- [ ] Open\n";
+    let html = render(markdown);
     assert!(html.contains("class=\"task-list-item\""));
     assert!(html.contains("type=\"checkbox\""));
-    assert!(html.contains("checked"));
+    assert!(!html.contains("disabled"), "{html}");
+    assert!(
+        html.contains(&format!(
+            "data-task-at=\"{}\" checked=\"\"",
+            markdown.find("[x]").expect("checked marker")
+        )),
+        "{html}"
+    );
+    assert!(
+        html.contains(&format!(
+            "data-task-at=\"{}\"",
+            markdown.find("[ ]").expect("open marker")
+        )),
+        "{html}"
+    );
 }
 
 #[test]

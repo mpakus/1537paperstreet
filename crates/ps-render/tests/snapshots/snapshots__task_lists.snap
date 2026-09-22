@@ -4,11 +4,11 @@ expression: "render(include_str! (\"corpus/task-lists.md\"))"
 ---
 <section class="chunk"><section data-block="0" data-src-line="1" data-hash="848d3adac25536dbad45a77bb2bc30e57b2ff4aef17b9ad3dd62b078b91f7b36">
 <ul>
-<li class="task-list-item"><input disabled="" type="checkbox" checked=""/>
+<li class="task-list-item"><input type="checkbox" data-task-at="2" checked=""/>
 Parsed</li>
-<li class="task-list-item"><input disabled="" type="checkbox"/>
+<li class="task-list-item"><input type="checkbox" data-task-at="15"/>
 Reviewed</li>
-<li class="task-list-item"><input disabled="" type="checkbox"/>
+<li class="task-list-item"><input type="checkbox" data-task-at="30"/>
 Shipped</li>
 </ul>
 </section>

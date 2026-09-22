@@ -32,6 +32,7 @@
     diagramTop = null,
     articleEl = $bindable(),
     onnavigate,
+    ontoggle,
     onerror,
     ontocresize,
     ondiagramchrome,
@@ -56,6 +57,7 @@
     diagramTop?: number | null
     articleEl?: HTMLElement | undefined
     onnavigate: (href: string) => void
+    ontoggle?: (byteOffset: number) => void
     onerror?: (message: string) => void
     ontocresize?: (event: PointerEvent) => void
     ondiagramchrome?: (next: {
@@ -272,6 +274,17 @@
         class="preview"
         role="presentation"
         onclickcapture={(event) => {
+          const checkbox = (event.target as HTMLElement | null)?.closest(
+            'input[type="checkbox"][data-task-at]',
+          )
+          if (checkbox instanceof HTMLInputElement) {
+            event.preventDefault()
+            const at = Number(checkbox.dataset.taskAt)
+            if (Number.isInteger(at) && at >= 0) {
+              ontoggle?.(at)
+            }
+            return
+          }
           const figure = (event.target as HTMLElement | null)?.closest(
             'figure.mermaid',
           )

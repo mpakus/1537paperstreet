@@ -77,6 +77,45 @@ export function toggleLinePrefix(
 
 const TASK_CHECKED = '- [x] '
 const TASK_OPEN = '- [ ] '
+const TASK_MARK_OPEN = new Uint8Array([0x5b, 0x20, 0x5d])
+const TASK_MARK_CHECKED = new Uint8Array([0x5b, 0x78, 0x5d])
+const TASK_MARK_CHECKED_UPPER = new Uint8Array([0x5b, 0x58, 0x5d])
+
+function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
+  return (
+    left.length === right.length &&
+    left.every((byte, index) => byte === right[index])
+  )
+}
+
+/**
+ * Flips one `[ ]` or `[x]` marker at a UTF-8 byte offset from the preview.
+ * Returns null when that offset is not a task marker.
+ */
+export function toggleTaskAt(text: string, byteOffset: number): string | null {
+  if (!Number.isInteger(byteOffset) || byteOffset < 0) {
+    return null
+  }
+  const bytes = new TextEncoder().encode(text)
+  if (byteOffset + 3 > bytes.length) {
+    return null
+  }
+  const marker = bytes.subarray(byteOffset, byteOffset + 3)
+  let replacement = TASK_MARK_OPEN
+  if (sameBytes(marker, TASK_MARK_OPEN)) {
+    replacement = TASK_MARK_CHECKED
+  } else if (
+    !sameBytes(marker, TASK_MARK_CHECKED) &&
+    !sameBytes(marker, TASK_MARK_CHECKED_UPPER)
+  ) {
+    return null
+  }
+  const next = new Uint8Array(bytes.length)
+  next.set(bytes.subarray(0, byteOffset), 0)
+  next.set(replacement, byteOffset)
+  next.set(bytes.subarray(byteOffset + 3), byteOffset + 3)
+  return new TextDecoder().decode(next)
+}
 
 /** Cycles a task-list prefix on each selected line: none → open → checked → none. */
 export function toggleTaskItem(

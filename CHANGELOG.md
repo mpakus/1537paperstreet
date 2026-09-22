@@ -5,6 +5,13 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.15] - 2026-09-22
+
+### Added
+
+- Clicking a task checkbox in Preview switches that item between `[ ]` and
+  `[x]` in the Markdown file.
+
 ## [0.8.14] - 2026-09-22
 
 ### Added
@@ -469,7 +476,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.14...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.15...HEAD
+[0.8.15]: https://github.com/mpakus/1537paperstreet/compare/v0.8.14...v0.8.15
 [0.8.14]: https://github.com/mpakus/1537paperstreet/compare/v0.8.13...v0.8.14
 [0.8.13]: https://github.com/mpakus/1537paperstreet/compare/v0.8.12...v0.8.13
 [0.8.12]: https://github.com/mpakus/1537paperstreet/compare/v0.8.11...v0.8.12

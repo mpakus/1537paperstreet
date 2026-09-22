@@ -57,7 +57,7 @@ pub(crate) fn clean(html: &str) -> String {
     sanitizer
         .add_tags(["input", "section"])
         .add_generic_attributes(["class", "id", "data-block", "data-src-line", "data-hash"])
-        .add_tag_attributes("input", ["checked", "disabled", "type"])
+        .add_tag_attributes("input", ["checked", "disabled", "type", "data-task-at"])
         .add_tag_attributes("a", ["href", "title", "class"])
         .add_tag_attributes(
             "img",
