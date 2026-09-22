@@ -19,6 +19,8 @@ import type {
   ThemeInfo,
   ThemeAppearance,
   WrittenDocument,
+  OpenSession,
+  RestoredSession,
   AgentChoice,
   AgentClientEvent,
   AgentPermission,
@@ -187,6 +189,16 @@ export function treeExpandedSet(
     project_id: projectId,
     rel_paths: relPaths,
   })
+}
+
+/** Returns the last open files and tabs, skipping anything no longer on disk. */
+export function sessionRestore(): Promise<RestoredSession> {
+  return invokeIpc('session_restore')
+}
+
+/** Remembers the open project, document tabs, and workspace tabs. */
+export function sessionSet(session: OpenSession): Promise<void> {
+  return invokeIpc('session_set', { session })
 }
 
 /** Opens a document and returns the first HTML chunk. */
@@ -557,6 +569,8 @@ export type {
   ThemeInfo,
   ThemeAppearance,
   WrittenDocument,
+  OpenSession,
+  RestoredSession,
   UpdateCheck,
   UpdateInstall,
 }

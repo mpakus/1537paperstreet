@@ -18,6 +18,7 @@ use crate::fsops::{ConflictStrategy, UntitledKind};
 use crate::projects::{OpenDropResult, Project, ProjectsListQuery, ProjectsListResult};
 use crate::themes::{ThemeAppearance, ThemeInfo};
 use crate::tree::{TreeNode, TreeNodeKind};
+use crate::ui_state::{OpenSession, RestoredSession, SessionTab};
 use crate::updates::{UpdateCheck, UpdateInstall};
 use crate::watch::{FsChangedEvent, WatchUpdate};
 
@@ -78,6 +79,9 @@ pub fn ipc_typescript() -> String {
         FsChangedEvent::decl(&ts),
         ThemeAppearance::decl(&ts),
         ThemeInfo::decl(&ts),
+        SessionTab::decl(&ts),
+        OpenSession::decl(&ts),
+        RestoredSession::decl(&ts),
         UpdateCheck::decl(&ts),
         UpdateInstall::decl(&ts),
     ];

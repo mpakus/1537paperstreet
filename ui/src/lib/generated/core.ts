@@ -795,6 +795,76 @@ appearance: ThemeAppearance,
  */
 builtin: boolean, };
 
+export type SessionTab = { 
+/**
+ * Project-relative path of the open document.
+ */
+rel_path: string, 
+/**
+ * Whether the tab is a temporary preview tab.
+ */
+preview: boolean, 
+/**
+ * `preview`, `editor`, or `split` for this tab. Empty uses the session mode.
+ */
+view_mode: string, };
+
+export type OpenSession = { 
+/**
+ * Registered project that owned the open files.
+ */
+project_id: string, 
+/**
+ * Document tabs in strip order.
+ */
+tabs: Array<SessionTab>, 
+/**
+ * Document that was focused, when one was.
+ */
+active_rel_path: string | null, 
+/**
+ * Open Dashboard and Assistant tabs, in strip order.
+ */
+workspace_tabs: Array<string>, 
+/**
+ * Tab that was showing: `document`, `assistant`, or `dashboard`.
+ */
+page: string, 
+/**
+ * `preview`, `editor`, or `split`. Empty keeps the configured default.
+ */
+view_mode: string, };
+
+export type RestoredSession = { 
+/**
+ * Project to activate. Empty when nothing was saved or the folder is gone.
+ */
+project_id: string | null, 
+/**
+ * Document tabs that still exist on disk.
+ */
+tabs: Array<SessionTab>, 
+/**
+ * Document to focus. Empty when no saved document remains.
+ */
+active_rel_path: string | null, 
+/**
+ * Dashboard and Assistant tabs to show again.
+ */
+workspace_tabs: Array<string>, 
+/**
+ * Tab to show after the documents are open.
+ */
+page: string, 
+/**
+ * View mode to apply. Empty keeps the configured default.
+ */
+view_mode: string, 
+/**
+ * User-facing notes for files and folders that could not be reopened.
+ */
+notices: Array<string>, };
+
 export type UpdateCheck = { 
 /**
  * Whether `latest` is newer than `current`.

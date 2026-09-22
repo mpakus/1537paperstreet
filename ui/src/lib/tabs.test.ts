@@ -14,6 +14,7 @@ import {
   removeTab,
   retitleTab,
   tabTitle,
+  tabsToReopen,
   upsertTab,
   type DocTab,
 } from './tabs'
@@ -27,6 +28,7 @@ function tab(relPath: string, preview = false): DocTab {
     docSourceMeta: null,
     draftText: '',
     preview,
+    viewMode: 'preview',
   }
 }
 
@@ -238,6 +240,36 @@ describe('tabs', () => {
     expect(next.map((item) => [item.relPath, item.preview])).toEqual([
       ['draft.md', false],
       ['other.md', true],
+    ])
+  })
+
+  it('keeps each tab’s view mode when leaving it', () => {
+    const leaving = { ...tab('notes.md'), viewMode: 'preview' as const }
+    const next = persistLeavingTab(
+      [leaving, { ...tab('lib/app.rb'), viewMode: 'editor' }],
+      leaving,
+    )
+    expect(next.map((item) => [item.relPath, item.viewMode])).toEqual([
+      ['notes.md', 'preview'],
+      ['lib/app.rb', 'editor'],
+    ])
+  })
+
+  it('reopens pinned tabs, then the preview, then the active file', () => {
+    const saved = [
+      { rel_path: 'a.md', preview: false },
+      { rel_path: 'b.md', preview: true },
+      { rel_path: 'c.md', preview: false },
+    ]
+    expect(tabsToReopen(saved, 'c.md').map((item) => item.rel_path)).toEqual([
+      'a.md',
+      'b.md',
+      'c.md',
+    ])
+    expect(tabsToReopen(saved, 'b.md').map((item) => item.rel_path)).toEqual([
+      'a.md',
+      'c.md',
+      'b.md',
     ])
   })
 })

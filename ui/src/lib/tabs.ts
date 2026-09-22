@@ -1,4 +1,4 @@
-import type { DocumentMeta, DocumentSource } from './generated/core'
+import type { DocumentMeta, DocumentSource, ViewMode } from './generated/core'
 import { followRenamedPath } from './tree'
 
 /** Workspace page shown in the main tab strip. */
@@ -33,6 +33,8 @@ export type DocTab = {
   draftText: string
   /** Temporary single-click tab; the next preview click replaces it. */
   preview: boolean
+  /** Preview, Edit, or Split last used for this file. */
+  viewMode: ViewMode
 }
 
 /** File name used as the tab label. */
@@ -161,6 +163,22 @@ export function retitleTab(tabs: DocTab[], from: string, to: string): DocTab[] {
       docMeta: tab.docMeta ? { ...tab.docMeta, relPath } : null,
     }
   })
+}
+
+/**
+ * Order for reopening saved tabs. Pinned files come first, then a preview,
+ * and the active file last so it stays focused.
+ */
+export function tabsToReopen<T extends { rel_path: string; preview: boolean }>(
+  tabs: readonly T[],
+  activeRelPath: string | null,
+): T[] {
+  const rest = tabs.filter((tab) => tab.rel_path !== activeRelPath)
+  return [
+    ...rest.filter((tab) => !tab.preview),
+    ...rest.filter((tab) => tab.preview),
+    ...tabs.filter((tab) => tab.rel_path === activeRelPath),
+  ]
 }
 
 /** Tab strip and open document after a project rename, without reloading disk. */

@@ -30,6 +30,8 @@
     textFormat,
     treeExpandedGet,
     treeExpandedSet,
+    sessionRestore,
+    sessionSet,
     updatesCheck,
     updatesInstall,
     updatesRelaunch,
@@ -61,6 +63,8 @@
   } from './lib/ipc'
   import type { MarkdownEditor } from './editor/types'
   import { applyMarkdownCommand } from './lib/markdown'
+  import { modeForTab, openSession, savedViewMode } from './lib/session'
+  import type { OpenSession } from './lib/ipc'
   import {
     pathsFromDataTransfer,
     recentProjects,
@@ -75,6 +79,7 @@
     openWorkspaceTab,
     persistLeavingTab,
     placeDocTab,
+    tabsToReopen,
     promptAfterRename,
     removeTab,
     tabTitle,
@@ -142,6 +147,8 @@
   let error = $state('')
   let errorSeq = $state(0)
   let messageHistory = $state<AppMessage[]>([])
+  let sessionReady = false
+  let lastSessionBody = ''
   let historyOpen = $state(false)
   let dragging = $state(false)
   let sidebarWidth = $state(220)
@@ -231,6 +238,43 @@
     x: number
     width: number
   } | null>(null)
+
+  function noteQuietly(message: string) {
+    messageHistory = recordMessage(messageHistory, message)
+  }
+
+  function currentSession(): OpenSession {
+    return openSession({
+      projectId: active?.id ?? '',
+      tabs,
+      activeRelPath: openMeta?.relPath ?? null,
+      workspaceTabs,
+      page: workspacePage,
+      viewMode,
+    })
+  }
+
+  function writeSession(snapshot: OpenSession) {
+    const body = JSON.stringify(snapshot)
+    if (!snapshot.project_id || body === lastSessionBody) {
+      return
+    }
+    lastSessionBody = body
+    void sessionSet(snapshot).catch((cause) => {
+      if (lastSessionBody === body) {
+        lastSessionBody = ''
+      }
+      showError(errorMessage(cause))
+    })
+  }
+
+  $effect(() => {
+    const snapshot = currentSession()
+    if (!sessionReady) {
+      return
+    }
+    writeSession(snapshot)
+  })
 
   function showError(message: string) {
     const text = message.trim()
@@ -604,6 +648,7 @@
   async function activateProject(
     project: Project,
     openRelPath?: string | null,
+    options?: { skipFile?: boolean },
   ) {
     if (active?.id !== project.id) {
       tabs = []
@@ -613,7 +658,7 @@
     void watchStart(project.id).catch((cause) => {
       showError(errorMessage(cause))
     })
-    const focus = openRelPath ?? project.last_file
+    const focus = options?.skipFile ? null : (openRelPath ?? project.last_file)
     if (focus) {
       revealRelPath = focus
       await openDocument(focus)
@@ -1212,6 +1257,12 @@
     if (next !== 'preview') {
       editorOpened = true
     }
+    if (openMeta) {
+      const relPath = openMeta.relPath
+      tabs = tabs.map((tab) =>
+        tab.relPath === relPath ? { ...tab, viewMode: next } : tab,
+      )
+    }
     if (next !== 'preview' && openMeta && !docSourceMeta) {
       await loadSource(openMeta.relPath)
     }
@@ -1320,6 +1371,7 @@
     relPath: string,
     forceReload = false,
     mode: TabOpenMode = 'keep',
+    nextView?: ViewMode,
   ) {
     if (!active) {
       return
@@ -1330,14 +1382,25 @@
       tabs = persistLeavingTab(tabs, leaving)
       const cached = tabs.find((tab) => tab.relPath === relPath)
       if (!forceReload && cached?.docMeta) {
-        restoreTab(cached)
-        tabs = placeDocTab(tabs, cached, mode)
+        const shown = {
+          ...cached,
+          viewMode: modeForTab(cached.viewMode, nextView, viewMode),
+        }
+        restoreTab(shown)
+        tabs = placeDocTab(tabs, shown, mode)
+        if (shown.viewMode !== 'preview' && !shown.docSourceMeta) {
+          await loadSource(shown.relPath)
+        }
         return
       }
     }
     if (forceReload) {
       ignoredExternal = null
       externalPrompt = null
+    }
+    viewMode = modeForTab(undefined, nextView, viewMode)
+    if (viewMode !== 'preview') {
+      editorOpened = true
     }
     setSelection([fileNode(relPath)])
     try {
@@ -1412,6 +1475,7 @@
       draftText,
       preview:
         tabs.find((tab) => tab.relPath === openMeta?.relPath)?.preview ?? false,
+      viewMode,
     }
   }
 
@@ -1420,6 +1484,10 @@
       return
     }
     workspacePage = 'document'
+    viewMode = tab.viewMode
+    if (tab.viewMode !== 'preview') {
+      editorOpened = true
+    }
     openMeta = { projectId: active.id, relPath: tab.relPath }
     html = tab.html
     docMeta = tab.docMeta
@@ -1441,6 +1509,11 @@
       const cached = tabs.find((tab) => tab.relPath === next)
       if (cached) {
         restoreTab(cached)
+        if (cached.viewMode !== 'preview' && !cached.docSourceMeta) {
+          void loadSource(cached.relPath).catch((cause) => {
+            showError(errorMessage(cause))
+          })
+        }
         return
       }
       void openDocument(next).catch((cause) => {
@@ -1580,9 +1653,58 @@
           editorOpened = true
         }
         await loadProjects()
-        if (active) {
-          await activateProject(active)
+        const restored = await sessionRestore()
+        for (const notice of restored.notices) {
+          noteQuietly(notice)
         }
+        const saved = restored.project_id
+          ? projects.find((project) => project.id === restored.project_id)
+          : undefined
+        if (saved) {
+          await activateProject(saved, null, { skipFile: true })
+          workspaceTabs = restored.workspace_tabs.filter(
+            (tab): tab is WorkspaceTab =>
+              tab === 'assistant' || tab === 'dashboard',
+          )
+          for (const tab of tabsToReopen(
+            restored.tabs,
+            restored.active_rel_path,
+          )) {
+            try {
+              await openDocument(
+                tab.rel_path,
+                false,
+                tab.preview ? 'preview' : 'pin',
+                savedViewMode(tab.view_mode) ??
+                  savedViewMode(restored.view_mode),
+              )
+            } catch (cause) {
+              noteQuietly(errorMessage(cause))
+            }
+          }
+          if (
+            restored.page === 'assistant' &&
+            workspaceTabs.includes('assistant')
+          ) {
+            workspacePage = 'assistant'
+          } else if (
+            restored.page === 'dashboard' &&
+            workspaceTabs.includes('dashboard')
+          ) {
+            workspacePage = 'dashboard'
+          }
+        } else if (active && active.available !== false) {
+          await activateProject(active)
+        } else {
+          const fallback = projects.find(
+            (project) => project.available !== false,
+          )
+          if (fallback) {
+            await activateProject(fallback)
+          }
+        }
+        sessionReady = true
+        writeSession(currentSession())
         if (config.updates.check_on_launch) {
           void checkUpdatesOnLaunch()
         }

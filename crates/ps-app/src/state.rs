@@ -24,7 +24,7 @@ use ps_core::search::ProjectSearch;
 use ps_core::store::JsonStore;
 use ps_core::themes::{ThemeCatalog, ThemeInfo};
 use ps_core::tree::{self, TreeNode};
-use ps_core::ui_state::UiState;
+use ps_core::ui_state::{DiskKind, OpenSession, RestoredSession, SessionProbe, UiState};
 use ps_core::{Error, Result};
 
 #[derive(Clone)]
@@ -282,6 +282,74 @@ impl AppState {
         state.set_expanded(project_id, rel_paths)?;
         store.replace(state);
         store.flush().map(|_| ())
+    }
+
+    pub(crate) fn session_set(&self, session: OpenSession) -> Result<()> {
+        let mut store = self
+            .ui_state
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let mut state = store.value().clone();
+        state.set_session(session)?;
+        store.replace(state);
+        store.flush().map(|_| ())
+    }
+
+    pub(crate) fn session_restore(&self) -> Result<RestoredSession> {
+        let project_id = {
+            let store = self
+                .ui_state
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            match store.value().session.as_ref() {
+                Some(session) => session.project_id.clone(),
+                None => return Ok(RestoredSession::empty()),
+            }
+        };
+        let (probe, root) = self.session_probe(&project_id);
+        let mut store = self
+            .ui_state
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let mut state = store.value().clone();
+        if state
+            .session
+            .as_ref()
+            .is_none_or(|session| session.project_id != project_id)
+        {
+            return Ok(RestoredSession::empty());
+        }
+        let restored = state.restore_session(&probe, |rel| disk_kind(root.as_deref(), rel));
+        if state != *store.value() {
+            store.replace(state);
+            store.flush()?;
+        }
+        Ok(restored)
+    }
+
+    fn session_probe(&self, project_id: &str) -> (SessionProbe, Option<PathBuf>) {
+        let projects = self
+            .projects
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        match projects.get(project_id).ok() {
+            Some(project) => {
+                let probe = SessionProbe {
+                    project_listed: true,
+                    project_name: project.name.clone(),
+                    root_is_dir: project.path.is_dir(),
+                };
+                (probe, Some(project.path.clone()))
+            }
+            None => (
+                SessionProbe {
+                    project_listed: false,
+                    project_name: String::new(),
+                    root_is_dir: false,
+                },
+                None,
+            ),
+        }
     }
 
     pub(crate) fn fs_mkdir(&self, project_id: String, rel_path: PathBuf) -> Result<TreeNode> {
@@ -931,6 +999,17 @@ fn document_title(rel_path: &Path, toc: &[TocEntry]) -> String {
         .unwrap_or_else(|| String::from("Untitled"))
 }
 
+fn disk_kind(root: Option<&Path>, rel: &str) -> DiskKind {
+    let Some(root) = root else {
+        return DiskKind::Missing;
+    };
+    match fsops::resolve(root, Path::new(rel)) {
+        Ok(absolute) if absolute.is_file() => DiskKind::File,
+        Ok(absolute) if absolute.is_dir() => DiskKind::Directory,
+        _ => DiskKind::Missing,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs;
@@ -1234,6 +1313,84 @@ mod tests {
             .projects_remove(project.id.clone())
             .expect("remove");
         assert!(reopened.tree_expanded_get(project.id).is_empty());
+    }
+
+    #[test]
+    fn last_session_reopens_existing_files_and_notes_the_rest_once() {
+        use ps_core::ui_state::{OpenSession, SessionTab};
+
+        let (temporary, state) = open_state();
+        let notes = temporary.path().join("notes");
+        fs::create_dir_all(notes.join("chapters")).expect("project directory");
+        fs::write(notes.join("keep.md"), b"# Keep\n").expect("file");
+        fs::write(notes.join("gone.md"), b"# Gone\n").expect("file");
+        let project = state
+            .projects_add("Notes".into(), notes.clone())
+            .expect("add");
+        state
+            .tree_expanded_set(
+                project.id.clone(),
+                vec![PathBuf::from("chapters"), PathBuf::from("missing")],
+            )
+            .expect("expanded");
+        state
+            .session_set(OpenSession {
+                project_id: project.id.clone(),
+                tabs: vec![
+                    SessionTab {
+                        rel_path: PathBuf::from("keep.md"),
+                        preview: false,
+                        view_mode: "preview".into(),
+                    },
+                    SessionTab {
+                        rel_path: PathBuf::from("gone.md"),
+                        preview: true,
+                        view_mode: "editor".into(),
+                    },
+                ],
+                active_rel_path: Some(PathBuf::from("gone.md")),
+                workspace_tabs: vec!["dashboard".into()],
+                page: "dashboard".into(),
+                view_mode: "editor".into(),
+            })
+            .expect("save session");
+
+        fs::remove_file(notes.join("gone.md")).expect("delete file");
+        fs::create_dir(notes.join("missing")).expect("folder exists for a moment");
+        fs::remove_dir(notes.join("missing")).expect("delete folder");
+
+        let restored = state.session_restore().expect("restore");
+        assert_eq!(restored.project_id.as_deref(), Some(project.id.as_str()));
+        assert_eq!(restored.tabs.len(), 1);
+        assert_eq!(restored.tabs[0].rel_path, PathBuf::from("keep.md"));
+        assert_eq!(restored.tabs[0].view_mode, "preview");
+        assert_eq!(
+            restored.active_rel_path.as_deref(),
+            Some(Path::new("keep.md"))
+        );
+        assert_eq!(restored.page, "dashboard");
+        assert_eq!(restored.view_mode, "editor");
+        assert_eq!(
+            restored.notices,
+            vec![
+                "Couldn't reopen \"gone.md\". That file is no longer in the project.".to_owned(),
+                "Couldn't reopen \"missing\". That folder is no longer in the project.".to_owned(),
+            ]
+        );
+
+        let again = state.session_restore().expect("restore again");
+        assert!(again.notices.is_empty());
+        assert_eq!(again.tabs.len(), 1);
+
+        fs::remove_dir_all(&notes).expect("delete project");
+        let missing = state.session_restore().expect("missing folder");
+        assert!(missing.project_id.is_none());
+        assert_eq!(
+            missing.notices,
+            vec!["Couldn't reopen \"Notes\". That folder is no longer on disk.".to_owned()]
+        );
+        let quiet = state.session_restore().expect("already cleared");
+        assert!(quiet.notices.is_empty());
     }
 
     #[test]

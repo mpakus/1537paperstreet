@@ -13,6 +13,7 @@ function tab(relPath: string): DocTab {
     docSourceMeta: null,
     draftText: '',
     preview: false,
+    viewMode: 'preview',
   }
 }
 

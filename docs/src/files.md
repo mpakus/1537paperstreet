@@ -47,10 +47,14 @@ Elixir, Go, Rust, C#, Java, and PHP. Other UTF-8 still opens; it is
 highlighted when a grammar exists.
 
 ⌘P quick-opens Markdown in the current project. Open files stay in tabs above
-the preview. ⌘W closes the active tab only (a document, Dashboard, or
-Assistant — not the window). ⌘⇧W hides the window. The tab close control
-does the same for that tab. The active tab uses a stronger background and an
-accent underline.
+the preview. Each document tab remembers its own Preview, Edit, or Split
+mode, so a Markdown file can stay in Preview while a source file stays in
+the editor. The last folder, document tabs, Dashboard, Assistant, and those
+per-tab modes open again the next time the app starts. If a file or folder from that session is gone, the app skips it and
+adds a note to Message history. ⌘W closes the active tab only (a document,
+Dashboard, or Assistant — not the window). ⌘⇧W hides the window. The tab
+close control does the same for that tab. The active tab uses a stronger
+background and an accent underline.
 
 A new folder or file immediately offers a name. Clicking an already selected
 name (not a double-click on a file — that pins a tab) also starts rename; F2 does the same.

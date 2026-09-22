@@ -5,6 +5,15 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.14] - 2026-09-22
+
+### Added
+
+- The last open folder, document tabs, Dashboard, and Assistant come back
+  when the app starts. Each document tab remembers its own Preview, Edit, or
+  Split mode. A file or folder that is no longer on disk is skipped, and a
+  note is added to Message history.
+
 ## [0.8.13] - 2026-09-22
 
 ### Changed
@@ -460,7 +469,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.13...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.14...HEAD
+[0.8.14]: https://github.com/mpakus/1537paperstreet/compare/v0.8.13...v0.8.14
 [0.8.13]: https://github.com/mpakus/1537paperstreet/compare/v0.8.12...v0.8.13
 [0.8.12]: https://github.com/mpakus/1537paperstreet/compare/v0.8.11...v0.8.12
 [0.8.11]: https://github.com/mpakus/1537paperstreet/compare/v0.8.10...v0.8.11

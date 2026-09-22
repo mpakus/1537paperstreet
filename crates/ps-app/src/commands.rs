@@ -16,6 +16,7 @@ use ps_core::fsops::{ConflictStrategy, UntitledKind};
 use ps_core::projects::{OpenDropResult, Project, ProjectsListQuery, ProjectsListResult};
 use ps_core::themes::ThemeInfo;
 use ps_core::tree::TreeNode;
+use ps_core::ui_state::{OpenSession, RestoredSession};
 use ps_core::updates::{UpdateCheck, UpdateInstall};
 use tauri::{Emitter, State};
 
@@ -199,6 +200,27 @@ pub(crate) async fn tree_expanded_set(
         .map_err(|error| error.to_string())
         .and_then(|result| result.map_err(to_command_error))?;
     hub.set_expanded(expanded)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn session_restore(state: State<'_, AppState>) -> Result<RestoredSession, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.session_restore())
+        .await
+        .map_err(|error| error.to_string())
+        .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn session_set(
+    state: State<'_, AppState>,
+    session: OpenSession,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.session_set(session))
+        .await
+        .map_err(|error| error.to_string())
+        .and_then(|result| result.map_err(to_command_error))
 }
 
 #[tauri::command(rename_all = "snake_case")]
