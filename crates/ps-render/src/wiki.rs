@@ -83,14 +83,9 @@ fn wiki_href(destination: &str) -> String {
 }
 
 fn has_doc_extension(path: &str) -> bool {
-    let last = path.rsplit('/').next().unwrap_or(path);
-    let Some((_, ext)) = last.rsplit_once('.') else {
-        return false;
-    };
-    matches!(
-        ext.to_ascii_lowercase().as_str(),
-        "md" | "markdown" | "mdown" | "txt"
-    )
+    let last = path.rsplit(['/', '\\']).next().unwrap_or(path);
+    last.rsplit_once('.')
+        .is_some_and(|(_, ext)| !ext.is_empty())
 }
 
 fn percent_encode_href(value: &str) -> String {

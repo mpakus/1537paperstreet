@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use ps_core::fsops;
 use pulldown_cmark::{Event, LinkType, Tag};
@@ -109,7 +109,7 @@ where
         }
 
         let canonical_root = self.canonical_root.as_ref().ok_or(())?;
-        let relative = self.document_dir.join(path);
+        let relative = collapse_relative(&self.document_dir.join(path))?;
         let resolved = fsops::resolve(self.project_root, &relative).map_err(|_| ())?;
         let relative = resolved.strip_prefix(canonical_root).map_err(|_| ())?;
         let relative = relative
@@ -147,19 +147,14 @@ where
     }
 
     fn existing_asset_url(&self, relative: &Path, suffix: &str) -> Result<Option<String>, ()> {
-        if relative
-            .components()
-            .any(|component| matches!(component, std::path::Component::ParentDir))
-        {
-            return Err(());
-        }
-        let Ok(resolved) = fsops::resolve(self.project_root, relative) else {
+        let relative = collapse_relative(relative)?;
+        let Ok(resolved) = fsops::resolve(self.project_root, &relative) else {
             return Ok(None);
         };
         if !resolved.is_file() {
             return Ok(None);
         }
-        self.asset_url_for_relative(relative, suffix).map(Some)
+        self.asset_url_for_relative(&relative, suffix).map(Some)
     }
 
     fn asset_url_for_relative(&self, relative: &Path, suffix: &str) -> Result<String, ()> {
@@ -190,7 +185,7 @@ where
 
 fn wiki_candidates(path: &str) -> Vec<PathBuf> {
     let base = PathBuf::from(path);
-    if has_doc_extension(&base) {
+    if base.extension().is_some() {
         vec![base]
     } else {
         vec![
@@ -201,11 +196,23 @@ fn wiki_candidates(path: &str) -> Vec<PathBuf> {
     }
 }
 
-fn has_doc_extension(path: &Path) -> bool {
-    matches!(
-        path.extension().and_then(|ext| ext.to_str()),
-        Some("md" | "markdown" | "mdown" | "txt")
-    )
+/// Collapses `.` and `..` so a link can name a file in a parent folder.
+/// A path that would leave the project is rejected.
+fn collapse_relative(path: &Path) -> Result<PathBuf, ()> {
+    let mut parts = Vec::new();
+    for component in path.components() {
+        match component {
+            Component::Normal(name) => parts.push(name.to_owned()),
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if parts.pop().is_none() {
+                    return Err(());
+                }
+            }
+            Component::RootDir | Component::Prefix(_) => return Err(()),
+        }
+    }
+    Ok(parts.iter().collect())
 }
 
 impl<'input, I> Iterator for Links<'input, '_, I>

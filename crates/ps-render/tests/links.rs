@@ -63,6 +63,37 @@ fn rewrites_only_paths_that_resolve_inside_the_project() {
 }
 
 #[test]
+fn opens_parent_and_source_links_inside_the_project() {
+    let project = tempdir().expect("temporary project");
+    fs::create_dir_all(project.path().join("notes")).expect("notes");
+    fs::create_dir_all(project.path().join("src")).expect("src");
+    fs::write(project.path().join("readme.md"), b"# Root").expect("readme");
+    fs::write(project.path().join("src/main.rs"), b"fn main() {}\n").expect("source");
+
+    let html = render_project(
+        "[Root](../readme.md)\n[Code](../src/main.rs)\n[[../src/main.rs]]\n",
+        project.path(),
+        Path::new("notes/chapter.md"),
+        "project-1",
+    );
+
+    assert!(
+        html.html
+            .contains("href=\"asset://localhost/project-1/readme.md\""),
+        "{}",
+        html.html
+    );
+    assert!(
+        html.html
+            .matches("href=\"asset://localhost/project-1/src/main.rs\"")
+            .count()
+            >= 2,
+        "{}",
+        html.html
+    );
+}
+
+#[test]
 fn reserves_png_width_and_height_on_project_images() {
     let project = tempdir().expect("temporary project");
     let mut png = vec![0_u8; 24];

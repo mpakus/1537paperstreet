@@ -206,6 +206,11 @@ describe('tabs', () => {
     )
     expect(kept[0]?.preview).toBe(true)
     expect(kept[0]?.html).toBe('<p>x</p>')
+    const linked = placeDocTab(previewA, tab('notes/lib.rs'), 'pin')
+    expect(linked.map((item) => [item.relPath, item.preview])).toEqual([
+      ['a.md', true],
+      ['notes/lib.rs', false],
+    ])
     const besidePinned = placeDocTab([tab('a.md')], tab('b.md'), 'preview')
     expect(besidePinned.map((item) => [item.relPath, item.preview])).toEqual([
       ['a.md', false],

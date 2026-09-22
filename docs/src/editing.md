@@ -28,8 +28,10 @@ footnotes, alerts (`> [!NOTE]`), definition lists. Tables fill the reading
 column with even column widths; long cell text wraps. YAML front matter at the
 top of the file (`---` … `---`) shows as a key/value card, not as horizontal
 rules. `[[Note]]` and `[[Note|label]]` open `Note.md` in the project (next to
-the document or at the root); missing links are drawn dashed. Click a link to
-another file in the project once to open it. Fenced code is
+the document or at the root); a wiki target that already names a file, such as
+`[[src/main.rs]]`, opens that file. Missing links are drawn dashed. Click a
+link to another file in the project to open it in a new tab — Markdown, source,
+or any other project file. Fenced code is
 highlighted (Rust, Python, Ruby, Elixir, YAML, JS/TS, and others) with
 quiet colors mixed into the body text.
 

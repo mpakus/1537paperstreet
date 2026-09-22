@@ -3210,7 +3210,7 @@ dependencies = [
 
 [[package]]
 name = "ps-app"
-version = "0.8.11"
+version = "0.8.12"
 dependencies = [
  "block2",
  "objc2",
@@ -3234,7 +3234,7 @@ dependencies = [
 
 [[package]]
 name = "ps-core"
-version = "0.8.11"
+version = "0.8.12"
 dependencies = [
  "blake3",
  "criterion",
@@ -3254,7 +3254,7 @@ dependencies = [
 
 [[package]]
 name = "ps-render"
-version = "0.8.11"
+version = "0.8.12"
 dependencies = [
  "ammonia",
  "blake3",

@@ -1081,7 +1081,7 @@
       return
     }
     revealRelPath = action.relPath
-    await openDocument(action.relPath, false, 'preview')
+    await openDocument(action.relPath, false, 'pin')
     if (action.hash) {
       requestAnimationFrame(() => {
         articleEl
