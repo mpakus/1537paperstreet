@@ -9,6 +9,7 @@ use crate::agents::{
 use crate::config::{
     Appearance, Config, Editor, Files, History, Typography, Updates, ViewMode, Viewer, Window,
 };
+use crate::content_search::{TextSearch, TextSearchHit};
 use crate::dashboard::{DashboardMetric, DashboardRow, DashboardSection, DashboardSnapshot};
 use crate::docio::{
     DocChunkEvent, DocDoneEvent, DocOpenResult, DocumentEncoding, DocumentMeta, DocumentSource,
@@ -62,6 +63,8 @@ pub fn ipc_typescript() -> String {
         OpenDropResult::decl(&ts),
         TreeNodeKind::decl(&ts),
         TreeNode::decl(&ts),
+        TextSearchHit::decl(&ts),
+        TextSearch::decl(&ts),
         ConflictStrategy::decl(&ts),
         UntitledKind::decl(&ts),
         LineEnding::decl(&ts),

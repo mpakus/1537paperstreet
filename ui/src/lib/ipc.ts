@@ -10,6 +10,8 @@ import type {
   Project,
   ProjectsListQuery,
   ProjectsListResult,
+  TextSearch,
+  TextSearchHit,
   TocEntry,
   TreeNode,
   UntitledKind,
@@ -379,6 +381,21 @@ export function fsImport(
   })
 }
 
+/** Searches file contents and paths under a project folder. An empty scope is the project root. */
+export function contentSearch(
+  projectId: string,
+  scope: string,
+  query: string,
+  limit = 40,
+): Promise<TextSearch> {
+  return invokeIpc('content_search', {
+    project_id: projectId,
+    scope,
+    query,
+    limit,
+  })
+}
+
 /** Fuzzy-searches Markdown files in a project. */
 export function filesSearch(
   projectId: string,
@@ -560,6 +577,8 @@ export type {
   Project,
   ProjectsListQuery,
   ProjectsListResult,
+  TextSearch,
+  TextSearchHit,
   TocEntry,
   TreeNode,
   UntitledKind,

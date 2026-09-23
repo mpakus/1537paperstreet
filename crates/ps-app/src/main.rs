@@ -21,8 +21,8 @@ mod window_chrome;
 use commands::{
     agent_cancel, agent_make_server, agent_permission_reply, agent_presets, agent_prompt,
     agent_prompt_history, agent_prompt_history_clear, agent_prompt_history_remove, agent_set_model,
-    agent_start, agent_stop, config_get, config_set, copy_conflicts, dashboard_get, doc_open,
-    doc_save, doc_source, doc_stat, export_pdf, files_search, fs_copy, fs_create_file,
+    agent_start, agent_stop, config_get, config_set, content_search, copy_conflicts, dashboard_get,
+    doc_open, doc_save, doc_source, doc_stat, export_pdf, files_search, fs_copy, fs_create_file,
     fs_create_untitled, fs_import, fs_mkdir, fs_move, fs_rename, fs_transfer, fs_trash,
     mermaid_cache_get, mermaid_cache_put, open_dropped_paths, open_external, open_url,
     projects_add, projects_list, projects_relocate, projects_remove, projects_rename,
@@ -96,6 +96,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             reveal_in_finder,
             open_external,
             copy_conflicts,
+            content_search,
             files_search,
             open_url,
             updates_check,

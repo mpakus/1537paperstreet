@@ -3210,7 +3210,7 @@ dependencies = [
 
 [[package]]
 name = "ps-app"
-version = "0.8.15"
+version = "0.8.16"
 dependencies = [
  "block2",
  "objc2",
@@ -3234,13 +3234,14 @@ dependencies = [
 
 [[package]]
 name = "ps-core"
-version = "0.8.15"
+version = "0.8.16"
 dependencies = [
  "blake3",
  "criterion",
  "notify",
  "nucleo",
  "proptest",
+ "regex",
  "serde",
  "serde_json",
  "tempfile",
@@ -3254,7 +3255,7 @@ dependencies = [
 
 [[package]]
 name = "ps-render"
-version = "0.8.15"
+version = "0.8.16"
 dependencies = [
  "ammonia",
  "blake3",

@@ -60,6 +60,7 @@
     ontransfer,
     onprojectdrop = () => {},
     onrenamed,
+    onsearch,
   }: {
     project: Project | null
     selectedRelPaths?: string[]
@@ -79,6 +80,7 @@
     ontransfer: (mode: 'copy' | 'move', from: string[], toDir: string) => void
     onprojectdrop?: (projectId: string, copy: boolean) => void
     onrenamed?: (from: string, to: string) => void
+    onsearch?: (relPath: string) => void
   } = $props()
 
   const ROW = 28
@@ -958,6 +960,14 @@
           withMenu((node) => {
             void refreshFromDisk(node?.relPath ?? '')
           })}>Refresh</button
+      >
+      <button
+        type="button"
+        role="menuitem"
+        onclick={() =>
+          withMenu((node) => {
+            onsearch?.(node?.relPath ?? '')
+          })}>Search</button
       >
     {/if}
     {#if menu.node}

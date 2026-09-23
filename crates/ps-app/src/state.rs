@@ -595,6 +595,19 @@ impl AppState {
         )
     }
 
+    pub(crate) fn content_search(
+        &self,
+        project_id: String,
+        scope: PathBuf,
+        query: String,
+        limit: u32,
+    ) -> Result<ps_core::content_search::TextSearch> {
+        let root = self.project_root(&project_id)?;
+        let show_hidden = self.config_get().files.show_hidden;
+        let limit = usize::try_from(limit).unwrap_or(40).min(100);
+        ps_core::content_search::search_documents(&root, &scope, &query, show_hidden, limit)
+    }
+
     pub(crate) fn copy_conflicts(
         &self,
         project_id: String,
@@ -1455,6 +1468,17 @@ mod tests {
             .expect("search");
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].name, "intro.md");
+
+        let text = state
+            .content_search(project.id.clone(), PathBuf::new(), "Intro".into(), 20)
+            .expect("content search");
+        assert_eq!(text.hits.len(), 1);
+        assert_eq!(text.hits[0].rel_path, Path::new("chapters/intro.md"));
+        assert!(
+            state
+                .content_search(project.id.clone(), PathBuf::from(".."), "Intro".into(), 20)
+                .is_err()
+        );
 
         let asset = state
             .resolve_asset(&project.id, Path::new("cover.png"))

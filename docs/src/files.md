@@ -22,6 +22,7 @@ Tree context menu and File / Go:
 | --- | --- |
 | New File / New Folder | ⌘N / ⌘⇧N — in the selected folder |
 | Refresh | context menu on a folder (or empty tree) — reloads from disk |
+| Search | context menu on a folder (or empty tree) — text or a regular expression in that folder |
 | Rename | click the selected name again, F2, or the context menu |
 | Duplicate | copy beside the original |
 | Copy name | basename to the clipboard |
@@ -46,7 +47,16 @@ preview font and colors. File formats lists JavaScript, TypeScript, Ruby,
 Elixir, Go, Rust, C#, Java, and PHP. Other UTF-8 still opens; it is
 highlighted when a grammar exists.
 
-⌘P quick-opens Markdown in the current project. Open files stay in tabs above
+⌘P quick-opens Markdown in the current project. ⌘⇧F, the toolbar search
+icon, or Search on a folder searches file contents. Type plain text or a
+regular expression. A pattern that is not a valid regular expression is
+searched as exact text. A plain query also fuzzy-matches file paths, so a
+small typo in a name can still find the file. Results list the path and, when
+the text matched, the line. Choosing a result opens that file. The search
+skips `.git`, `node_modules`, and `target`, does not follow symbolic links,
+and does not read binary files.
+
+Open files stay in tabs above
 the preview. Each document tab remembers its own Preview, Edit, or Split
 mode, so a Markdown file can stay in Preview while a source file stays in
 the editor. The last folder, document tabs, Dashboard, Assistant, and those
@@ -65,7 +75,7 @@ folder); ⌥ copies; hovering a folder expands it. A stacked ghost of the
 dragged names follows the pointer and eases into the folder. Copy name and
 Copy path put the basename or the absolute path on the clipboard.
 
-The title bar: Preview / Edit / Split, Save, Format, Export, Board, and AI;
+The title bar: Preview / Edit / Split, Search, Save, Format, Export, Board, and AI;
 in Preview and Split — type size and zoom. Board opens the Dashboard tab; AI
 opens the Assistant. More in [editing](editing.md) and
 [assistant](assistant.md).

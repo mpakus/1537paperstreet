@@ -210,6 +210,11 @@ const GO_OPEN_FILE: MenuCommand = MenuCommand {
     title: "Open File",
     accelerator: Some("CmdOrCtrl+P"),
 };
+const GO_SEARCH_FILES: MenuCommand = MenuCommand {
+    id: "go-search-files",
+    title: "Search in Files",
+    accelerator: Some("CmdOrCtrl+Shift+F"),
+};
 const GO_REVEAL: MenuCommand = MenuCommand {
     id: "go-reveal",
     title: "Reveal in Finder",
@@ -288,6 +293,7 @@ pub(crate) fn plan_commands() -> &'static [MenuCommand] {
         VIEW_DASHBOARD,
         GO_SWITCH_PROJECT,
         GO_OPEN_FILE,
+        GO_SEARCH_FILES,
         GO_REVEAL,
         GO_EXTERNAL_EDITOR,
         APP_SETTINGS,
@@ -459,6 +465,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
 
     let switch_project = item(app, GO_SWITCH_PROJECT)?;
     let open_file = item(app, GO_OPEN_FILE)?;
+    let search_files = item(app, GO_SEARCH_FILES)?;
     let reveal = item(app, GO_REVEAL)?;
     let external = item(app, GO_EXTERNAL_EDITOR)?;
     let go_menu = Submenu::with_items(
@@ -468,6 +475,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         &[
             &switch_project,
             &open_file,
+            &search_files,
             &PredefinedMenuItem::separator(app)?,
             &reveal,
             &external,
@@ -613,7 +621,7 @@ mod tests {
             );
         }
 
-        assert_eq!(accelerators.len(), 35);
+        assert_eq!(accelerators.len(), 36);
     }
 
     #[test]

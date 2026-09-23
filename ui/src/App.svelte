@@ -125,6 +125,7 @@
   import MessageToasts from './panes/MessageToasts.svelte'
   import Preview from './panes/Preview.svelte'
   import Projects from './panes/Projects.svelte'
+  import ContentSearch from './panes/ContentSearch.svelte'
   import QuickOpen from './panes/QuickOpen.svelte'
   import QuickSwitch from './panes/QuickSwitch.svelte'
   import ReloadDisk from './panes/ReloadDisk.svelte'
@@ -221,6 +222,8 @@
   let appVersion = $state('0.1.0')
   let findOpen = $state(false)
   let quickOpen = $state(false)
+  let contentSearchOpen = $state(false)
+  let contentScope = $state('')
   let articleEl = $state<HTMLElement | undefined>()
   let appConfig = $state<Config | null>(null)
   let expandedSeed = $state<string[]>([])
@@ -747,6 +750,15 @@
           return
         }
         quickOpen = true
+        return
+      }
+      if (id === 'go-search-files') {
+        if (!active) {
+          showError('Open a folder first.')
+          return
+        }
+        contentScope = ''
+        contentSearchOpen = true
         return
       }
       if (id === 'edit-find') {
@@ -2146,6 +2158,10 @@
                 showError(errorMessage(cause))
               })
             }}
+            onsearch={(relPath) => {
+              contentScope = relPath
+              contentSearchOpen = true
+            }}
             onrenamed={(from, to) => {
               applyOpenRename(from, to)
             }}
@@ -2451,6 +2467,23 @@
         })
       }}
       onclose={() => (switchOpen = false)}
+      onerror={(message) => {
+        showError(message)
+      }}
+    />
+  {/if}
+
+  {#if contentSearchOpen && active}
+    <ContentSearch
+      projectId={active.id}
+      scope={contentScope}
+      onopen={(relPath) => {
+        revealRelPath = relPath
+        void openDocument(relPath, false, 'pin').catch((cause) => {
+          showError(errorMessage(cause))
+        })
+      }}
+      onclose={() => (contentSearchOpen = false)}
       onerror={(message) => {
         showError(message)
       }}

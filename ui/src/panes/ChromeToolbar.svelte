@@ -57,6 +57,31 @@
   <div class="cluster" role="group" aria-label="File">
     <button
       type="button"
+      class="icon"
+      title="Search in files (⌘⇧F)"
+      aria-label="Search in files"
+      onclick={() => oncommand('go-search-files')}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <circle
+          cx="7"
+          cy="7"
+          r="4.25"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        />
+        <path
+          d="M10.2 10.2 13.5 13.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+    <button
+      type="button"
       disabled={!canSave}
       title="Save (⌘S)"
       onclick={() => oncommand('file-save')}>Save</button
@@ -273,6 +298,18 @@
     color: var(--fg);
     background: var(--bg-elev);
     box-shadow: 0 1px 0 color-mix(in srgb, var(--fg) 8%, transparent);
+  }
+
+  .cluster > button.icon {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    padding: 0;
+  }
+
+  .cluster > button.icon svg {
+    width: 15px;
+    height: 15px;
   }
 
   .cluster > button {

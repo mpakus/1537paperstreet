@@ -5,6 +5,16 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.16] - 2026-09-23
+
+### Added
+
+- Each code block and quote in Preview has a Copy button in its top-right
+  corner.
+- Search in files (toolbar icon, ⌘⇧F, or Search on a folder) finds text or a
+  regular expression and opens the matching file. A plain query also
+  fuzzy-matches paths.
+
 ## [0.8.15] - 2026-09-22
 
 ### Added
@@ -476,7 +486,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.15...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.16...HEAD
+[0.8.16]: https://github.com/mpakus/1537paperstreet/compare/v0.8.15...v0.8.16
 [0.8.15]: https://github.com/mpakus/1537paperstreet/compare/v0.8.14...v0.8.15
 [0.8.14]: https://github.com/mpakus/1537paperstreet/compare/v0.8.13...v0.8.14
 [0.8.13]: https://github.com/mpakus/1537paperstreet/compare/v0.8.12...v0.8.13

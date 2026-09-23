@@ -45,6 +45,7 @@ article figure.mermaid {
   border-radius: 6px;
 }
 article figure.mermaid svg { max-width: 100%; height: auto; }
+article .copy-control { display: none !important; }
 @page { margin: 16mm; }
 `
 

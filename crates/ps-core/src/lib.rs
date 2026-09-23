@@ -4,6 +4,7 @@
 
 pub mod agents;
 pub mod config;
+pub mod content_search;
 pub mod dashboard;
 pub mod docio;
 pub mod edit;

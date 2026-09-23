@@ -581,6 +581,34 @@ relPath: string,
  */
 kind: TreeNodeKind, };
 
+export type TextSearchHit = { 
+/**
+ * Project-relative path of the matching file.
+ */
+relPath: string, 
+/**
+ * 1-based line of the first match. Zero when only the path matched.
+ */
+line: number, 
+/**
+ * A short excerpt of the matching line. Empty for a path-only match.
+ */
+snippet: string, };
+
+export type TextSearch = { 
+/**
+ * Matching files, content hits first.
+ */
+hits: Array<TextSearchHit>, 
+/**
+ * True when the query was not a valid regular expression.
+ */
+literal: boolean, 
+/**
+ * True when the walk stopped at the file cap.
+ */
+capped: boolean, };
+
 export type ConflictStrategy = "replace" | "keepBoth" | "skip";
 
 export type UntitledKind = "file" | "folder";

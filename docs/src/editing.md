@@ -35,7 +35,8 @@ link to another file in the project to open it in a new tab. Markdown stays in
 Preview. A source file (`.rb`, `.js`, `.ex`, and the other editor languages)
 opens in the code editor with syntax highlighting. Fenced code is
 highlighted (Rust, Python, Ruby, Elixir, YAML, JS/TS, and others) with
-quiet colors mixed into the body text.
+quiet colors mixed into the body text. Each code block and quote has a Copy
+button in its top-right corner.
 
 `write_doc` restores BOM, line endings, and a trailing newline atomically,
 skips the write when the encoded bytes already match disk, and does not

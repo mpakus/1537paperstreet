@@ -52,20 +52,29 @@
   color: var(--fg);
 }
 
-.preview .code-block {
+.preview .copy-block {
   position: relative;
 }
 
-.preview .code-copy {
+.preview .copy-block > pre,
+.preview .copy-block > blockquote {
+  padding-inline-end: 4.75rem;
+}
+
+.preview .copy-control {
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
+  z-index: 1;
   padding: var(--space-1) var(--space-2);
+  font-family: var(--font-body);
   font-size: 0.75rem;
+  line-height: 1.2;
   color: var(--fg);
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  cursor: pointer;
 }
 
 .preview figure.mermaid {

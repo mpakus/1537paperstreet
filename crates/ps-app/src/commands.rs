@@ -481,6 +481,23 @@ pub(crate) async fn doc_open(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn content_search(
+    state: State<'_, AppState>,
+    project_id: String,
+    scope: PathBuf,
+    query: String,
+    limit: u32,
+) -> Result<ps_core::content_search::TextSearch, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        state.content_search(project_id, scope, query, limit)
+    })
+    .await
+    .map_err(|error| error.to_string())
+    .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
 pub(crate) async fn files_search(
     state: State<'_, AppState>,
     project_id: String,
