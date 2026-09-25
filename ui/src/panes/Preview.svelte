@@ -477,6 +477,24 @@
     height: auto;
   }
 
+  .preview:has(:global(.image-file)) article {
+    max-width: none;
+  }
+
+  .preview :global(.image-file) {
+    display: flex;
+    justify-content: center;
+    margin: 0;
+  }
+
+  .preview :global(.image-file img) {
+    max-width: 100%;
+    max-height: calc(100vh - var(--titlebar-h) - 6rem);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+
   .preview :global(code),
   .preview :global(pre) {
     font-family: var(--font-mono);

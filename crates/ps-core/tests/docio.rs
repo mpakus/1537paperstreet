@@ -118,6 +118,34 @@ fn reads_eight_line_ending_bom_and_trailing_newline_combinations() {
 }
 
 #[test]
+fn image_files_preview_without_exposing_bytes_and_cannot_be_saved() {
+    let png = b"\x89PNG\r\n\x1a\n";
+    let (_temp, root) = project_file("cover.png", png);
+    let loaded = docio::read_doc(&root, Path::new("cover.png")).expect("read");
+    assert_eq!(loaded.source.text, "");
+    assert_eq!(loaded.source.encoding, DocumentEncoding::Binary);
+    assert!(!loaded.source.writable);
+    assert!(loaded.source.readonly_reason.is_none());
+    assert!(!loaded.source_only);
+    let err = docio::write_doc(
+        &root,
+        Path::new("cover.png"),
+        "",
+        &loaded.hash,
+        RestoreTraits::from_source(&loaded.source),
+    )
+    .expect_err("image save");
+    assert!(matches!(err, Error::ImageNotEditable));
+    assert_eq!(fs::read(root.join("cover.png")).expect("png bytes"), png);
+
+    let (_temp, root) = project_file("icon.svg", b"<svg><script>alert(1)</script></svg>\n");
+    let loaded = docio::read_doc(&root, Path::new("icon.svg")).expect("svg");
+    assert_eq!(loaded.source.text, "");
+    assert!(!loaded.source.writable);
+    assert!(!loaded.source_only);
+}
+
+#[test]
 fn binary_files_are_read_only_with_empty_text() {
     let (_temp, root) = project_file("note.md", &[0xff, 0xfe, 0x00]);
     let loaded = docio::read_doc(&root, Path::new("note.md")).expect("read");

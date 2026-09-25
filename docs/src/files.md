@@ -11,7 +11,8 @@ single-click file replaces it). Double-click pins a permanent tab. A single
 click expands a folder. UTF-8 text is editable. Preview and Edit highlight JavaScript,
 TypeScript, Ruby, Elixir, Go, Rust, C#, Java, and PHP (and other languages
 when a grammar exists). Binary files and files larger than 8 MB stay
-source-only. Folders such as `.docs` and `.git` are always listed. Hidden
+source-only. Images (PNG, JPEG, GIF, WebP, SVG, and similar) open in Preview
+and cannot be edited. Folders such as `.docs` and `.git` are always listed. Hidden
 files stay behind Settings → Show hidden files.
 
 ## Actions

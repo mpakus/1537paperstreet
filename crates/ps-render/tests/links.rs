@@ -109,6 +109,37 @@ fn opens_parent_and_source_links_inside_the_project() {
 }
 
 #[test]
+fn renders_jpeg_gif_and_webp_images_as_project_assets() {
+    let project = tempdir().expect("temporary project");
+    fs::write(project.path().join("photo.jpeg"), b"\xFF\xD8\xFF").expect("jpeg");
+    fs::write(project.path().join("anim.gif"), b"GIF89a").expect("gif");
+    fs::write(project.path().join("still.webp"), b"RIFF").expect("webp");
+
+    let html = render_project(
+        "![Photo](photo.jpeg)\n![Anim](anim.gif)\n![Still](still.webp)\n",
+        project.path(),
+        Path::new("readme.md"),
+        "project-1",
+    );
+
+    assert!(
+        html.html
+            .contains("src=\"asset://localhost/project-1/photo.jpeg\""),
+        "{}",
+        html.html
+    );
+    assert!(
+        html.html
+            .contains("src=\"asset://localhost/project-1/anim.gif\"")
+    );
+    assert!(
+        html.html
+            .contains("src=\"asset://localhost/project-1/still.webp\"")
+    );
+    assert!(!html.html.contains("#invalid-path"), "{}", html.html);
+}
+
+#[test]
 fn reserves_png_width_and_height_on_project_images() {
     let project = tempdir().expect("temporary project");
     let mut png = vec![0_u8; 24];

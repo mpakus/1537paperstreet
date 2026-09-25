@@ -421,29 +421,65 @@ pub fn is_markdown_path(path: &Path) -> bool {
 
 /// Language hint used to highlight a non-Markdown file in the preview.
 ///
-/// Markdown paths return [`None`] so they go through the document renderer.
+/// Markdown and image paths return [`None`] so they are not highlighted as source.
 /// Every other path returns the extension, or the lowercased file name when
 /// there is no extension (`Makefile`, `Dockerfile`). Unknown languages are
 /// still shown as escaped plain text.
 ///
 /// ```
 /// use std::path::Path;
-/// use ps_core::projects::{is_editable_path, is_source_path, source_language};
+/// use ps_core::projects::{is_editable_path, is_image_path, is_source_path, source_language};
 ///
 /// assert_eq!(source_language(Path::new("src/main.rs")).as_deref(), Some("rs"));
 /// assert_eq!(source_language(Path::new("notes.py")).as_deref(), Some("py"));
 /// assert_eq!(source_language(Path::new("Makefile")).as_deref(), Some("makefile"));
 /// assert_eq!(source_language(Path::new("notes.md")), None);
+/// assert_eq!(source_language(Path::new("cover.png")), None);
 /// assert!(is_source_path(Path::new("notes.txt")));
 /// assert!(is_editable_path(Path::new("LICENSE")));
 /// assert!(is_editable_path(Path::new("cover.png")));
+/// assert!(!is_source_path(Path::new("cover.png")));
 /// assert!(!is_source_path(Path::new("notes.md")));
+/// assert!(is_image_path(Path::new("photo.JPEG")));
+/// assert!(is_image_path(Path::new("anim.gif")));
+/// assert!(!is_image_path(Path::new("notes.md")));
 /// ```
 pub fn source_language(path: &Path) -> Option<String> {
-    if is_markdown_path(path) {
+    if is_markdown_path(path) || is_image_path(path) {
         return None;
     }
     Some(language_hint(path))
+}
+
+/// Returns whether `path` is an image the preview can show.
+///
+/// ```
+/// use std::path::Path;
+/// use ps_core::projects::is_image_path;
+///
+/// assert!(is_image_path(Path::new("notes/cover.png")));
+/// assert!(is_image_path(Path::new("photo.JPEG")));
+/// assert!(!is_image_path(Path::new("notes.md")));
+/// ```
+pub fn is_image_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            matches!(
+                extension.to_ascii_lowercase().as_str(),
+                "png"
+                    | "jpg"
+                    | "jpeg"
+                    | "gif"
+                    | "webp"
+                    | "svg"
+                    | "bmp"
+                    | "ico"
+                    | "avif"
+                    | "tif"
+                    | "tiff"
+            )
+        })
 }
 
 fn language_hint(path: &Path) -> String {

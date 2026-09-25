@@ -14,6 +14,7 @@
     canSave = false,
     canFormat = false,
     canFormatDocument = false,
+    canEdit = true,
     hasDocument = false,
     readingZoom = 1,
     onmode,
@@ -24,6 +25,7 @@
     canSave?: boolean
     canFormat?: boolean
     canFormatDocument?: boolean
+    canEdit?: boolean
     hasDocument?: boolean
     readingZoom?: number
     onmode: (mode: ViewMode) => void
@@ -44,8 +46,11 @@
         <button
           type="button"
           class="seg"
-          title={view.title}
+          title={view.id !== 'preview' && !canEdit
+            ? 'Editing is not available for images'
+            : view.title}
           aria-pressed={page === 'document' && mode === view.id}
+          disabled={view.id !== 'preview' && !canEdit}
           onclick={() => onmode(view.id)}>{view.label}</button
         >
       {/each}
@@ -325,7 +330,12 @@
     transition-duration: var(--duration);
   }
 
-  .seg:hover:not([aria-pressed='true']),
+  .seg:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .seg:hover:not([aria-pressed='true']):not(:disabled),
   .cluster > button:hover:not(:disabled) {
     background: var(--selection);
   }

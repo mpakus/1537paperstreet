@@ -8,6 +8,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use crate::projects::is_image_path;
 use crate::{Error, Result, fsops};
 
 const UTF8_BOM: &[u8] = &[0xEF, 0xBB, 0xBF];
@@ -206,10 +207,27 @@ pub fn read_doc(project_root: &Path, rel_path: &Path) -> Result<LoadedDocument> 
     }
 
     let bytes = fs::read(&path).map_err(|source| Error::io("read the document", &path, source))?;
+    let size = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+    let hash = blake3::hash(&bytes).to_hex().to_string();
+    if is_image_path(rel_path) {
+        return Ok(LoadedDocument {
+            source: DocumentSource {
+                text: String::new(),
+                eol: LineEnding::Lf,
+                bom: false,
+                trailing_newline: false,
+                encoding: DocumentEncoding::Binary,
+                writable: false,
+                readonly_reason: None,
+            },
+            hash,
+            size,
+            source_only: false,
+        });
+    }
     let writable_on_disk = is_writable(&path);
     let bom = bytes.starts_with(UTF8_BOM);
     let payload = if bom { &bytes[3..] } else { bytes.as_slice() };
-    let size = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
     let too_large = size > SOURCE_ONLY_BYTES;
     let eol = detect_eol(payload);
     let trailing_newline = payload.ends_with(b"\n");
@@ -247,7 +265,7 @@ pub fn read_doc(project_root: &Path, rel_path: &Path) -> Result<LoadedDocument> 
             readonly_reason: reason,
             text,
         },
-        hash: blake3::hash(&bytes).to_hex().to_string(),
+        hash,
         size,
         source_only: encoding == DocumentEncoding::Binary || too_large,
     })
@@ -326,6 +344,9 @@ pub fn write_doc(
     base_hash: &str,
     traits: RestoreTraits,
 ) -> Result<WrittenDocument> {
+    if is_image_path(rel_path) {
+        return Err(Error::ImageNotEditable);
+    }
     let path = fsops::resolve(project_root, rel_path)?;
     let metadata = fs::symlink_metadata(&path)
         .map_err(|source| Error::io("open the document", &path, source))?;

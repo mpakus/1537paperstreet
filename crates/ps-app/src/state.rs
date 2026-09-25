@@ -702,7 +702,12 @@ impl AppState {
         let loaded = docio::read_doc(&root, &rel_path)?;
         let allow_raw_html = self.config_get().viewer.allow_raw_html;
 
-        let (toc, mut chunks) = if loaded.source_only {
+        let (toc, mut chunks) = if projects::is_image_path(&rel_path) {
+            (
+                Vec::new(),
+                vec![ps_render::render_image(&project_id, &rel_path)],
+            )
+        } else if loaded.source_only {
             (Vec::new(), Vec::new())
         } else if let Some(language) = projects::source_language(&rel_path) {
             let html = ps_render::render_source(&loaded.source.text, &language);
@@ -1837,6 +1842,46 @@ mod tests {
         assert!(binary.result.meta.source_only);
         assert!(binary.result.first_chunk.is_none());
         assert_eq!(binary.result.meta.chunk_count, 0);
+
+        fs::write(project_root.join("cover.png"), b"\x89PNG\r\n\x1a\n").expect("png");
+        let image = state
+            .doc_open(project.id.clone(), PathBuf::from("cover.png"))
+            .expect("png open");
+        assert!(!image.result.meta.source_only);
+        assert!(!image.result.meta.writable);
+        assert!(image.result.meta.readonly_reason.is_none());
+        let image_html = image.result.first_chunk.expect("png chunk");
+        assert!(image_html.contains(&format!(
+            "src=\"asset://localhost/{}/cover.png\"",
+            project.id
+        )));
+        assert!(image_html.contains("class=\"image-file\""));
+        assert!(!image_html.contains("PNG"));
+
+        fs::create_dir(project_root.join("shots")).expect("shots");
+        fs::write(project_root.join("shots/my photo.jpeg"), b"\xFF\xD8\xFF").expect("jpeg");
+        let jpeg = state
+            .doc_open(project.id.clone(), PathBuf::from("shots/my photo.jpeg"))
+            .expect("jpeg open");
+        let jpeg_html = jpeg.result.first_chunk.expect("jpeg chunk");
+        assert!(jpeg_html.contains(&format!(
+            "src=\"asset://localhost/{}/shots/my%20photo.jpeg\"",
+            project.id
+        )));
+
+        fs::write(
+            project_root.join("icon.svg"),
+            b"<svg><script>alert(1)</script></svg>",
+        )
+        .expect("svg");
+        let svg = state
+            .doc_open(project.id.clone(), PathBuf::from("icon.svg"))
+            .expect("svg open");
+        assert!(!svg.result.meta.writable);
+        let svg_html = svg.result.first_chunk.expect("svg chunk");
+        assert!(svg_html.contains("<img "));
+        assert!(!svg_html.contains("<script"));
+        assert!(!svg_html.contains("alert"));
 
         assert!(
             state

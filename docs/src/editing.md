@@ -33,7 +33,9 @@ the document or at the root); a wiki target that already names a file, such as
 `[[src/main.rs]]`, opens that file. Missing links are drawn dashed. Click a
 link to another file in the project to open it in a new tab. Markdown stays in
 Preview. A source file (`.rb`, `.js`, `.ex`, and the other editor languages)
-opens in the code editor with syntax highlighting. Fenced code is
+opens in the code editor with syntax highlighting. An image (PNG, JPEG, GIF,
+WebP, SVG, BMP, ICO, AVIF, or TIFF) opens in Preview; Edit and Split stay
+off, and the file is not written back as text. Fenced code is
 highlighted (Rust, Python, Ruby, Elixir, YAML, JS/TS, and others) with
 quiet colors mixed into the body text. Each code block and quote has a Copy
 button in its top-right corner.

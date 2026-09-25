@@ -5,6 +5,13 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.17] - 2026-09-25
+
+### Added
+
+- PNG, JPEG, GIF, WebP, SVG, BMP, ICO, AVIF, and TIFF files open in Preview.
+  Edit and Split stay off, so the image is not overwritten as text.
+
 ## [0.8.16] - 2026-09-23
 
 ### Added
@@ -486,7 +493,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.16...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.17...HEAD
+[0.8.17]: https://github.com/mpakus/1537paperstreet/compare/v0.8.16...v0.8.17
 [0.8.16]: https://github.com/mpakus/1537paperstreet/compare/v0.8.15...v0.8.16
 [0.8.15]: https://github.com/mpakus/1537paperstreet/compare/v0.8.14...v0.8.15
 [0.8.14]: https://github.com/mpakus/1537paperstreet/compare/v0.8.13...v0.8.14

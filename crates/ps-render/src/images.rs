@@ -1,10 +1,104 @@
-//! Reserved `width`/`height` on project images so the viewer does not shift.
+//! Project images: intrinsic sizes in Markdown, and a preview page for image files.
 
 use std::fs;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Component, Path};
 
 use ps_core::fsops;
+use ps_core::projects::is_image_path;
+
+/// One HTML chunk that shows a project image through `asset://`.
+///
+/// The file bytes stay on disk. SVG is loaded as an image, so scripts in the
+/// file do not run. A path that is not an image, or that leaves the project,
+/// becomes a short message instead of a tag.
+///
+/// ```
+/// use std::path::Path;
+/// use ps_render::render_image;
+///
+/// let html = render_image("project-1", Path::new("notes/cover image.png"));
+/// assert!(html.contains("src=\"asset://localhost/project-1/notes/cover%20image.png\""));
+/// assert!(html.contains("alt=\"cover image.png\""));
+/// assert!(html.contains("class=\"image-file\""));
+/// ```
+#[must_use]
+pub fn render_image(project_scope: &str, rel_path: &Path) -> String {
+    let Some(src) = image_src(project_scope, rel_path) else {
+        return String::from(
+            "<section class=\"chunk\"><p class=\"image-file\">This image cannot be shown.</p></section>\n",
+        );
+    };
+    let alt = escape_text(
+        rel_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("Image"),
+    );
+    format!(
+        "<section class=\"chunk\"><p class=\"image-file\"><img src=\"{src}\" alt=\"{alt}\"></p></section>\n"
+    )
+}
+
+fn image_src(project_scope: &str, rel_path: &Path) -> Option<String> {
+    if !is_image_path(rel_path)
+        || project_scope.is_empty()
+        || !project_scope
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+    {
+        return None;
+    }
+
+    let mut encoded = String::new();
+    let mut parts = 0_usize;
+    for component in rel_path.components() {
+        match component {
+            Component::Normal(name) => {
+                let name = name.to_str()?;
+                if name.is_empty() || name == "." || name == ".." {
+                    return None;
+                }
+                if parts > 0 {
+                    encoded.push('/');
+                }
+                encode_segment(&mut encoded, name);
+                parts += 1;
+            }
+            Component::CurDir => {}
+            Component::ParentDir | Component::RootDir | Component::Prefix(_) => return None,
+        }
+    }
+    if parts == 0 {
+        return None;
+    }
+    Some(format!("asset://localhost/{project_scope}/{encoded}"))
+}
+
+fn encode_segment(output: &mut String, value: &str) {
+    for byte in value.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' => {
+                output.push(char::from(byte));
+            }
+            _ => output.push_str(&format!("%{byte:02X}")),
+        }
+    }
+}
+
+fn escape_text(value: &str) -> String {
+    let mut escaped = String::with_capacity(value.len());
+    for character in value.chars() {
+        match character {
+            '&' => escaped.push_str("&amp;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '"' => escaped.push_str("&quot;"),
+            _ => escaped.push(character),
+        }
+    }
+    escaped
+}
 
 /// Adds intrinsic `width`/`height` (and lazy loading) to project `asset://` images.
 pub(crate) fn reserve_sizes(html: &str, project_root: &Path, project_scope: &str) -> String {

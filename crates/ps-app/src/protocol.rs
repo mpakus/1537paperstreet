@@ -97,6 +97,10 @@ fn mime_for(path: &Path) -> &'static str {
         Some("gif") => "image/gif",
         Some("webp") => "image/webp",
         Some("svg") => "image/svg+xml",
+        Some("bmp") => "image/bmp",
+        Some("ico") => "image/x-icon",
+        Some("avif") => "image/avif",
+        Some("tif" | "tiff") => "image/tiff",
         Some("pdf") => "application/pdf",
         Some("mp4") => "video/mp4",
         Some("webm") => "video/webm",
@@ -149,6 +153,9 @@ mod tests {
         assert_eq!(mime_for(Path::new("a.gif")), "image/gif");
         assert_eq!(mime_for(Path::new("a.webp")), "image/webp");
         assert_eq!(mime_for(Path::new("a.svg")), "image/svg+xml");
+        assert_eq!(mime_for(Path::new("a.bmp")), "image/bmp");
+        assert_eq!(mime_for(Path::new("a.avif")), "image/avif");
+        assert_eq!(mime_for(Path::new("a.tiff")), "image/tiff");
         assert_eq!(mime_for(Path::new("a.pdf")), "application/pdf");
         assert_eq!(mime_for(Path::new("a.mp4")), "video/mp4");
         assert_eq!(mime_for(Path::new("a.webm")), "video/webm");

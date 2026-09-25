@@ -102,6 +102,7 @@
     dropDirAtPoint,
     followRenamedPath,
     isDraftDirty,
+    isImagePath,
     isJsonPath,
     isMarkdownPath,
     peekTreeDrag,
@@ -1264,7 +1265,15 @@
     draftText = loaded.text
   }
 
+  function viewForDocument(relPath: string, mode: ViewMode): ViewMode {
+    return isImagePath(relPath) ? 'preview' : mode
+  }
+
   async function setViewMode(next: ViewMode) {
+    if (openMeta && isImagePath(openMeta.relPath) && next !== 'preview') {
+      showError('Images open in Preview. Editing is not available.')
+      return
+    }
     viewMode = next
     if (next !== 'preview') {
       editorOpened = true
@@ -1454,7 +1463,10 @@
       if (!forceReload && cached?.docMeta) {
         const shown = {
           ...cached,
-          viewMode: modeForTab(cached.viewMode, nextView, viewMode),
+          viewMode: viewForDocument(
+            relPath,
+            modeForTab(cached.viewMode, nextView, viewMode),
+          ),
         }
         restoreTab(shown)
         tabs = placeDocTab(tabs, shown, mode)
@@ -1468,7 +1480,10 @@
       ignoredExternal = null
       externalPrompt = null
     }
-    viewMode = modeForTab(undefined, nextView, viewMode)
+    viewMode = viewForDocument(
+      relPath,
+      modeForTab(undefined, nextView, viewMode),
+    )
     if (viewMode !== 'preview') {
       editorOpened = true
     }
@@ -1554,8 +1569,8 @@
       return
     }
     workspacePage = 'document'
-    viewMode = tab.viewMode
-    if (tab.viewMode !== 'preview') {
+    viewMode = viewForDocument(tab.relPath, tab.viewMode)
+    if (viewMode !== 'preview') {
       editorOpened = true
     }
     openMeta = { projectId: active.id, relPath: tab.relPath }
@@ -2022,6 +2037,7 @@
         (docSourceMeta?.writable ?? docMeta?.writable) &&
         (isMarkdownPath(openMeta.relPath) || isJsonPath(openMeta.relPath)),
       )}
+      canEdit={!isImagePath(openMeta?.relPath ?? '')}
       readingZoom={previewZoom}
       onmode={(mode) => {
         workspacePage = 'document'

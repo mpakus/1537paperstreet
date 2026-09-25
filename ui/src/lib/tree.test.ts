@@ -6,6 +6,7 @@ import {
   fileIconKind,
   flattenTree,
   isEditablePath,
+  isImagePath,
   isJsonPath,
   isMarkdownPath,
   isSourcePath,
@@ -131,6 +132,12 @@ describe('tree helpers', () => {
     expect(isEditablePath('readme.md')).toBe(true)
     expect(isEditablePath('cover.png')).toBe(true)
     expect(isEditablePath('')).toBe(false)
+    expect(isImagePath('cover.png')).toBe(true)
+    expect(isImagePath('shots/photo.JPEG')).toBe(true)
+    expect(isImagePath('anim.gif')).toBe(true)
+    expect(isImagePath('icon.svg')).toBe(true)
+    expect(isImagePath('readme.md')).toBe(false)
+    expect(isSourcePath('cover.png')).toBe(false)
   })
 
   it('picks distinct icons for folders, Markdown, and other files', () => {

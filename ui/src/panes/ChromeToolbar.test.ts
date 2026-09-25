@@ -77,4 +77,21 @@ describe('ChromeToolbar', () => {
     expect(body).not.toContain('aria-label="Editor"')
     expect(body).not.toContain('aria-label="Bold"')
   })
+
+  it('disables edit and split for images', () => {
+    const { body } = render(ChromeToolbar, {
+      props: {
+        mode: 'preview',
+        canEdit: false,
+        hasDocument: true,
+        onmode() {},
+        oncommand() {},
+      },
+    })
+
+    expect(body).toContain('Editing is not available for images')
+    expect(body).toMatch(/disabled[^>]*>Edit<\/button>/)
+    expect(body).toMatch(/disabled[^>]*>Split<\/button>/)
+    expect(body).not.toMatch(/disabled[^>]*>Preview<\/button>/)
+  })
 })

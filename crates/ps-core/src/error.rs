@@ -155,6 +155,10 @@ pub enum Error {
     #[error("Format is available for Markdown and JSON.")]
     FormatUnavailable,
 
+    /// An image cannot be overwritten from the editor.
+    #[error("Images open in Preview. Editing is not available.")]
+    ImageNotEditable,
+
     /// JSON in the editor could not be parsed.
     #[error("This file is not valid JSON.")]
     InvalidJsonBuffer,

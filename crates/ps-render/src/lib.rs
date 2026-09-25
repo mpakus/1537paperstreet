@@ -20,6 +20,7 @@ pub use blocks::RenderedBlock;
 pub use cache::{CacheError, CacheResult, RenderCache};
 pub use chunks::html_chunks;
 pub use highlight::render_source;
+pub use images::render_image;
 pub use pipeline::{
     RenderOptions, RenderedDocument, render, render_document, render_document_with_options,
     render_project, render_project_with_options, render_with_options,

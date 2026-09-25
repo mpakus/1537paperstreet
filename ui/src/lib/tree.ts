@@ -7,6 +7,7 @@ export type TreeRow = {
 }
 
 const MARKDOWN_NAME = /\.(md|markdown|mdown|mdwn)$/i
+const IMAGE_NAME = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif|tiff?)$/i
 
 /** Returns whether a file name uses a recognized Markdown extension. */
 export function isMarkdownPath(name: string): boolean {
@@ -18,9 +19,14 @@ export function isJsonPath(name: string): boolean {
   return /\.json$/i.test(name)
 }
 
-/** Returns whether a file name is a non-Markdown document. */
+/** Returns whether a file name is shown as source text. */
 export function isSourcePath(name: string): boolean {
-  return name.length > 0 && !isMarkdownPath(name)
+  return name.length > 0 && !isMarkdownPath(name) && !isImagePath(name)
+}
+
+/** Returns whether a file name is an image shown in Preview. */
+export function isImagePath(name: string): boolean {
+  return IMAGE_NAME.test(name)
 }
 
 /** Returns whether the tree should open the file in Preview or Edit. */
