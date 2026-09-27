@@ -9,7 +9,7 @@ without importing files into a vault or signing in to a service.
 
 Made in Austin ✩ Texas · [aomega.co](https://aomega.co)
 
-[Download the latest release](https://github.com/mpakus/1537paperstreet/releases/latest)
+[1537paperstreet.com](https://1537paperstreet.com) · [Download the latest release](https://github.com/mpakus/1537paperstreet/releases/latest)
 
 ![Preview of a Markdown document with Projects, file tree, table of contents, and rendered headings](docs/screen-preview.png)
 

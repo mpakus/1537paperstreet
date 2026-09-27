@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://1537paperstreet.com/sitemap.xml

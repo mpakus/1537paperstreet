@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>1537paperstreet — Your Markdown. Your folders.</title>
+    <meta
+      name="description"
+      content="A free, open-source Markdown reading room for macOS. Open any folder. No vault, no account, no cloud library."
+    />
+    <link rel="canonical" href="https://1537paperstreet.com/" />
+    <meta name="theme-color" content="#fbfaf7" />
+    <link rel="icon" href="favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="1537paperstreet" />
+    <meta
+      property="og:title"
+      content="1537paperstreet — Your Markdown. Your folders."
+    />
+    <meta
+      property="og:description"
+      content="A free, open-source Markdown reading room for macOS. Open any folder. No vault, no account, no cloud library."
+    />
+    <meta property="og:url" content="https://1537paperstreet.com/" />
+    <meta
+      property="og:image"
+      content="https://1537paperstreet.com/media/og.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="1537paperstreet — Your Markdown. Your folders."
+    />
+    <meta
+      name="twitter:description"
+      content="A free, open-source Markdown reading room for macOS. Open any folder. No vault, no account, no cloud library."
+    />
+    <meta
+      name="twitter:image"
+      content="https://1537paperstreet.com/media/og.png"
+    />
+    <link
+      rel="preload"
+      href="fonts/fraunces-latin-500-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="fonts/source-sans-3-latin-400-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      document.documentElement.classList.add('js')
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "1537paperstreet",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "url": "https://1537paperstreet.com/",
+        "description": "A free, open-source Markdown reading room for macOS. Open any folder. No vault, no account, no cloud library."
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to content</a>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="logo" href="#content">
+          <img src="logo.png" alt="1537paperstreet" width="833" height="128" />
+        </a>
+        <nav class="nav" aria-label="Page">
+          <a class="section-link" href="#editing">Editing</a>
+          <a class="section-link" href="#themes">Themes</a>
+          <a
+            class="button"
+            href="https://github.com/mpakus/1537paperstreet/releases/latest"
+            >Download</a
+          >
+        </nav>
+      </div>
+    </header>
+    <main id="content">
+      <section class="hero wrap" id="reading" aria-labelledby="hero-title">
+        <p class="kicker rise">Free · Open source · macOS</p>
+        <h1 id="hero-title" class="rise rise-2">
+          Your Markdown.<br />
+          Your <span class="mark">folders.</span>
+        </h1>
+        <p class="lede rise rise-3">
+          A quieter way to work with the files you already have. Read, edit, and
+          export from ordinary folders. No vault, no account, no cloud library.
+        </p>
+        <div class="actions rise rise-4">
+          <a
+            class="button"
+            href="https://github.com/mpakus/1537paperstreet/releases/latest"
+            >Download for macOS</a
+          >
+          <a class="quiet" href="https://github.com/mpakus/1537paperstreet"
+            >View the source</a
+          >
+        </div>
+        <p class="fine rise rise-4">
+          macOS 12 or newer · Universal · Signed and notarized
+        </p>
+        <figure class="shot stage rise rise-4">
+          <img
+            src="media/reading.png"
+            width="1560"
+            height="960"
+            alt="1537paperstreet in Paper Light: project list, file tree, table of contents, and a rendered note titled The long room."
+            fetchpriority="high"
+          />
+          <span class="dogear" aria-hidden="true"></span>
+        </figure>
+      </section>
+
+      <div class="wrap">
+        <section class="facts" aria-label="What it does">
+          <div>
+            <p class="fact-title">Any folder</p>
+            <p>
+              Projects are paths on disk. Removing one from the list does not
+              delete it.
+            </p>
+          </div>
+          <div>
+            <p class="fact-title">Atomic saves</p>
+            <p>
+              A file you did not edit comes back byte for byte. A file changed
+              elsewhere is not overwritten.
+            </p>
+          </div>
+          <div>
+            <p class="fact-title">Diagrams and math</p>
+            <p>
+              Mermaid and KaTeX render on the Mac, with the rest of GitHub
+              Flavored Markdown.
+            </p>
+          </div>
+          <div>
+            <p class="fact-title">Local agents</p>
+            <p>
+              Codex, Claude, or OpenCode, if they are already on this machine.
+              The app does not send your notes away.
+            </p>
+          </div>
+        </section>
+        <ul class="keys">
+          <li><kbd>⌘P</kbd> Quick open</li>
+          <li><kbd>⌘E</kbd> Preview or edit</li>
+          <li><kbd>⌘⇧E</kbd> Split</li>
+          <li><kbd>⌘S</kbd> Save</li>
+          <li><kbd>⌘⌥E</kbd> Export PDF</li>
+        </ul>
+      </div>
+
+      <section
+        class="block wrap reveal"
+        id="editing"
+        aria-labelledby="edit-title"
+      >
+        <p class="index">01</p>
+        <div class="prose">
+          <h2 id="edit-title">Write beside the page</h2>
+          <p>
+            Preview, Edit, and Split share one window. The source stays readable
+            — headings, links, and fenced code — while the page updates beside
+            it. Formatting lives in the toolbar, and in the shortcuts you
+            already use.
+          </p>
+        </div>
+        <figure class="shot">
+          <img
+            src="media/split.png"
+            width="1560"
+            height="960"
+            alt="Split view: Markdown source on the left and a rendered Mermaid diagram of a note moving from the folder to the page and back."
+            loading="lazy"
+          />
+          <figcaption>
+            Split keeps the source next to the page. Diagrams are Mermaid, drawn
+            locally.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section
+        class="band block reveal"
+        id="themes"
+        aria-labelledby="theme-title"
+      >
+        <div class="wrap">
+          <p class="index">02</p>
+          <div class="prose">
+            <h2 id="theme-title">Twelve rooms for the same text</h2>
+            <p>
+              Paper, Solarized, Nord, Gruvbox, Catppuccin, Tokyo Night, and
+              GitHub. Follow the system appearance, or flip light and dark for
+              this session with ⌘⌥T — that choice is not written into your
+              settings.
+            </p>
+          </div>
+          <ul class="themes reveal">
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #fbfaf7; --swatch-accent: #c1452f"
+              ></span>
+              <span>Paper Light</span>
+            </li>
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #1c1b19; --swatch-accent: #e07a66"
+              ></span>
+              <span>Paper Dark</span>
+            </li>
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #fdf6e3; --swatch-accent: #cb4b16"
+              ></span>
+              <span>Solarized Light</span>
+            </li>
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #002b36; --swatch-accent: #cb4b16"
+              ></span>
+              <span>Solarized Dark</span>
+            </li>
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #fbf1c7; --swatch-accent: #cc241d"
+              ></span>
+              <span>Gruvbox Light</span>
+            </li>
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #282828; --swatch-accent: #fe8019"
+              ></span>
+              <span>Gruvbox Dark</span>
+            </li>
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #eff1f5; --swatch-accent: #fe640b"
+              ></span>
+              <span>Catppuccin Latte</span>
+            </li>
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #1e1e2e; --swatch-accent: #fab387"
+              ></span>
+              <span>Catppuccin Mocha</span>
+            </li>
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #2e3440; --swatch-accent: #88c0d0"
+              ></span>
+              <span>Nord</span>
+            </li>
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #1a1b26; --swatch-accent: #7aa2f7"
+              ></span>
+              <span>Tokyo Night</span>
+            </li>
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #ffffff; --swatch-accent: #0969da"
+              ></span>
+              <span>GitHub Light</span>
+            </li>
+            <li>
+              <span
+                class="swatch"
+                style="--swatch-bg: #0d1117; --swatch-accent: #2f81f7"
+              ></span>
+              <span>GitHub Dark</span>
+            </li>
+          </ul>
+          <figure class="shot">
+            <img
+              src="media/night.png"
+              width="1560"
+              height="960"
+              alt="The same note in Paper Dark, with the file tree, table of contents, and reading column."
+              loading="lazy"
+            />
+            <figcaption>
+              Paper Dark. The text does not change. The room does.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="block wrap reveal" aria-labelledby="local-title">
+        <div class="local">
+          <div class="prose">
+            <p class="index">03</p>
+            <h2 id="local-title">The folder never leaves</h2>
+          </div>
+          <ul class="points">
+            <li>
+              <h3>No account</h3>
+              <p>
+                Reading, search, themes, and diagrams run on the Mac. The only
+                optional network request is Check for Updates.
+              </p>
+            </li>
+            <li>
+              <h3>No vault</h3>
+              <p>
+                Open a folder, or drop one on the window. The same files stay
+                available to Git, Finder, and any other editor.
+              </p>
+            </li>
+            <li>
+              <h3>Agents on your terms</h3>
+              <p>
+                An external agent is a CLI you already installed. It may use the
+                network under its own terms. This app does not ship your
+                Markdown to a model service.
+              </p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section
+        class="close wrap reveal"
+        id="download"
+        aria-labelledby="download-title"
+      >
+        <h2 id="download-title">Free, on your Mac.</h2>
+        <p>
+          macOS 12 or newer, Apple Silicon or Intel. Current releases are
+          Developer ID signed, notarized, and checked by Gatekeeper.
+        </p>
+        <div class="actions">
+          <a
+            class="button"
+            href="https://github.com/mpakus/1537paperstreet/releases/latest"
+            >Download for macOS</a
+          >
+          <a
+            class="quiet"
+            href="https://github.com/mpakus/1537paperstreet/blob/main/README.md"
+            >Read the guide</a
+          >
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="wrap">
+        <p class="place">Made in Austin, Texas</p>
+        <p>1537paperstreet is free software.</p>
+        <nav aria-label="Elsewhere">
+          <a href="https://github.com/mpakus/1537paperstreet">GitHub</a>
+          <a href="https://aomega.co">aomega.co</a>
+        </nav>
+      </div>
+    </footer>
+    <script src="site.js"></script>
+  </body>
+</html>
