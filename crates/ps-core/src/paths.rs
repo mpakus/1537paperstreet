@@ -21,10 +21,8 @@ impl AppPaths {
             return Ok(Self::from_root(root));
         }
 
-        let home = env::var_os("HOME").ok_or(Error::HomeDirectoryUnavailable)?;
-        Ok(Self::from_root(
-            PathBuf::from(home).join(".1537paperstreet"),
-        ))
+        let home = home_dir()?;
+        Ok(Self::from_root(home.join(".1537paperstreet")))
     }
 
     /// Creates a path set rooted at `root`.
@@ -115,5 +113,40 @@ impl AppPaths {
     /// Returns the prompt-history file path.
     pub fn agent_prompts_file(&self) -> PathBuf {
         self.agents().join("prompts.json")
+    }
+}
+
+fn home_dir() -> Result<PathBuf> {
+    home_from(env::var_os("HOME"), env::var_os("USERPROFILE"))
+}
+
+fn home_from(
+    home: Option<std::ffi::OsString>,
+    userprofile: Option<std::ffi::OsString>,
+) -> Result<PathBuf> {
+    for candidate in [home, userprofile] {
+        if let Some(value) = candidate.filter(|value| !value.is_empty()) {
+            return Ok(PathBuf::from(value));
+        }
+    }
+    Err(Error::HomeDirectoryUnavailable)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::home_from;
+    use std::path::PathBuf;
+
+    #[test]
+    fn home_prefers_home_then_userprofile() {
+        assert_eq!(
+            home_from(Some("a".into()), Some("b".into())).expect("home"),
+            PathBuf::from("a")
+        );
+        assert_eq!(
+            home_from(None, Some("b".into())).expect("userprofile"),
+            PathBuf::from("b")
+        );
+        assert!(home_from(Some("".into()), None).is_err());
     }
 }

@@ -11,6 +11,7 @@ mod agent;
 mod commands;
 mod fs_watch;
 mod menu;
+mod open_path;
 mod pdf;
 mod protocol;
 mod state;
@@ -126,9 +127,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         ])
         .build(tauri::generate_context!())?
         .run(|app, event| {
+            #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen { .. } = event {
                 crate::tray::show_main_window(app);
             }
+            #[cfg(not(target_os = "macos"))]
+            let _ = (app, event);
         });
     Ok(())
 }

@@ -215,6 +215,11 @@ fn collect_event(
         *overflow = true;
         return;
     }
+    // inotify reports opens and reads; treating them as changes makes every
+    // document load trigger another reload.
+    if matches!(event.kind, notify::EventKind::Access(_)) {
+        return;
+    }
     for path in event.paths {
         if let Ok(relative) = path.strip_prefix(root)
             && let Some(relative) = normalize_relative(relative)
@@ -316,6 +321,26 @@ mod tests {
         collect_event(root, Ok(event), &mut changed, &mut overflow);
         assert!(!overflow);
         assert!(changed.contains(Path::new("notes/guide.md")));
+    }
+
+    #[test]
+    fn collect_event_ignores_reads_and_opens() {
+        use notify::event::{AccessKind, AccessMode};
+
+        let root = Path::new("/tmp/project");
+        let mut changed = BTreeSet::new();
+        let mut overflow = false;
+        for kind in [
+            AccessKind::Open(AccessMode::Any),
+            AccessKind::Read,
+            AccessKind::Close(AccessMode::Read),
+        ] {
+            let event =
+                notify::Event::new(notify::EventKind::Access(kind)).add_path(root.join("note.md"));
+            collect_event(root, Ok(event), &mut changed, &mut overflow);
+        }
+        assert!(!overflow);
+        assert!(changed.is_empty());
     }
 
     #[test]

@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Release-build 1537paperstreet for this Mac or another macOS architecture.
+# Release-build 1537paperstreet for this machine.
 #
-#   bin/build                 universal .app + DMG (Apple Silicon + Intel)
-#   bin/build host          .app for this machine
-#   bin/build arm64         .app for Apple Silicon
-#   bin/build x86_64        .app for Intel
+#   bin/build                 universal .app + DMG on macOS (default there)
+#   bin/build host            .app for this Mac
+#   bin/build arm64           .app for Apple Silicon
+#   bin/build x86_64          .app for Intel
+#   bin/build deb             Linux .deb (run on Linux; default there)
+#   bin/build nsis            Windows installer (run on Windows; default there)
 #   bin/build --help
 #
 # Extra arguments after the target go to `tauri build`.
@@ -13,58 +15,108 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
+os="$(uname -s)"
+
 usage() {
   cat <<'EOF'
-usage: bin/build [host|arm64|x86_64|universal] [tauri-build-args...]
+usage: bin/build [host|arm64|x86_64|universal|deb|nsis] [tauri-build-args...]
 
-  host        current architecture (.app)
+  host        current macOS architecture (.app)
   arm64       aarch64-apple-darwin
   x86_64      x86_64-apple-darwin
-  universal   arm64 + x86_64 (.app and DMG)  [default]
+  universal   arm64 + x86_64 (.app and DMG)  [default on macOS]
+  deb         Linux .deb                     [default on Linux]
+  nsis        Windows NSIS installer         [default on Windows]
 
-This project ships macOS only (12.0+). Windows and Linux targets are not built.
+macOS builds require macOS 12.0+. deb and nsis must be built on that host.
 EOF
 }
 
-if [[ "$(uname -s)" != "Darwin" ]]; then
-  echo "1537paperstreet is a macOS app. Run bin/build on a Mac." >&2
-  exit 1
-fi
+default_target() {
+  case "$os" in
+    Darwin) echo universal ;;
+    Linux) echo deb ;;
+    MINGW*|MSYS*|CYGWIN*) echo nsis ;;
+    *)
+      echo "unsupported operating system: $os" >&2
+      exit 1
+      ;;
+  esac
+}
 
-target_alias="universal"
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   usage
   exit 0
 fi
+
+target_alias="$(default_target)"
 if [[ $# -gt 0 && "$1" != -* ]]; then
   target_alias="$1"
   shift
 fi
 
+require_os() {
+  case "$1" in
+    Darwin | Linux)
+      if [[ "$os" != "$1" ]]; then
+        echo "build $target_alias on $1 (this machine is $os)" >&2
+        exit 1
+      fi
+      ;;
+    Windows)
+      case "$os" in
+        MINGW* | MSYS* | CYGWIN*) ;;
+        *)
+          echo "build $target_alias on Windows (this machine is $os)" >&2
+          exit 1
+          ;;
+      esac
+      ;;
+  esac
+}
+
 case "$target_alias" in
   host | native | local)
+    require_os Darwin
     rust_target=""
     bundles="app"
     out_dir="target/release/bundle"
     rustup_targets=()
     ;;
   arm64 | aarch64 | aarch64-apple-darwin)
+    require_os Darwin
     rust_target="aarch64-apple-darwin"
     bundles="app"
     out_dir="target/aarch64-apple-darwin/release/bundle"
     rustup_targets=("aarch64-apple-darwin")
     ;;
   x86_64 | intel | x86_64-apple-darwin)
+    require_os Darwin
     rust_target="x86_64-apple-darwin"
     bundles="app"
     out_dir="target/x86_64-apple-darwin/release/bundle"
     rustup_targets=("x86_64-apple-darwin")
     ;;
   universal | universal-apple-darwin)
+    require_os Darwin
     rust_target="universal-apple-darwin"
     bundles="app,dmg"
     out_dir="target/universal-apple-darwin/release/bundle"
     rustup_targets=("aarch64-apple-darwin" "x86_64-apple-darwin")
+    ;;
+  deb | linux)
+    require_os Linux
+    rust_target=""
+    bundles="deb"
+    out_dir="target/release/bundle"
+    rustup_targets=()
+    ;;
+  nsis | windows)
+    require_os Windows
+    rust_target=""
+    bundles="nsis"
+    out_dir="target/release/bundle"
+    rustup_targets=()
     ;;
   *)
     echo "unknown target: $target_alias" >&2
@@ -81,8 +133,10 @@ if [[ ${#rustup_targets[@]} -gt 0 ]]; then
   rustup target add "${rustup_targets[@]}"
 fi
 
-export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-12.0}"
-export SDKROOT="${SDKROOT:-$(xcrun --sdk macosx --show-sdk-path)}"
+if [[ "$os" == "Darwin" ]]; then
+  export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-12.0}"
+  export SDKROOT="${SDKROOT:-$(xcrun --sdk macosx --show-sdk-path)}"
+fi
 
 args=(build --bundles "$bundles")
 if [[ -n "$rust_target" ]]; then
@@ -99,4 +153,10 @@ if [[ -d "$out_dir/macos" ]]; then
 fi
 if [[ -d "$out_dir/dmg" ]]; then
   ls "$out_dir"/dmg/*.dmg 2>/dev/null || true
+fi
+if [[ -d "$out_dir/deb" ]]; then
+  ls "$out_dir"/deb/*.deb 2>/dev/null || true
+fi
+if [[ -d "$out_dir/nsis" ]]; then
+  ls "$out_dir"/nsis/*-setup.exe 2>/dev/null || true
 fi

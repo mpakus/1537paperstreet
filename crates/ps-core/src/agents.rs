@@ -3,7 +3,6 @@
 use std::env;
 use std::ffi::{OsStr, OsString};
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
@@ -524,10 +523,34 @@ pub fn login_path(existing: Option<&OsStr>, home: Option<&Path>) -> OsString {
 }
 
 fn is_runnable(path: &Path) -> bool {
+    if runnable_file(path) {
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        if path.extension().is_none() {
+            return runnable_file(&path.with_extension("exe"));
+        }
+    }
+    false
+}
+
+fn runnable_file(path: &Path) -> bool {
     let Ok(metadata) = fs::metadata(path) else {
         return false;
     };
-    metadata.is_file() && metadata.permissions().mode() & 0o111 != 0
+    if !metadata.is_file() {
+        return false;
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        metadata.permissions().mode() & 0o111 != 0
+    }
+    #[cfg(not(unix))]
+    {
+        true
+    }
 }
 
 fn validate_command(command: &str) -> Result<()> {

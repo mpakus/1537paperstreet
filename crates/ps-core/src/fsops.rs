@@ -1090,9 +1090,33 @@ fn same_volume(source: &Path, destination_dir: &Path) -> Result<bool> {
     Ok(source_device == destination_device)
 }
 
-#[cfg(not(unix))]
+/// Compares drive letters or UNC shares. Mounted folders may still need a copy.
+#[cfg(windows)]
+fn same_volume(source: &Path, destination_dir: &Path) -> Result<bool> {
+    let source = source
+        .canonicalize()
+        .map_err(|error| Error::io("inspect the move source volume", source, error))?;
+    let destination = destination_dir.canonicalize().map_err(|error| {
+        Error::io(
+            "inspect the move destination volume",
+            destination_dir,
+            error,
+        )
+    })?;
+    Ok(volume_prefix(&source).is_some() && volume_prefix(&source) == volume_prefix(&destination))
+}
+
+#[cfg(windows)]
+fn volume_prefix(path: &Path) -> Option<std::ffi::OsString> {
+    match path.components().next() {
+        Some(std::path::Component::Prefix(prefix)) => Some(prefix.as_os_str().to_ascii_uppercase()),
+        _ => None,
+    }
+}
+
+#[cfg(not(any(unix, windows)))]
 fn same_volume(_source: &Path, _destination_dir: &Path) -> Result<bool> {
-    Ok(true)
+    Ok(false)
 }
 
 fn move_one_on_same_volume<B>(
@@ -1430,6 +1454,13 @@ mod move_tests {
         let destination = destination_dir.join("draft.md");
         fs::write(&source, b"New text").expect("source file");
         fs::write(&destination, b"Important old text").expect("destination file");
+        let probe = root.join("probe");
+        fs::write(&probe, b"x").expect("probe");
+        fs::set_permissions(&probe, fs::Permissions::from_mode(0o000)).expect("lock probe");
+        if fs::read(&probe).is_ok() {
+            // Root ignores mode bits, so the copy cannot be made to fail this way.
+            return;
+        }
         let mut progress = CopyProgress {
             bytes_copied: 0,
             total_bytes: 8,

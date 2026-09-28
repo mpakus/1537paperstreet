@@ -87,4 +87,22 @@ mod tests {
         );
         assert!(manifest.contains("image-png"));
     }
+
+    #[test]
+    fn linux_and_windows_use_a_decorated_window() {
+        let linux: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.linux.conf.json")).expect("linux config");
+        let windows: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.windows.conf.json"))
+                .expect("windows config");
+        assert_eq!(linux["bundle"]["targets"][0].as_str(), Some("deb"));
+        assert_eq!(windows["bundle"]["targets"][0].as_str(), Some("nsis"));
+        for config in [linux, windows] {
+            let window = &config["app"]["windows"][0];
+            assert_eq!(window["label"].as_str(), Some("main"));
+            assert_eq!(window["transparent"].as_bool(), Some(false));
+            assert_eq!(window["decorations"].as_bool(), Some(true));
+            assert_eq!(window["dragDropEnabled"].as_bool(), Some(true));
+        }
+    }
 }

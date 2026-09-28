@@ -878,8 +878,10 @@ strip = "symbols"
   Developer ID, подменяют `.app` и просят перезапуск. Страница загрузки —
   запасной путь, если zip нет. `tauri-plugin-updater` с Ed25519 (T-155) ещё
   впереди. Плюс Homebrew cask.
-- **CI:** GitHub Actions, раннеры `macos-14` (arm64). Джобы: `fmt` → `clippy -D warnings` → `test` → `coverage` → `bench-regression` → `build-universal` → (по тегу) `sign-notarize-release`.
-- **Секреты:** сертификат, пароли, ключ обновлений — только в GitHub Secrets.
+- **CI:** GitHub Actions. `macos-14` гоняет fmt, clippy, тесты и universal-сборку. `ubuntu-24.04` гоняет тесты и собирает `.deb`. `windows-latest` проверяет компиляцию и собирает NSIS. По тегу публикуется GitHub Release.
+- **Linux:** `.deb` для x86_64 (WebKitGTK 4.1). Окно с обычной рамкой. PDF и установка обновления поверх запущенного приложения остаются на macOS; Check for Updates открывает страницу релиза.
+- **Windows:** NSIS-установщик x64 (WebView2). Подпись Authenticode не входит в этот релиз. Домашний каталог — `HOME` или `USERPROFILE`, данные в `~/.1537paperstreet`.
+- **Секреты:** сертификат Apple, пароли, ключ обновлений — только в GitHub Secrets. Linux и Windows публикуются без подписи.
 
 ---
 
@@ -920,7 +922,6 @@ P16 закрыта. Codex spawn — `codex app-server --stdio` (не `codex acp`
 - Полнотекстовый поиск по содержимому всех файлов (v1.1).
 - Полноценное трёхстороннее слияние при конфликте версий (в v1 — выбор одной из сторон; данные для merge уже есть, § 10.6).
 - Git-бэкенд для истории и интеграция со статусом git в дереве (v1.1, § 10.8).
-- Windows и Linux.
 - Синхронизация, облако, аккаунты, шаринг.
 - Плагины и пользовательские скрипты (кроме opt-in ACP CLI, ADR-010).
 - Экспорт в PDF/HTML (v1.1 — только ZIP).

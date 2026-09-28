@@ -11,6 +11,7 @@
     type Config,
     type ThemeInfo,
   } from '../lib/ipc'
+  import { usesTrafficLights } from '../lib/platform'
 
   const BODY_FONTS = [
     'New York',
@@ -374,21 +375,23 @@
       {/if}
     </section>
 
-    <section>
-      <h3>Window</h3>
-      <label class="check">
-        <input
-          type="checkbox"
-          bind:checked={draft.window.show_in_dock}
-          onchange={persist}
-        />
-        Keep icon in Dock when the window is hidden
-      </label>
-      <p class="hint">
-        Uncheck to remove the Dock icon after the red traffic light hides the
-        window. The menu-bar icon still brings the app back.
-      </p>
-    </section>
+    {#if usesTrafficLights()}
+      <section>
+        <h3>Window</h3>
+        <label class="check">
+          <input
+            type="checkbox"
+            bind:checked={draft.window.show_in_dock}
+            onchange={persist}
+          />
+          Keep icon in Dock when the window is hidden
+        </label>
+        <p class="hint">
+          Uncheck to remove the Dock icon after the red traffic light hides the
+          window. The menu-bar icon still brings the app back.
+        </p>
+      </section>
+    {/if}
 
     <section>
       <h3>Files and preview</h3>

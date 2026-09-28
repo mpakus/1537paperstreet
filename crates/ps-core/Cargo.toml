@@ -1,6 +1,6 @@
 [package]
 name = "ps-core"
-version = "0.8.17"
+version = "0.8.18"
 edition.workspace = true
 publish.workspace = true
 rust-version.workspace = true
@@ -17,7 +17,7 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 thiserror = "2.0.20"
 time = { version = "0.3.55", features = ["formatting"] }
-trash = { version = "5.2.6", default-features = false }
+trash = { version = "5.2.6", default-features = false, features = ["coinit_apartmentthreaded"] }
 ts-rs = "12.0.1"
 ulid = "3.0.0"
 unicode-normalization = "0.1.25"

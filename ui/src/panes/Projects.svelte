@@ -11,6 +11,7 @@
   } from '../lib/ipc'
   import { listboxFocusIndex } from '../lib/list-focus'
   import { highlightQuery } from '../lib/text'
+  import { revealLabel } from '../lib/platform'
   import {
     isTreeDrag,
     resolveTreeDrag,
@@ -424,7 +425,7 @@
             onerror(errorMessage(cause))
           })
         }
-      }}>Reveal in Finder</button
+      }}>{revealLabel()}</button
     >
     {#if menu.project.available === false}
       <button

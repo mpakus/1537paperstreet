@@ -215,9 +215,15 @@ const GO_SEARCH_FILES: MenuCommand = MenuCommand {
     title: "Search in Files",
     accelerator: Some("CmdOrCtrl+Shift+F"),
 };
+#[cfg(target_os = "macos")]
+const REVEAL_TITLE: &str = "Reveal in Finder";
+#[cfg(target_os = "windows")]
+const REVEAL_TITLE: &str = "Show in Explorer";
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+const REVEAL_TITLE: &str = "Show in Files";
 const GO_REVEAL: MenuCommand = MenuCommand {
     id: "go-reveal",
-    title: "Reveal in Finder",
+    title: REVEAL_TITLE,
     accelerator: Some("CmdOrCtrl+Shift+R"),
 };
 const GO_EXTERNAL_EDITOR: MenuCommand = MenuCommand {

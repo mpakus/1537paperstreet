@@ -5,6 +5,20 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.18] - 2026-09-28
+
+### Added
+
+- Tagged releases also publish a Linux `.deb` (x86_64) and a Windows NSIS
+  installer. macOS stays the signed universal `.app` and DMG.
+- Reveal and Open use Finder, Explorer, or the Linux file manager.
+
+### Changed
+
+- Linux and Windows use a normal window frame. The Dock setting stays on macOS.
+- Check for Updates on Linux and Windows opens the release page. Installing
+  over the running app stays macOS-only. PDF export stays macOS-only.
+
 ## [0.8.17] - 2026-09-25
 
 ### Added
@@ -493,7 +507,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.17...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.18...HEAD
+[0.8.18]: https://github.com/mpakus/1537paperstreet/compare/v0.8.17...v0.8.18
 [0.8.17]: https://github.com/mpakus/1537paperstreet/compare/v0.8.16...v0.8.17
 [0.8.16]: https://github.com/mpakus/1537paperstreet/compare/v0.8.15...v0.8.16
 [0.8.15]: https://github.com/mpakus/1537paperstreet/compare/v0.8.14...v0.8.15
