@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
 
+  import { usesTrafficLights } from './lib/platform'
+
   import {
     configGet,
     configSet,
@@ -2003,6 +2005,7 @@
   style:--measure-ch={measureCh}
   style:--font-body={`"${bodyFont}", "Iowan Old Style", Palatino, serif`}
   style:--font-mono={`"${monoFont}", ui-monospace, monospace`}
+  style:--traffic-pad={usesTrafficLights() ? '88px' : '0px'}
 >
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <header

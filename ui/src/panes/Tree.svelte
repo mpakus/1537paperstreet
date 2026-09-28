@@ -40,6 +40,7 @@
     type DragGhostPreview,
     visibleWindow,
   } from '../lib/tree'
+  import { revealLabel } from '../lib/platform'
 
   let {
     project,
@@ -1052,7 +1053,7 @@
         type="button"
         role="menuitem"
         onclick={() => withMenu((node) => void reveal(node))}
-        >Reveal in Finder</button
+        >{revealLabel()}</button
       >
       {#if actionNodes(menu.node).every((item) => item.kind !== 'directory')}
         <button
@@ -1084,7 +1085,7 @@
         type="button"
         role="menuitem"
         onclick={() => withMenu(() => void reveal(null))}
-        >Reveal in Finder</button
+        >{revealLabel()}</button
       >
     {/if}
   </div>

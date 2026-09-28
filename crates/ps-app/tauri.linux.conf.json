@@ -1,0 +1,20 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "1537paperstreet",
+        "width": 1180,
+        "height": 780,
+        "visible": false,
+        "transparent": false,
+        "decorations": true,
+        "hiddenTitle": false,
+        "dragDropEnabled": true
+      }
+    ]
+  },
+  "bundle": {
+    "targets": ["deb"]
+  }
+}

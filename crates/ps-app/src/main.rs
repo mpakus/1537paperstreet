@@ -11,6 +11,7 @@ mod agent;
 mod commands;
 mod fs_watch;
 mod menu;
+mod open_path;
 mod pdf;
 mod protocol;
 mod state;

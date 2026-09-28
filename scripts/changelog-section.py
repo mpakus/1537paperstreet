@@ -70,6 +70,8 @@ SIGNED_FOOTER = """
 Universal macOS build (Apple Silicon `arm64` + Intel `x86_64`), minimum macOS 12.0.
 
 Signed with Developer ID and notarized by Apple. The notarization ticket is stapled to both the app and DMG for offline Gatekeeper verification.
+
+Linux `.deb` (x86_64) and the Windows NSIS installer are on the same release. Those packages are not Apple-signed. In-app install still replaces the macOS `.app`; Linux and Windows open this page.
 """
 
 

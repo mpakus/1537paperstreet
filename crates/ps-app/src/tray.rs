@@ -33,12 +33,16 @@ pub(crate) fn install(app: &App) -> tauri::Result<()> {
     )?;
     let icon = Image::from_bytes(TRAY_ICON_PNG)?;
 
-    TrayIconBuilder::with_id("status")
+    let mut builder = TrayIconBuilder::with_id("status")
         .icon(icon)
-        .icon_as_template(true)
         .tooltip("1537paperstreet")
         .menu(&menu)
-        .show_menu_on_left_click(false)
+        .show_menu_on_left_click(false);
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.icon_as_template(true);
+    }
+    builder
         .on_menu_event(|app, event| match event.id().as_ref() {
             "tray-show" => show_main_window(app),
             "tray-about" => {

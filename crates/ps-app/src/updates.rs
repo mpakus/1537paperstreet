@@ -136,7 +136,7 @@ pub(crate) fn github_status_message(status: u16) -> String {
 pub(crate) fn check_latest(current: &str) -> Result<UpdateCheck, String> {
     match fetch_latest_release_json() {
         Ok(body) => match ps_core::updates::from_github_json(current, &body) {
-            Ok(check) => Ok(check),
+            Ok(check) => Ok(installable_on_this_host(check)),
             Err(error) => check_latest_from_tag(current).or(Err(error.to_string())),
         },
         Err(api_error) => check_latest_from_tag(current).or(Err(api_error)),
@@ -148,11 +148,30 @@ fn check_latest_from_tag(current: &str) -> Result<UpdateCheck, String> {
     ps_core::updates::from_github_tag(current, &tag).map_err(|error| error.to_string())
 }
 
+/// In-app install replaces a macOS `.app`. Other hosts keep the release page.
+fn installable_on_this_host(check: UpdateCheck) -> UpdateCheck {
+    #[cfg(target_os = "macos")]
+    {
+        check
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        UpdateCheck {
+            can_install: false,
+            asset_url: String::new(),
+            asset_sha256: String::new(),
+            ..check
+        }
+    }
+}
+
 /// Downloads the latest macOS zip, verifies it, and replaces the running `.app`.
 pub(crate) fn install_latest_update() -> Result<UpdateInstall, String> {
     let body = fetch_latest_release_json()?;
-    let check = ps_core::updates::from_github_json(env!("CARGO_PKG_VERSION"), &body)
-        .map_err(|error| error.to_string())?;
+    let check = installable_on_this_host(
+        ps_core::updates::from_github_json(env!("CARGO_PKG_VERSION"), &body)
+            .map_err(|error| error.to_string())?,
+    );
     install_checked_update(&check)
 }
 

@@ -1090,9 +1090,28 @@ fn same_volume(source: &Path, destination_dir: &Path) -> Result<bool> {
     Ok(source_device == destination_device)
 }
 
-#[cfg(not(unix))]
+#[cfg(windows)]
+fn same_volume(source: &Path, destination_dir: &Path) -> Result<bool> {
+    use std::os::windows::fs::MetadataExt;
+
+    let source_serial = fs::metadata(source)
+        .map_err(|error| Error::io("inspect the move source volume", source, error))?
+        .volume_serial_number();
+    let destination_serial = fs::metadata(destination_dir)
+        .map_err(|error| {
+            Error::io(
+                "inspect the move destination volume",
+                destination_dir,
+                error,
+            )
+        })?
+        .volume_serial_number();
+    Ok(source_serial != 0 && source_serial == destination_serial)
+}
+
+#[cfg(not(any(unix, windows)))]
 fn same_volume(_source: &Path, _destination_dir: &Path) -> Result<bool> {
-    Ok(true)
+    Ok(false)
 }
 
 fn move_one_on_same_volume<B>(

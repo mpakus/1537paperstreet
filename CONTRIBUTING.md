@@ -24,9 +24,10 @@ History (P10) and ZIP export (P12) are out of scope unless someone explicitly
 asks. Do not add them “while you’re here.”
 
 Release: tag `vX.Y.Z` (same version as `package.json`) runs
-`.github/workflows/release.yml` — universal `.app`/DMG on `macos-14` and a
-GitHub Release. The workflow refuses to publish an unsigned build. It needs
-the same Developer ID certificate and App Store Connect API key used by
+`.github/workflows/release.yml`. That publishes a universal `.app` and DMG
+from `macos-14`, a `.deb` from `ubuntu-24.04`, and an NSIS installer from
+`windows-latest`. The workflow refuses to publish an unsigned macOS build. It
+needs the same Developer ID certificate and App Store Connect API key used by
 GitRonimo in these repository secrets:
 
 - `DEVELOPER_ID_APPLICATION`
@@ -37,5 +38,7 @@ GitRonimo in these repository secrets:
 - `APPLE_API_ISSUER`
 
 Tauri signs the universal app with hardened runtime and notarizes it; the
-workflow also notarizes and staples the final DMG. Both artifacts must pass
-`codesign`, `stapler`, and Gatekeeper verification before publication.
+workflow also notarizes and staples the final DMG. Both macOS artifacts must
+pass `codesign`, `stapler`, and Gatekeeper verification before publication.
+The Linux `.deb` and Windows installer are attached to the same release
+without Authenticode or Apple signing.

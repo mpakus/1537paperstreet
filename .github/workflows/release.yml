@@ -1,7 +1,6 @@
-# Tag vX.Y.Z (or workflow_dispatch) builds one macOS app for Apple Silicon and
-# Intel. Tauri's universal-apple-darwin target compiles both Rust triples and
-# merges them with Apple `lipo` (PLAN § 16). cargo-lipo is not used: it only
-# produces iOS static libraries and is deprecated.
+# Tag vX.Y.Z (or workflow_dispatch) builds three release packages:
+# a universal macOS app and DMG, a Linux .deb, and a Windows NSIS installer.
+# macOS is signed and notarized. Linux and Windows packages are unsigned.
 name: Release
 
 on:
@@ -161,25 +160,151 @@ jobs:
           VERSION: ${{ steps.artifacts.outputs.version }}
           DMG: ${{ steps.artifacts.outputs.dmg }}
           ZIP: ${{ steps.artifacts.outputs.zip }}
-        run: |
-          set -euo pipefail
-          pkg="$(node -p "require('./package.json').version")"
-          if [[ "$VERSION" != "$pkg" ]]; then
-            echo "tag $TAG does not match package.json version $pkg" >&2
-            exit 1
-          fi
-          python3 scripts/changelog-section.py "$VERSION" --signed-footer > notes.md
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "1537paperstreet $VERSION" --notes-file notes.md
-            gh release upload "$TAG" "$DMG" "$ZIP" --clobber
-          else
-            gh release create "$TAG" \
-              --title "1537paperstreet $VERSION" \
-              --notes-file notes.md \
-              "$DMG" \
-              "$ZIP"
-          fi
+        run: bash scripts/publish-release.sh --edit-notes "$TAG" "$VERSION" "$DMG" "$ZIP"
 
       - name: Remove App Store Connect API key
         if: always()
         run: rm -f "$RUNNER_TEMP/AuthKey_${APPLE_API_KEY}.p8"
+
+  release-linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            curl \
+            file \
+            libayatana-appindicator3-dev \
+            libssl-dev \
+            libwebkit2gtk-4.1-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            patchelf
+
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cargo-release-linux-${{ hashFiles('Cargo.lock') }}
+
+      - run: npm ci
+
+      - name: Build .deb
+        run: npm run tauri -- build --bundles deb
+
+      - name: Collect artifacts
+        id: artifacts
+        env:
+          PUBLISH_TAG: ${{ inputs.publish_tag }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          elif [[ -n "${PUBLISH_TAG:-}" ]]; then
+            version="${PUBLISH_TAG#v}"
+          else
+            version="$(node -p "require('./package.json').version")"
+          fi
+          deb=(target/release/bundle/deb/*.deb)
+          if [[ "${#deb[@]}" -ne 1 || ! -f "${deb[0]}" ]]; then
+            echo "expected exactly one .deb" >&2
+            ls -la target/release/bundle/deb/ >&2 || true
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "deb=${deb[0]}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: linux-deb
+          path: ${{ steps.artifacts.outputs.deb }}
+
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag' || inputs.publish_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.publish_tag }}
+          VERSION: ${{ steps.artifacts.outputs.version }}
+          DEB: ${{ steps.artifacts.outputs.deb }}
+        run: bash scripts/publish-release.sh "$TAG" "$VERSION" "$DEB"
+
+  release-windows:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cargo-release-windows-${{ hashFiles('Cargo.lock') }}
+
+      - run: npm ci
+
+      - name: Build NSIS installer
+        run: npm run tauri -- build --bundles nsis
+
+      - name: Collect artifacts
+        id: artifacts
+        env:
+          PUBLISH_TAG: ${{ inputs.publish_tag }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          elif [[ -n "${PUBLISH_TAG:-}" ]]; then
+            version="${PUBLISH_TAG#v}"
+          else
+            version="$(node -p "require('./package.json').version")"
+          fi
+          setup=(target/release/bundle/nsis/*-setup.exe)
+          if [[ "${#setup[@]}" -ne 1 || ! -f "${setup[0]}" ]]; then
+            echo "expected exactly one NSIS installer" >&2
+            ls -la target/release/bundle/nsis/ >&2 || true
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "setup=${setup[0]}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: windows-nsis
+          path: ${{ steps.artifacts.outputs.setup }}
+
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag' || inputs.publish_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.publish_tag }}
+          VERSION: ${{ steps.artifacts.outputs.version }}
+          SETUP: ${{ steps.artifacts.outputs.setup }}
+        run: bash scripts/publish-release.sh "$TAG" "$VERSION" "$SETUP"

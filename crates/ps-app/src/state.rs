@@ -1,6 +1,5 @@
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::{Arc, Mutex};
 
 use ps_core::agents::{
@@ -377,12 +376,12 @@ impl AppState {
 
     pub(crate) fn reveal_in_finder(&self, project_id: String, rel_path: PathBuf) -> Result<()> {
         let path = self.absolute_in_project(&project_id, &rel_path)?;
-        run_open(&["-R", "--"], &path, "reveal the item in Finder")
+        crate::open_path::reveal(&path)
     }
 
     pub(crate) fn open_external(&self, project_id: String, rel_path: PathBuf) -> Result<()> {
         let path = self.absolute_in_project(&project_id, &rel_path)?;
-        run_open(&["--"], &path, "open the file in an external editor")
+        crate::open_path::launch(&path)
     }
 
     pub(crate) fn fs_rename(
@@ -650,22 +649,7 @@ impl AppState {
         if !is_http_url(url) {
             return Err(Error::UnsupportedUrl);
         }
-        let status = Command::new("/usr/bin/open")
-            .args(["--", url])
-            .status()
-            .map_err(|source| Error::Io {
-                action: "open the link in a browser",
-                path: PathBuf::from(url),
-                source,
-            })?;
-        if status.success() {
-            return Ok(());
-        }
-        Err(Error::Io {
-            action: "open the link in a browser",
-            path: PathBuf::from(url),
-            source: io::Error::other("the macOS open command failed"),
-        })
+        crate::open_path::open_url(url)
     }
 
     pub(crate) fn doc_source(
@@ -913,26 +897,6 @@ fn is_http_url(url: &str) -> bool {
         && host.chars().all(|character| {
             character.is_ascii_alphanumeric() || matches!(character, '.' | '-' | ':')
         })
-}
-
-fn run_open(args: &[&str], path: &Path, action: &'static str) -> Result<()> {
-    let status = Command::new("/usr/bin/open")
-        .args(args)
-        .arg(path)
-        .status()
-        .map_err(|source| Error::Io {
-            action,
-            path: path.to_path_buf(),
-            source,
-        })?;
-    if status.success() {
-        return Ok(());
-    }
-    Err(Error::Io {
-        action,
-        path: path.to_path_buf(),
-        source: io::Error::other("the macOS open command failed"),
-    })
 }
 
 /// Writes bytes chosen through a native Save dialog. This is not a project path.

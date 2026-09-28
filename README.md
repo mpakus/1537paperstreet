@@ -222,9 +222,14 @@ App data lives in `~/.1537paperstreet/` (`config.json`, `projects.json`,
 ## Install
 
 macOS 12 (Monterey) or newer, Apple Silicon or Intel. GitHub Releases ship a
-**universal** `.app` and DMG.
+**universal** `.app` and DMG, a Linux `.deb` (x86_64), and a Windows NSIS
+installer.
 
-Current releases are Developer ID–signed, notarized, and Gatekeeper-checked.
+Current macOS releases are Developer ID–signed, notarized, and Gatekeeper-checked.
+The Linux and Windows packages on the same release are unsigned. PDF export and
+installing an update over the running app are macOS-only; on Linux and Windows,
+Check for Updates opens the release page.
+
 Release **0.3.0 and earlier** are unsigned: Right-click → Open, or after
 copying to Applications:
 
@@ -258,16 +263,22 @@ npm install
 `./bin/test.dev` installs npm deps if needed and runs the Tauri development
 window (`npm run tauri -- dev`). Extra arguments are forwarded.
 
-Release `.app` / DMG (macOS 12+):
+Release `.app` / DMG (macOS 12+), Linux `.deb`, or Windows NSIS installer:
 
 ```sh
-./bin/build              # universal Apple Silicon + Intel
-./bin/build host         # this machine only
-./bin/build arm64        # Apple Silicon
-./bin/build x86_64       # Intel
+./bin/build              # on macOS: universal Apple Silicon + Intel
+./bin/build host         # this Mac only
+./bin/build deb          # on Linux: .deb
+./bin/build nsis         # on Windows: NSIS installer
 ```
 
-`./bin/build --help` lists targets. The same universal build is `npm run tauri:build:universal`.
+`./bin/build --help` lists targets. The same universal macOS build is `npm run tauri:build:universal`.
+
+A `v*` tag builds the universal macOS app, a Linux `.deb`, and a Windows
+installer, and publishes a GitHub Release after the macOS app and DMG pass
+Developer ID signature, notarization-ticket, and Gatekeeper verification.
+Linux and Windows packages are unsigned. Required Apple secrets are documented
+in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Before a pull request:
 
@@ -285,8 +296,3 @@ How we work: [`CONTRIBUTING.md`](CONTRIBUTING.md). After changing IPC types:
 ```sh
 UPDATE_TS_BINDINGS=1 cargo test -p ps-core --test typescript
 ```
-
-A `v*` tag builds the universal binary and publishes a GitHub Release only
-after the app and DMG pass Developer ID signature, notarization-ticket, and
-Gatekeeper verification. Required repository secrets are documented in
-[`CONTRIBUTING.md`](CONTRIBUTING.md).
