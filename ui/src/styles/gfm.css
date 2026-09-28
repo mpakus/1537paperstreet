@@ -67,15 +67,26 @@
 
 .preview li.task-list-item {
   list-style: none;
+  cursor: pointer;
 }
 
-.preview li.task-list-item > input[type='checkbox'] {
+.preview li.task-list-item::marker {
+  content: none;
+}
+
+.preview li.task-list-item > input[type='checkbox'],
+.preview li.task-list-item > p > input[type='checkbox'] {
   width: 1rem;
   height: 1rem;
-  margin: 0 var(--space-2) 0 0;
+  margin: 0 var(--space-2) 0.15em -1.35em;
   accent-color: var(--accent);
   cursor: pointer;
   vertical-align: middle;
+}
+
+.preview li.task-list-item > p:first-of-type {
+  display: inline;
+  margin: 0;
 }
 
 .preview .front-matter {

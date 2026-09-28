@@ -5,6 +5,7 @@
   import { enhanceCodeBlocks } from '../lib/code'
   import { observeMermaid } from '../lib/diagrams'
   import { observeMath } from '../lib/math'
+  import { taskByteOffset } from '../lib/tasks'
   import {
     DIAGRAM_FRAME_DEFAULT_HEIGHT,
     DIAGRAM_FRAME_DEFAULT_WIDTH,
@@ -274,20 +275,11 @@
         class="preview"
         role="presentation"
         onclickcapture={(event) => {
-          const checkbox = (event.target as HTMLElement | null)?.closest(
-            'input[type="checkbox"][data-task-at]',
-          )
-          if (checkbox instanceof HTMLInputElement) {
-            event.preventDefault()
-            const at = Number(checkbox.dataset.taskAt)
-            if (Number.isInteger(at) && at >= 0) {
-              ontoggle?.(at)
-            }
+          const target = event.target
+          if (!(target instanceof Element)) {
             return
           }
-          const figure = (event.target as HTMLElement | null)?.closest(
-            'figure.mermaid',
-          )
+          const figure = target.closest('figure.mermaid')
           if (
             figure instanceof HTMLElement &&
             figure.dataset.rendered === 'svg'
@@ -299,7 +291,13 @@
             }
             return
           }
-          const link = (event.target as HTMLElement | null)?.closest('a')
+          const at = taskByteOffset(target)
+          if (at !== null) {
+            event.preventDefault()
+            ontoggle?.(at)
+            return
+          }
+          const link = target.closest('a')
           if (!link) {
             return
           }

@@ -35,6 +35,30 @@ export type DocTab = {
   preview: boolean
   /** Preview, Edit, or Split last used for this file. */
   viewMode: ViewMode
+  /** Reading-pane scroll offset in pixels. */
+  scrollTop: number
+}
+
+/** Pixel offset of the reading pane, or 0 when it is not on screen. */
+export function readingScrollTop(
+  scroller: { scrollTop: number } | null | undefined,
+): number {
+  const value = scroller?.scrollTop ?? 0
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0
+  }
+  return value
+}
+
+/** Puts the reading pane back at a saved offset. */
+export function applyReadingScroll(
+  scroller: { scrollTop: number } | null | undefined,
+  scrollTop: number,
+): void {
+  if (!scroller) {
+    return
+  }
+  scroller.scrollTop = readingScrollTop({ scrollTop })
 }
 
 /** File name used as the tab label. */

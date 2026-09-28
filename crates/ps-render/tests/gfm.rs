@@ -27,6 +27,80 @@ fn renders_gfm_task_lists_with_item_class() {
 }
 
 #[test]
+fn renders_loose_task_lists_with_the_checkbox_before_the_paragraph() {
+    let markdown = "- [ ] Open\n\n- [x] Done\n";
+    let html = render(markdown);
+    let input_at = html.find("<input").expect("checkbox");
+    let paragraph_at = html.find("<p>").expect("loose paragraph");
+    assert!(input_at < paragraph_at, "{html}");
+    assert!(html.matches("task-list-item").count() >= 2, "{html}");
+    assert!(
+        html.contains(&format!(
+            "data-task-at=\"{}\"",
+            markdown.find("[ ]").expect("open marker")
+        )),
+        "{html}"
+    );
+    assert!(
+        html.contains(&format!(
+            "data-task-at=\"{}\" checked=\"\"",
+            markdown.find("[x]").expect("checked marker")
+        )),
+        "{html}"
+    );
+    assert!(!html.contains("disabled"), "{html}");
+}
+
+#[test]
+fn renders_star_plus_and_numbered_task_markers() {
+    let markdown = "* [ ] Star\n+ [x] Plus\n1. [ ] Number\n";
+    let html = render(markdown);
+    assert!(
+        html.contains(&format!(
+            "data-task-at=\"{}\"",
+            markdown.find("[ ]").expect("star")
+        )),
+        "{html}"
+    );
+    assert!(
+        html.contains(&format!(
+            "data-task-at=\"{}\"",
+            markdown.rfind("[ ]").expect("number")
+        )),
+        "{html}"
+    );
+    assert!(
+        html.contains(&format!(
+            "data-task-at=\"{}\" checked=\"\"",
+            markdown.find("[x]").expect("plus")
+        )),
+        "{html}"
+    );
+}
+
+#[test]
+fn keeps_task_offsets_when_the_document_also_has_raw_html() {
+    let markdown = "<span>note</span>\n\n- [x] Done\n- [ ] Open\n";
+    let html = render(markdown);
+    assert!(
+        html.contains(&format!(
+            "data-task-at=\"{}\"",
+            markdown.find("[x]").expect("checked marker")
+        )),
+        "{html}"
+    );
+    assert!(
+        html.contains(&format!(
+            "data-task-at=\"{}\"",
+            markdown.find("[ ]").expect("open marker")
+        )),
+        "{html}"
+    );
+    assert!(html.contains("checked"), "{html}");
+    assert!(!html.contains("disabled"), "{html}");
+}
+
+#[test]
 fn renders_gfm_alerts() {
     let html = render("> [!WARNING]\n> Disk is full\n");
     assert!(html.contains("markdown-alert-warning"), "{html}");

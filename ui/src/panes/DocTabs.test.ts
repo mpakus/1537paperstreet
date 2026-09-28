@@ -14,6 +14,7 @@ function tab(relPath: string): DocTab {
     draftText: '',
     preview: false,
     viewMode: 'preview',
+    scrollTop: 0,
   }
 }
 

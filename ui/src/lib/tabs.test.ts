@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { DocumentMeta, DocumentSource } from './generated/core'
 
 import {
+  applyReadingScroll,
   closeActiveTarget,
   closeWorkspaceTab,
   followOpenRename,
@@ -12,6 +13,7 @@ import {
   placeDocTab,
   promptAfterRename,
   removeTab,
+  readingScrollTop,
   retitleTab,
   tabTitle,
   tabsToReopen,
@@ -29,6 +31,7 @@ function tab(relPath: string, preview = false): DocTab {
     draftText: '',
     preview,
     viewMode: 'preview',
+    scrollTop: 0,
   }
 }
 
@@ -39,6 +42,27 @@ describe('tabs', () => {
     expect(closeWorkspaceTab(['dashboard', 'assistant'], 'dashboard')).toEqual([
       'assistant',
     ])
+  })
+
+  it('keeps the reading position when a tab is left and shown again', () => {
+    const scroller = { scrollTop: 640 }
+    expect(readingScrollTop(scroller)).toBe(640)
+    expect(readingScrollTop(null)).toBe(0)
+    expect(readingScrollTop({ scrollTop: Number.NaN })).toBe(0)
+
+    const left = persistLeavingTab([tab('notes.md'), tab('other.md')], {
+      ...tab('notes.md'),
+      html: '<p>notes</p>',
+      scrollTop: 640,
+    })
+    expect(left.find((item) => item.relPath === 'notes.md')?.scrollTop).toBe(
+      640,
+    )
+
+    applyReadingScroll(scroller, 0)
+    expect(scroller.scrollTop).toBe(0)
+    applyReadingScroll(scroller, 640)
+    expect(scroller.scrollTop).toBe(640)
   })
 
   it('uses the file name as the label', () => {

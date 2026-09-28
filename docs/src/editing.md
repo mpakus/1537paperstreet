@@ -24,14 +24,15 @@ link, wiki link `[[Note]]`, task item `- [ ]`, heading, and so on). Source
 files hide those commands.
 
 Preview renders GitHub Flavored Markdown: tables, strikethrough, task lists,
-footnotes, alerts (`> [!NOTE]`), definition lists. Click a task checkbox to
-switch that item between `[ ]` and `[x]` in the file. Tables fill the reading
+footnotes, alerts (`> [!NOTE]`), definition lists. Click a task item to
+switch it between `[ ]` and `[x]` in the file. Tables fill the reading
 column with even column widths; long cell text wraps. YAML front matter at the
 top of the file (`---` … `---`) shows as a key/value card, not as horizontal
 rules. `[[Note]]` and `[[Note|label]]` open `Note.md` in the project (next to
 the document or at the root); a wiki target that already names a file, such as
 `[[src/main.rs]]`, opens that file. Missing links are drawn dashed. Click a
-link to another file in the project to open it in a new tab. Markdown stays in
+link to another file in the project to open it in a new tab. The reading pane
+stays at the same scroll position. Markdown stays in
 Preview. A source file (`.rb`, `.js`, `.ex`, and the other editor languages)
 opens in the code editor with syntax highlighting. An image (PNG, JPEG, GIF,
 WebP, SVG, BMP, ICO, AVIF, or TIFF) opens in Preview; Edit and Split stay

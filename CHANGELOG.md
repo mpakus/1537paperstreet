@@ -5,6 +5,16 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.19] - 2026-09-28
+
+### Fixed
+
+- Opening a linked file keeps the reading pane where it was, and the document
+  you left is still there when you return to its tab.
+- Task items in Preview keep their checkbox when a blank line separates them.
+  Clicking the item, not only the box, switches that line between `[ ]` and
+  `[x]` in the file.
+
 ## [0.8.18] - 2026-09-28
 
 ### Added
@@ -507,7 +517,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.18...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.19...HEAD
+[0.8.19]: https://github.com/mpakus/1537paperstreet/compare/v0.8.18...v0.8.19
 [0.8.18]: https://github.com/mpakus/1537paperstreet/compare/v0.8.17...v0.8.18
 [0.8.17]: https://github.com/mpakus/1537paperstreet/compare/v0.8.16...v0.8.17
 [0.8.16]: https://github.com/mpakus/1537paperstreet/compare/v0.8.15...v0.8.16

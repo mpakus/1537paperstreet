@@ -74,6 +74,7 @@
   } from './lib/open'
   import { clampPanelWidth } from './lib/panel-width'
   import {
+    applyReadingScroll,
     closeActiveTarget,
     closeWorkspaceTab,
     followOpenRename,
@@ -81,6 +82,7 @@
     openWorkspaceTab,
     persistLeavingTab,
     placeDocTab,
+    readingScrollTop,
     tabsToReopen,
     promptAfterRename,
     removeTab,
@@ -171,6 +173,7 @@
   let editorOpened = $state(false)
   let draftText = $state('')
   let docSourceMeta = $state<DocumentSource | null>(null)
+  let checkboxBusy = false
   let editorApi = $state<MarkdownEditor | null>(null)
   let tabs = $state<DocTab[]>([])
   let switchOpen = $state(false)
@@ -1150,6 +1153,7 @@
       await setViewMode('editor')
     }
     if (action.hash) {
+      pendingReadingScroll = null
       requestAnimationFrame(() => {
         articleEl
           ?.querySelector(`#${CSS.escape(action.hash)}`)
@@ -1292,9 +1296,10 @@
   }
 
   async function toggleCheckbox(byteOffset: number) {
-    if (!active || !openMeta) {
+    if (checkboxBusy || !active || !openMeta) {
       return
     }
+    checkboxBusy = true
     const projectId = active.id
     const relPath = openMeta.relPath
     try {
@@ -1329,16 +1334,18 @@
         docMeta = { ...docMeta, hash: written.hash, size: written.size }
       }
       ignoredExternal = { relPath, hash: written.hash }
+      if (docSourceMeta && openMeta?.relPath === relPath) {
+        docSourceMeta = { ...docSourceMeta, text: next }
+        draftText = next
+      }
       if (viewMode === 'preview') {
         await openDocument(relPath, true)
         return
       }
-      draftText = next
       const caret = new TextDecoder().decode(
         new TextEncoder().encode(next).subarray(0, byteOffset),
       ).length
       editorApi?.setTextAndSelection(next, caret, caret)
-      docSourceMeta = { ...docSourceMeta, text: next }
       const opened = await docOpen(projectId, relPath)
       if (openMeta?.relPath === relPath) {
         html = opened.firstChunk ?? ''
@@ -1346,6 +1353,8 @@
       }
     } catch (cause) {
       showError(errorMessage(cause))
+    } finally {
+      checkboxBusy = false
     }
   }
 
@@ -1490,8 +1499,18 @@
       editorOpened = true
     }
     setSelection([fileNode(relPath)])
+    const switching = leaving?.relPath !== relPath
     try {
       const opened = await docOpen(active.id, relPath)
+      if (switching && leaving && openMeta?.relPath === leaving.relPath) {
+        const scrollTop = previewScrollTop()
+        if (scrollTop !== null) {
+          tabs = tabs.map((tab) =>
+            tab.relPath === leaving.relPath ? { ...tab, scrollTop } : tab,
+          )
+        }
+      }
+      const keptScroll = previewScrollTop() ?? 0
       docMissing = false
       docMeta = opened.meta
       openMeta = {
@@ -1507,8 +1526,9 @@
       }
       const snap = snapshotCurrentTab()
       if (snap) {
-        tabs = placeDocTab(tabs, snap, mode)
+        tabs = placeDocTab(tabs, { ...snap, scrollTop: keptScroll }, mode)
       }
+      restoreReadingScroll(relPath, keptScroll)
     } catch (cause) {
       html = ''
       docMeta = null
@@ -1563,6 +1583,52 @@
       preview:
         tabs.find((tab) => tab.relPath === openMeta?.relPath)?.preview ?? false,
       viewMode,
+      scrollTop: previewScrollTop() ?? existingScroll(),
+    }
+  }
+
+  let pendingReadingScroll: { relPath: string; scrollTop: number } | null = null
+
+  function existingScroll(): number {
+    return tabs.find((tab) => tab.relPath === openMeta?.relPath)?.scrollTop ?? 0
+  }
+
+  function previewScrollTop(): number | null {
+    const scroller = articleEl?.parentElement
+    if (!scroller) {
+      return null
+    }
+    return readingScrollTop(scroller)
+  }
+
+  function restoreReadingScroll(relPath: string, scrollTop: number) {
+    pendingReadingScroll = { relPath, scrollTop }
+    void tick().then(() => {
+      if (pendingReadingScroll?.relPath !== relPath) {
+        return
+      }
+      applyPendingReadingScroll()
+      requestAnimationFrame(() => {
+        applyPendingReadingScroll()
+      })
+    })
+  }
+
+  function applyPendingReadingScroll() {
+    const pending = pendingReadingScroll
+    if (!pending || openMeta?.relPath !== pending.relPath) {
+      return
+    }
+    const scroller = articleEl?.parentElement
+    if (!scroller) {
+      return
+    }
+    applyReadingScroll(scroller, pending.scrollTop)
+    if (
+      pending.scrollTop === 0 ||
+      scroller.scrollTop >= pending.scrollTop - 1
+    ) {
+      pendingReadingScroll = null
     }
   }
 
@@ -1583,6 +1649,7 @@
     docMissing = false
     revealRelPath = tab.relPath
     setSelection([fileNode(tab.relPath)])
+    restoreReadingScroll(tab.relPath, tab.scrollTop)
   }
 
   function closeTab(relPath: string) {
@@ -1707,6 +1774,14 @@
       payload.relPath === openMeta.relPath
     ) {
       html += payload.html
+      if (pendingReadingScroll?.relPath === payload.relPath) {
+        void tick().then(() => {
+          applyPendingReadingScroll()
+          requestAnimationFrame(() => {
+            applyPendingReadingScroll()
+          })
+        })
+      }
     }
   }
 
