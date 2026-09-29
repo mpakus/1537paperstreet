@@ -289,7 +289,7 @@ p {
 
 .button {
   background: var(--accent);
-  color: #fff;
+  color: #fff !important;
 }
 
 .button:active,
