@@ -5,6 +5,7 @@ import type { DocumentMeta, DocumentSource } from './generated/core'
 import {
   applyReadingScroll,
   closeActiveTarget,
+  scrollBeforeLink,
   closeWorkspaceTab,
   followOpenRename,
   nextAfterClose,
@@ -63,6 +64,13 @@ describe('tabs', () => {
     expect(scroller.scrollTop).toBe(0)
     applyReadingScroll(scroller, 640)
     expect(scroller.scrollTop).toBe(640)
+  })
+
+  it('keeps the offset from before a link click moves the pane', () => {
+    expect(scrollBeforeLink(640, 0)).toBe(640)
+    expect(scrollBeforeLink(640, 800)).toBe(800)
+    expect(scrollBeforeLink(null, 240)).toBe(240)
+    expect(scrollBeforeLink(0, 0)).toBe(0)
   })
 
   it('uses the file name as the label', () => {

@@ -101,6 +101,39 @@ fn keeps_task_offsets_when_the_document_also_has_raw_html() {
 }
 
 #[test]
+fn renders_bare_task_lines_as_checkboxes() {
+    let markdown = "[ ] one\n[x] two\n";
+    let html = render(markdown);
+    assert!(
+        html.contains(&format!(
+            "data-task-at=\"{}\"",
+            markdown.find("[ ]").expect("open")
+        )),
+        "{html}"
+    );
+    assert!(
+        html.contains(&format!(
+            "data-task-at=\"{}\" checked=\"\"",
+            markdown.find("[x]").expect("checked")
+        )),
+        "{html}"
+    );
+    assert!(
+        html.contains(">one</li>") || html.contains("one</li>"),
+        "{html}"
+    );
+    assert!(html.contains("two"), "{html}");
+    assert!(!html.contains("disabled"), "{html}");
+}
+
+#[test]
+fn leaves_a_checkbox_mention_inside_a_sentence_as_text() {
+    let html = render("See [ ] this later.\n");
+    assert!(!html.contains("type=\"checkbox\""), "{html}");
+    assert!(html.contains("[ ]"), "{html}");
+}
+
+#[test]
 fn renders_gfm_alerts() {
     let html = render("> [!WARNING]\n> Disk is full\n");
     assert!(html.contains("markdown-alert-warning"), "{html}");

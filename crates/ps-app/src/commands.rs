@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use ps_core::config::Config;
 use ps_core::docio::{
-    DocChunkEvent, DocDoneEvent, DocOpenResult, DocumentSource, DocumentStat, RestoreTraits,
-    WrittenDocument,
+    DocChunkEvent, DocDoneEvent, DocOpenResult, DocPreview, DocumentSource, DocumentStat,
+    RestoreTraits, WrittenDocument,
 };
 use ps_core::edit::format_text;
 use ps_core::fsops::{ConflictStrategy, UntitledKind};
@@ -426,6 +426,20 @@ pub(crate) async fn doc_save(
     .await
     .map_err(|error| error.to_string())
     .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn doc_preview(
+    state: State<'_, AppState>,
+    project_id: String,
+    rel_path: PathBuf,
+    text: String,
+) -> Result<DocPreview, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.doc_preview(project_id, rel_path, text))
+        .await
+        .map_err(|error| error.to_string())
+        .and_then(|result| result.map_err(to_command_error))
 }
 
 #[tauri::command(rename_all = "snake_case")]

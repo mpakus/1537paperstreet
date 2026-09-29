@@ -12,8 +12,8 @@ use crate::config::{
 use crate::content_search::{TextSearch, TextSearchHit};
 use crate::dashboard::{DashboardMetric, DashboardRow, DashboardSection, DashboardSnapshot};
 use crate::docio::{
-    DocChunkEvent, DocDoneEvent, DocOpenResult, DocumentEncoding, DocumentMeta, DocumentSource,
-    DocumentStat, LineEnding, RestoreTraits, TocEntry, WrittenDocument,
+    DocChunkEvent, DocDoneEvent, DocOpenResult, DocPreview, DocumentEncoding, DocumentMeta,
+    DocumentSource, DocumentStat, LineEnding, RestoreTraits, TocEntry, WrittenDocument,
 };
 use crate::fsops::{ConflictStrategy, UntitledKind};
 use crate::projects::{OpenDropResult, Project, ProjectsListQuery, ProjectsListResult};
@@ -76,6 +76,7 @@ pub fn ipc_typescript() -> String {
         WrittenDocument::decl(&ts),
         DocumentMeta::decl(&ts),
         DocOpenResult::decl(&ts),
+        DocPreview::decl(&ts),
         DocChunkEvent::decl(&ts),
         DocDoneEvent::decl(&ts),
         WatchUpdate::decl(&ts),

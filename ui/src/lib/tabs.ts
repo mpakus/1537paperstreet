@@ -50,6 +50,21 @@ export function readingScrollTop(
   return value
 }
 
+/**
+ * Scroll offset to keep when a link is clicked.
+ * The pane can jump to the top between pointer-down and click; the earlier
+ * offset is the one the reader was actually on.
+ */
+export function scrollBeforeLink(
+  pointerDown: number | null,
+  atClick: number,
+): number {
+  const down =
+    pointerDown == null ? 0 : readingScrollTop({ scrollTop: pointerDown })
+  const click = readingScrollTop({ scrollTop: atClick })
+  return down > click ? down : click
+}
+
 /** Puts the reading pane back at a saved offset. */
 export function applyReadingScroll(
   scroller: { scrollTop: number } | null | undefined,

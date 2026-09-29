@@ -146,7 +146,7 @@ fn finish_render<'events>(
     let mut toc = Vec::new();
     let mut mermaid_figures = Vec::new();
     let has_headings = may_have_heading(markdown);
-    let events = WikiHtml::new(TaskLists::new(FrontMatter::new(events)));
+    let events = WikiHtml::new(TaskLists::new(FrontMatter::new(events), markdown));
 
     let mermaid_prefix = if markdown.contains("mermaid") {
         let prefix = format!("PSMERMAID{}__", blake3::hash(markdown.as_bytes()).to_hex());

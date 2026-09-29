@@ -751,6 +751,16 @@ meta: DocumentMeta,
  */
 firstChunk: string | null, };
 
+export type DocPreview = { 
+/**
+ * Sanitized viewer HTML for the whole buffer.
+ */
+html: string, 
+/**
+ * Headings in source order.
+ */
+toc: Array<TocEntry>, };
+
 export type DocChunkEvent = { 
 /**
  * Registered project that owns the file.

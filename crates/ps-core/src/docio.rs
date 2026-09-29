@@ -130,6 +130,16 @@ pub struct DocumentMeta {
     pub toc: Vec<TocEntry>,
 }
 
+/// HTML for the editor buffer, used by Split so Preview matches unsaved text.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct DocPreview {
+    /// Sanitized viewer HTML for the whole buffer.
+    pub html: String,
+    /// Headings in source order.
+    pub toc: Vec<TocEntry>,
+}
+
 /// Synchronous `doc_open` payload: metadata plus the first HTML chunk.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, TS)]
 #[serde(rename_all = "camelCase")]

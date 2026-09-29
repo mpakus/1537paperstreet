@@ -5,6 +5,7 @@
   import { enhanceCodeBlocks } from '../lib/code'
   import { observeMermaid } from '../lib/diagrams'
   import { observeMath } from '../lib/math'
+  import { scrollBeforeLink } from '../lib/tabs'
   import { taskByteOffset } from '../lib/tasks'
   import {
     DIAGRAM_FRAME_DEFAULT_HEIGHT,
@@ -57,7 +58,7 @@
     diagramLeft?: number | null
     diagramTop?: number | null
     articleEl?: HTMLElement | undefined
-    onnavigate: (href: string) => void
+    onnavigate: (href: string, scrollTop: number) => void
     ontoggle?: (byteOffset: number) => void
     onerror?: (message: string) => void
     ontocresize?: (event: PointerEvent) => void
@@ -73,6 +74,7 @@
 
   let activeId = $state<string | null>(null)
   let modalSvg = $state<string | null>(null)
+  let pointerScroll: number | null = null
   const collapsed = new SvelteSet<string>()
   let expanded = $state(false)
 
@@ -274,6 +276,18 @@
       <div
         class="preview"
         role="presentation"
+        onpointerdowncapture={(event) => {
+          const target = event.target
+          const scroller = event.currentTarget
+          if (
+            !(target instanceof Element) ||
+            !(scroller instanceof HTMLElement) ||
+            !target.closest('a')
+          ) {
+            return
+          }
+          pointerScroll = scroller.scrollTop
+        }}
         onclickcapture={(event) => {
           const target = event.target
           if (!(target instanceof Element)) {
@@ -306,7 +320,16 @@
             return
           }
           event.preventDefault()
-          onnavigate(href)
+          const scroller = event.currentTarget
+          if (!(scroller instanceof HTMLElement)) {
+            return
+          }
+          const scrollTop = scrollBeforeLink(pointerScroll, scroller.scrollTop)
+          pointerScroll = null
+          if (scrollTop > scroller.scrollTop) {
+            scroller.scrollTop = scrollTop
+          }
+          onnavigate(href, scrollTop)
         }}
       >
         <!-- HTML is sanitized by ps-render before it crosses IPC. -->

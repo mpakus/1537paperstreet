@@ -9,8 +9,8 @@ use ps_core::agents::{
 use ps_core::config::Config;
 use ps_core::dashboard::DashboardSnapshot;
 use ps_core::docio::{
-    self, DocOpenResult, DocumentMeta, DocumentSource, DocumentStat, LoadedDocument, RestoreTraits,
-    TocEntry, WrittenDocument,
+    self, DocOpenResult, DocPreview, DocumentMeta, DocumentSource, DocumentStat, LoadedDocument,
+    RestoreTraits, TocEntry, WrittenDocument,
 };
 use ps_core::fsops::{self, ConflictStrategy, CopyOutcome, MoveOutcome, UntitledKind};
 use ps_core::log::FileLog;
@@ -751,6 +751,38 @@ impl AppState {
                 first_chunk,
             },
             remaining_chunks: chunks,
+        })
+    }
+
+    /// Renders editor text for Split, without writing the file.
+    pub(crate) fn doc_preview(
+        &self,
+        project_id: String,
+        rel_path: PathBuf,
+        text: String,
+    ) -> Result<DocPreview> {
+        let root = self.project_root(&project_id)?;
+        let _resolved = fsops::resolve(&root, &rel_path)?;
+        let allow_raw_html = self.config_get().viewer.allow_raw_html;
+        let rendered = ps_render::render_project_with_options(
+            &text,
+            &root,
+            &rel_path,
+            &project_id,
+            ps_render::RenderOptions { allow_raw_html },
+        );
+        let toc = rendered
+            .toc
+            .into_iter()
+            .map(|item| TocEntry {
+                level: item.level,
+                title: item.title,
+                id: item.id,
+            })
+            .collect();
+        Ok(DocPreview {
+            html: rendered.html,
+            toc,
         })
     }
 
@@ -1691,6 +1723,29 @@ mod tests {
             fs::read(beta_root.join("note 2.md")).expect("moved"),
             b"from alpha"
         );
+    }
+
+    #[test]
+    fn doc_preview_renders_unsaved_task_lines() {
+        let (temporary, state) = open_state();
+        let project_root = temporary.path().join("notes");
+        fs::create_dir(&project_root).expect("project directory");
+        fs::write(project_root.join("readme.md"), "# Hello\n\nSaved.\n").expect("document");
+        let project = state
+            .projects_add("Notes".into(), project_root)
+            .expect("add");
+        let draft = "# Hello\n\n[ ] one\n[x] two\n";
+        let preview = state
+            .doc_preview(project.id, PathBuf::from("readme.md"), draft.into())
+            .expect("preview");
+        assert!(
+            preview.html.contains("type=\"checkbox\""),
+            "{}",
+            preview.html
+        );
+        assert!(preview.html.contains("one"), "{}", preview.html);
+        assert!(preview.html.contains("checked"), "{}", preview.html);
+        assert!(preview.toc.iter().any(|entry| entry.title == "Hello"));
     }
 
     #[test]

@@ -31,8 +31,10 @@ top of the file (`---` … `---`) shows as a key/value card, not as horizontal
 rules. `[[Note]]` and `[[Note|label]]` open `Note.md` in the project (next to
 the document or at the root); a wiki target that already names a file, such as
 `[[src/main.rs]]`, opens that file. Missing links are drawn dashed. Click a
-link to another file in the project to open it in a new tab. The reading pane
-stays at the same scroll position. Markdown stays in
+link to another file in the project to open it in a new tab at that heading
+when the link has one. The file you were reading stays at the same place
+when you come back to its tab. A web address opens in the browser and leaves
+the reading pane where it was. Markdown stays in
 Preview. A source file (`.rb`, `.js`, `.ex`, and the other editor languages)
 opens in the code editor with syntax highlighting. An image (PNG, JPEG, GIF,
 WebP, SVG, BMP, ICO, AVIF, or TIFF) opens in Preview; Edit and Split stay

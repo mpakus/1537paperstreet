@@ -65,13 +65,11 @@
   border-left-color: var(--accent);
 }
 
+/* list-style hides the bullet. Do not set ::marker { content: none }:
+   WebKit then skips painting the item text, so Preview shows an empty row. */
 .preview li.task-list-item {
   list-style: none;
   cursor: pointer;
-}
-
-.preview li.task-list-item::marker {
-  content: none;
 }
 
 .preview li.task-list-item > input[type='checkbox'],

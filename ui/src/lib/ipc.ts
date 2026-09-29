@@ -2,6 +2,7 @@ import type {
   Config,
   ConflictStrategy,
   DocOpenResult,
+  DocPreview,
   DocumentMeta,
   DocumentSource,
   DocumentStat,
@@ -209,6 +210,19 @@ export function docOpen(
   relPath: string,
 ): Promise<DocOpenResult> {
   return invokeIpc('doc_open', { project_id: projectId, rel_path: relPath })
+}
+
+/** Renders unsaved editor text for Split preview. */
+export function docPreview(
+  projectId: string,
+  relPath: string,
+  text: string,
+): Promise<DocPreview> {
+  return invokeIpc('doc_preview', {
+    project_id: projectId,
+    rel_path: relPath,
+    text,
+  })
 }
 
 /** Reads a document's source text and on-disk traits. */
@@ -569,6 +583,7 @@ export type {
   Config,
   ConflictStrategy,
   DocOpenResult,
+  DocPreview,
   DocumentMeta,
   DocumentSource,
   DocumentStat,

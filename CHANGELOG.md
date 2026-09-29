@@ -5,6 +5,18 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.20] - 2026-09-29
+
+### Fixed
+
+- Clicking a link to another file opens that tab without sending the document
+  you were reading back to the top. A heading in the link opens that heading.
+  A web address opens in the browser and leaves the reading pane where it was.
+- Task lists in Preview show the checkbox and its label. A line written as
+  `[ ] one` or `[x] two` renders the same way as `- [ ] one`. Split updates
+  the preview from the editor, including text that is not saved yet. Checking
+  an item still writes `[x]` or `[ ]` back into the file.
+
 ## [0.8.19] - 2026-09-28
 
 ### Fixed
@@ -517,7 +529,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.19...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.20...HEAD
+[0.8.20]: https://github.com/mpakus/1537paperstreet/compare/v0.8.19...v0.8.20
 [0.8.19]: https://github.com/mpakus/1537paperstreet/compare/v0.8.18...v0.8.19
 [0.8.18]: https://github.com/mpakus/1537paperstreet/compare/v0.8.17...v0.8.18
 [0.8.17]: https://github.com/mpakus/1537paperstreet/compare/v0.8.16...v0.8.17

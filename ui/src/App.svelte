@@ -8,6 +8,7 @@
     configSet,
     copyConflicts,
     docOpen,
+    docPreview,
     docSave,
     docSource,
     docStat,
@@ -83,6 +84,7 @@
     persistLeavingTab,
     placeDocTab,
     readingScrollTop,
+    scrollBeforeLink,
     tabsToReopen,
     promptAfterRename,
     removeTab,
@@ -283,6 +285,46 @@
       return
     }
     writeSession(snapshot)
+  })
+
+  let draftPreviewGen = 0
+  $effect(() => {
+    if (viewMode !== 'split' || !active || !openMeta || !docSourceMeta) {
+      return
+    }
+    if (!isMarkdownPath(openMeta.relPath)) {
+      return
+    }
+    const text = draftText
+    const projectId = active.id
+    const relPath = openMeta.relPath
+    const generation = ++draftPreviewGen
+    const handle = setTimeout(() => {
+      void docPreview(projectId, relPath, text)
+        .then((preview) => {
+          if (
+            generation !== draftPreviewGen ||
+            openMeta?.relPath !== relPath ||
+            viewMode !== 'split'
+          ) {
+            return
+          }
+          const top = previewScrollTop() ?? 0
+          html = preview.html
+          if (top > 0) {
+            restoreReadingScroll(relPath, top)
+          }
+          if (docMeta && openMeta?.relPath === relPath) {
+            docMeta = { ...docMeta, toc: preview.toc }
+          }
+        })
+        .catch((cause) => {
+          if (generation === draftPreviewGen) {
+            showError(errorMessage(cause))
+          }
+        })
+    }, 180)
+    return () => clearTimeout(handle)
   })
 
   function showError(message: string) {
@@ -1124,7 +1166,7 @@
     await finishTransfer('import', sources, toDir, 'keepBoth')
   }
 
-  async function navigate(href: string) {
+  async function navigate(href: string, scrollAtClick: number) {
     const action = classifyPreviewHref(href, {
       projectId: active?.id ?? null,
       projectPath: active?.path ?? null,
@@ -1137,28 +1179,30 @@
       return
     }
     if (action.kind === 'http') {
+      pinReadingScroll(scrollAtClick)
       await openUrl(action.url)
+      pinReadingScroll(scrollAtClick)
       return
     }
     if (action.kind !== 'document' || !active) {
       return
     }
     revealRelPath = action.relPath
-    await openDocument(action.relPath, false, 'pin')
+    pinReadingScroll(scrollAtClick)
+    await openDocument(
+      action.relPath,
+      false,
+      'pin',
+      undefined,
+      action.hash,
+      scrollAtClick,
+    )
     if (
       openMeta?.relPath === action.relPath &&
       linkOpensEditor(action.relPath, docMeta?.sourceOnly ?? false) &&
       viewMode === 'preview'
     ) {
       await setViewMode('editor')
-    }
-    if (action.hash) {
-      pendingReadingScroll = null
-      requestAnimationFrame(() => {
-        articleEl
-          ?.querySelector(`#${CSS.escape(action.hash)}`)
-          ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-      })
     }
   }
 
@@ -1462,6 +1506,8 @@
     forceReload = false,
     mode: TabOpenMode = 'keep',
     nextView?: ViewMode,
+    anchor?: string,
+    scrollAtClick?: number,
   ) {
     if (!active) {
       return
@@ -1469,6 +1515,9 @@
     workspacePage = 'document'
     const leaving = snapshotCurrentTab()
     if (leaving && leaving.relPath !== relPath) {
+      if (scrollAtClick != null) {
+        leaving.scrollTop = scrollBeforeLink(scrollAtClick, leaving.scrollTop)
+      }
       tabs = persistLeavingTab(tabs, leaving)
       const cached = tabs.find((tab) => tab.relPath === relPath)
       if (!forceReload && cached?.docMeta) {
@@ -1483,6 +1532,9 @@
         tabs = placeDocTab(tabs, shown, mode)
         if (shown.viewMode !== 'preview' && !shown.docSourceMeta) {
           await loadSource(shown.relPath)
+        }
+        if (anchor) {
+          revealAnchor(shown.relPath, anchor)
         }
         return
       }
@@ -1502,15 +1554,7 @@
     const switching = leaving?.relPath !== relPath
     try {
       const opened = await docOpen(active.id, relPath)
-      if (switching && leaving && openMeta?.relPath === leaving.relPath) {
-        const scrollTop = previewScrollTop()
-        if (scrollTop !== null) {
-          tabs = tabs.map((tab) =>
-            tab.relPath === leaving.relPath ? { ...tab, scrollTop } : tab,
-          )
-        }
-      }
-      const keptScroll = previewScrollTop() ?? 0
+      const nextScroll = switching ? 0 : (previewScrollTop() ?? 0)
       docMissing = false
       docMeta = opened.meta
       openMeta = {
@@ -1526,9 +1570,13 @@
       }
       const snap = snapshotCurrentTab()
       if (snap) {
-        tabs = placeDocTab(tabs, { ...snap, scrollTop: keptScroll }, mode)
+        tabs = placeDocTab(tabs, { ...snap, scrollTop: nextScroll }, mode)
       }
-      restoreReadingScroll(relPath, keptScroll)
+      if (switching && anchor) {
+        revealAnchor(relPath, anchor)
+      } else {
+        restoreReadingScroll(relPath, nextScroll)
+      }
     } catch (cause) {
       html = ''
       docMeta = null
@@ -1588,6 +1636,66 @@
   }
 
   let pendingReadingScroll: { relPath: string; scrollTop: number } | null = null
+  let pendingAnchor: { relPath: string; id: string } | null = null
+
+  function pinReadingScroll(scrollTop: number) {
+    const top = readingScrollTop({ scrollTop })
+    const scroller = articleEl?.parentElement
+    if (scroller && top > 0) {
+      scroller.scrollTop = top
+    }
+    if (!openMeta) {
+      return
+    }
+    const relPath = openMeta.relPath
+    tabs = tabs.map((tab) =>
+      tab.relPath === relPath ? { ...tab, scrollTop: top } : tab,
+    )
+  }
+
+  function revealAnchor(relPath: string, id: string) {
+    pendingReadingScroll = null
+    pendingAnchor = { relPath, id }
+    let frames = 0
+    let hits = 0
+    const step = () => {
+      if (openMeta?.relPath !== relPath) {
+        if (pendingAnchor?.relPath === relPath && pendingAnchor.id === id) {
+          pendingAnchor = null
+        }
+        return
+      }
+      if (pendingAnchor?.relPath !== relPath || pendingAnchor.id !== id) {
+        return
+      }
+      if (scrollAnchorIntoPreview(id)) {
+        hits += 1
+      }
+      frames += 1
+      if ((hits >= 3 && frames >= 4) || frames >= 24) {
+        if (hits > 0) {
+          pendingAnchor = null
+        }
+        return
+      }
+      requestAnimationFrame(step)
+    }
+    void tick().then(step)
+  }
+
+  function scrollAnchorIntoPreview(id: string): boolean {
+    const scroller = articleEl?.parentElement
+    const node = articleEl?.querySelector(`#${CSS.escape(id)}`)
+    if (!scroller || !(node instanceof HTMLElement)) {
+      return false
+    }
+    const top =
+      node.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top +
+      scroller.scrollTop
+    scroller.scrollTop = Math.max(0, top)
+    return true
+  }
 
   function existingScroll(): number {
     return tabs.find((tab) => tab.relPath === openMeta?.relPath)?.scrollTop ?? 0
@@ -1602,16 +1710,20 @@
   }
 
   function restoreReadingScroll(relPath: string, scrollTop: number) {
+    pendingAnchor = null
     pendingReadingScroll = { relPath, scrollTop }
-    void tick().then(() => {
+    let frames = 0
+    const step = () => {
       if (pendingReadingScroll?.relPath !== relPath) {
         return
       }
       applyPendingReadingScroll()
-      requestAnimationFrame(() => {
-        applyPendingReadingScroll()
-      })
-    })
+      frames += 1
+      if (pendingReadingScroll?.relPath === relPath && frames < 8) {
+        requestAnimationFrame(step)
+      }
+    }
+    void tick().then(step)
   }
 
   function applyPendingReadingScroll() {
@@ -1768,12 +1880,23 @@
     relPath: string
     html: string
   }) {
+    if (viewMode === 'split') {
+      return
+    }
     if (
       openMeta &&
       payload.projectId === openMeta.projectId &&
       payload.relPath === openMeta.relPath
     ) {
       html += payload.html
+      const anchorId = pendingAnchor?.id
+      if (pendingAnchor?.relPath === payload.relPath && anchorId) {
+        void tick().then(() => {
+          if (pendingAnchor?.id === anchorId) {
+            scrollAnchorIntoPreview(anchorId)
+          }
+        })
+      }
       if (pendingReadingScroll?.relPath === payload.relPath) {
         void tick().then(() => {
           applyPendingReadingScroll()
@@ -2501,8 +2624,8 @@
               ontoggle={(offset) => {
                 void toggleCheckbox(offset)
               }}
-              onnavigate={(href) => {
-                void navigate(href).catch((cause) => {
+              onnavigate={(href, scrollTop) => {
+                void navigate(href, scrollTop).catch((cause) => {
                   showError(errorMessage(cause))
                 })
               }}
