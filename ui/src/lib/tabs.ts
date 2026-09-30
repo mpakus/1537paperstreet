@@ -100,6 +100,28 @@ export function tabHasUnsavedDraft(tab: DocTab): boolean {
   return Boolean(tab.docSourceMeta && tab.draftText !== tab.docSourceMeta.text)
 }
 
+/**
+ * Files with unsaved editor text.
+ * The open document uses the live buffer. A saved file drops out even when
+ * its tab snapshot has not been written back yet.
+ */
+export function unsavedPaths(
+  tabs: readonly DocTab[],
+  openRelPath: string | null,
+  openDirty: boolean,
+): string[] {
+  const paths = tabs
+    .filter((item) => tabHasUnsavedDraft(item))
+    .map((item) => item.relPath)
+  if (!openRelPath) {
+    return paths
+  }
+  if (openDirty) {
+    return paths.includes(openRelPath) ? paths : [...paths, openRelPath]
+  }
+  return paths.filter((path) => path !== openRelPath)
+}
+
 /** Places a tab as a temporary preview, a pinned tab, or an in-place refresh. */
 export function placeDocTab(
   tabs: DocTab[],

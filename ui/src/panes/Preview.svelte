@@ -17,6 +17,7 @@
     html,
     emptyMessage,
     toc = [],
+    tocOpen = true,
     tocWidth = 224,
     banner = null,
     themeId = 'paper-light',
@@ -36,12 +37,14 @@
     onnavigate,
     ontoggle,
     onerror,
+    ontoc,
     ontocresize,
     ondiagramchrome,
   }: {
     html: string
     emptyMessage: string
     toc?: TocEntry[]
+    tocOpen?: boolean
     tocWidth?: number
     banner?: string | null
     themeId?: string
@@ -61,6 +64,7 @@
     onnavigate: (href: string, scrollTop: number) => void
     ontoggle?: (byteOffset: number) => void
     onerror?: (message: string) => void
+    ontoc?: (open: boolean) => void
     ontocresize?: (event: PointerEvent) => void
     ondiagramchrome?: (next: {
       width: number
@@ -191,44 +195,69 @@
   style:--read-bg={previewBg || undefined}
   style:--read-fg={previewFg || undefined}
 >
-  <button
-    type="button"
-    class="fullsize"
-    title={expanded ? 'Exit full size' : 'Full size'}
-    aria-label={expanded ? 'Exit full size' : 'Full size'}
-    aria-pressed={expanded}
-    onclick={() => (expanded = !expanded)}
-  >
-    {#if expanded}
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <path
-          d="M5 3H3v2M11 3h2v2M5 13H3v-2M11 13h2v-2"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    {:else}
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <path
-          d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
+  <div class="corner">
+    {#if toc.length > 0}
+      <button
+        type="button"
+        class="corner-btn toc-toggle"
+        class:is-in={tocOpen}
+        title={tocOpen ? 'Hide contents' : 'Show contents'}
+        aria-label={tocOpen
+          ? 'Hide table of contents'
+          : 'Show table of contents'}
+        aria-pressed={tocOpen}
+        onclick={() => ontoc?.(!tocOpen)}
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path
+            d="M3.5 4.5h9M3.5 8h9M3.5 11.5h5.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
     {/if}
-  </button>
+    <button
+      type="button"
+      class="corner-btn"
+      title={expanded ? 'Exit full size' : 'Full size'}
+      aria-label={expanded ? 'Exit full size' : 'Full size'}
+      aria-pressed={expanded}
+      onclick={() => (expanded = !expanded)}
+    >
+      {#if expanded}
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path
+            d="M5 3H3v2M11 3h2v2M5 13H3v-2M11 13h2v-2"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      {:else}
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path
+            d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      {/if}
+    </button>
+  </div>
   {#if banner}
     <p class="banner" role="status">{banner}</p>
   {/if}
 
   <div class="body">
-    {#if toc.length > 0}
+    {#if tocOpen && toc.length > 0}
       <nav
         class="toc"
         aria-label="Table of contents"
@@ -378,11 +407,16 @@
     z-index: 25;
   }
 
-  .fullsize {
+  .corner {
     position: absolute;
     top: var(--space-2);
     right: var(--space-2);
     z-index: 2;
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .corner-btn {
     display: grid;
     place-items: center;
     width: 22px;
@@ -392,16 +426,27 @@
     background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--fg) 10%, transparent);
     -webkit-app-region: no-drag;
   }
 
-  .fullsize svg {
+  .corner-btn svg {
     width: 12px;
     height: 12px;
   }
 
-  .fullsize:hover {
+  .corner-btn:hover {
     color: var(--fg);
+    background: var(--bg-elev);
+  }
+
+  .toc-toggle.is-in {
+    color: var(--fg);
+    background: color-mix(in srgb, var(--bg) 82%, var(--fg));
+    box-shadow: inset 0 1px 2px color-mix(in srgb, var(--fg) 28%, transparent);
+  }
+
+  .toc-toggle:not(.is-in) {
     background: var(--bg-elev);
   }
 
