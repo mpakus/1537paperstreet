@@ -84,6 +84,7 @@
         </a>
         <nav class="nav" aria-label="Page">
           <a class="section-link" href="#editing">Editing</a>
+          <a class="section-link" href="#features">Features</a>
           <a class="section-link" href="#themes">Themes</a>
           <a
             class="button"
@@ -164,6 +165,8 @@
         </section>
         <ul class="keys">
           <li><kbd>⌘P</kbd> Quick open</li>
+          <li><kbd>⌘⇧F</kbd> Search files</li>
+          <li><kbd>⌘F</kbd> Find</li>
           <li><kbd>⌘E</kbd> Preview or edit</li>
           <li><kbd>⌘⇧E</kbd> Split</li>
           <li><kbd>⌘S</kbd> Save</li>
@@ -181,9 +184,9 @@
           <h2 id="edit-title">Write beside the page</h2>
           <p>
             Preview, Edit, and Split share one window. The source stays readable
-            — headings, links, and fenced code — while the page updates beside
-            it. Formatting lives in the toolbar, and in the shortcuts you
-            already use.
+            — headings, links, and fenced code — while the page beside it
+            follows the editor, including text you are still writing. Formatting
+            lives in the toolbar, and in the shortcuts you already use.
           </p>
         </div>
         <figure class="shot">
@@ -202,19 +205,104 @@
       </section>
 
       <section
+        class="block wrap reveal"
+        id="features"
+        aria-labelledby="features-title"
+      >
+        <p class="index">02</p>
+        <div class="prose">
+          <h2 id="features-title">The room, as it works now</h2>
+          <p>
+            Folders, reading, and writing, with search, tasks, images, and a
+            contents panel you can put away.
+          </p>
+        </div>
+        <ul class="catalog">
+          <li>
+            <h3>Reading</h3>
+            <p>
+              Tables, footnotes, alerts, wiki links, and YAML front matter.
+              A task line is a checkbox in Preview. Click it and the file
+              becomes <code>[x]</code> or <code>[ ]</code>.
+            </p>
+          </li>
+          <li>
+            <h3>Links</h3>
+            <p>
+              A link to another file opens a new tab, at the heading when the
+              link has one. That document is still where you left it when you
+              come back. A web address opens in the browser.
+            </p>
+          </li>
+          <li>
+            <h3>Contents</h3>
+            <p>
+              A button in the preview corner shows or hides the outline.
+              Pressed in, the list is visible. The choice is saved. Full size
+              fills the window under the title bar.
+            </p>
+          </li>
+          <li>
+            <h3>Unsaved files</h3>
+            <p>
+              A red dot at the top-left of a file icon means the editor has
+              changes. Saving removes the dot. Renaming the file keeps that
+              text.
+            </p>
+          </li>
+          <li>
+            <h3>Search and tabs</h3>
+            <p>
+              Quick open jumps to a name. Search in files takes plain text or
+              a regular expression, and a plain query also finds a close path.
+              Each tab remembers Preview, Edit, or Split and comes back at the
+              next launch. A single click is a temporary tab; a double-click
+              pins it.
+            </p>
+          </li>
+          <li>
+            <h3>The tree</h3>
+            <p>
+              New file, new folder, rename, duplicate, move, and trash. Drag
+              into a folder, or hold Option to copy. Refresh reloads that
+              folder. Reveal opens Finder, Explorer, or the file manager.
+            </p>
+          </li>
+          <li>
+            <h3>Pictures and source</h3>
+            <p>
+              PNG, JPEG, GIF, WebP, SVG, and the other common images open in
+              Preview and stay images. Ruby, JavaScript, Elixir, and other
+              source files open in the editor. Code blocks and quotes have
+              Copy. Format aligns Markdown tables and pretty-prints JSON.
+            </p>
+          </li>
+          <li>
+            <h3>Diagrams and PDF</h3>
+            <p>
+              Click a Mermaid drawing to move, resize, and zoom it. The window
+              remembers its size and place. KaTeX stays on the page. Export
+              PDF is on macOS.
+            </p>
+          </li>
+        </ul>
+      </section>
+
+      <section
         class="band block reveal"
         id="themes"
         aria-labelledby="theme-title"
       >
         <div class="wrap">
-          <p class="index">02</p>
+          <p class="index">03</p>
           <div class="prose">
             <h2 id="theme-title">Twelve rooms for the same text</h2>
             <p>
               Paper, Solarized, Nord, Gruvbox, Catppuccin, Tokyo Night, and
               GitHub. Follow the system appearance, or flip light and dark for
               this session with ⌘⌥T — that choice is not written into your
-              settings.
+              settings. Fonts, reading size, and preview colors live in
+              Settings. A theme file you add is listed with these twelve.
             </p>
           </div>
           <ul class="themes reveal">
@@ -321,7 +409,7 @@
       <section class="block wrap reveal" aria-labelledby="local-title">
         <div class="local">
           <div class="prose">
-            <p class="index">03</p>
+            <p class="index">04</p>
             <h2 id="local-title">The folder never leaves</h2>
           </div>
           <ul class="points">
@@ -340,11 +428,18 @@
               </p>
             </li>
             <li>
+              <h3>A board for this folder</h3>
+              <p>
+                Dashboard counts projects, Markdown files, and the agents you
+                configured. Those numbers stay on this computer.
+              </p>
+            </li>
+            <li>
               <h3>Agents on your terms</h3>
               <p>
-                An external agent is a CLI you already installed. It may use the
-                network under its own terms. This app does not ship your
-                Markdown to a model service.
+                An external agent is a CLI you already installed: Codex,
+                Claude, or OpenCode. It may use the network under its own
+                terms. This app does not ship your Markdown to a model service.
               </p>
             </li>
           </ul>
