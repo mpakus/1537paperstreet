@@ -33,6 +33,24 @@ describe('Preview', () => {
     expect(body).toContain('This file is read-only.')
     expect(body).toContain('id="hello"')
     expect(body).toContain('aria-label="Full size"')
+    expect(body).toContain('aria-pressed="true"')
+    expect(body).toContain('Hide table of contents')
+  })
+
+  it('hides the contents list when the toggle is out', () => {
+    const { body } = render(Preview, {
+      props: {
+        html: '<h1 id="hello">Hello</h1>',
+        emptyMessage: 'unused',
+        toc: [{ level: 1, title: 'Hello', id: 'hello' }],
+        tocOpen: false,
+        onnavigate() {},
+      },
+    })
+
+    expect(body).not.toContain('aria-label="Table of contents"')
+    expect(body).toContain('Show table of contents')
+    expect(body).toContain('aria-pressed="false"')
   })
 
   it('applies saved reading colors on the preview pane', () => {

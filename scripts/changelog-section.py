@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import io
 import re
 import sys
 from pathlib import Path
@@ -75,6 +76,22 @@ Linux `.deb` (x86_64) and the Windows NSIS installer are on the same release. Th
 """
 
 
+def write_stdout(text: str) -> None:
+    """Write release notes as UTF-8 bytes.
+
+    GitHub's Windows runner opens Python stdout as cp1252. Text such as
+    "Settings → …" cannot be encoded in that code page, and
+    ``reconfigure`` does not stick when bash redirects stdout to a file.
+    """
+    encoded = text.encode("utf-8")
+    buffer = getattr(sys.stdout, "buffer", None)
+    if buffer is None:
+        sys.stdout.write(text)
+        return
+    buffer.write(encoded)
+    buffer.flush()
+
+
 def self_test() -> None:
     got = section_for(SAMPLE, "v0.1.0")
     assert "## [0.1.0] - 2026-08-19" in got
@@ -89,6 +106,16 @@ def self_test() -> None:
         raise AssertionError("missing version should fail")
     notes = section_for(SAMPLE, "0.1.0") + SIGNED_FOOTER
     assert "notarized by Apple" in notes
+    raw = io.BytesIO()
+    wrapped = io.TextIOWrapper(raw, encoding="cp1252")
+    previous = sys.stdout
+    sys.stdout = wrapped
+    try:
+        write_stdout("Settings → Show table of contents\n")
+    finally:
+        sys.stdout = previous
+        wrapped.detach()
+    assert raw.getvalue().decode("utf-8") == "Settings → Show table of contents\n"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -124,9 +151,10 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("version is required unless --self-test")
 
     text = args.changelog.read_text(encoding="utf-8")
-    sys.stdout.write(section_for(text, args.version))
+    notes = section_for(text, args.version)
     if args.signed_footer:
-        sys.stdout.write(SIGNED_FOOTER)
+        notes += SIGNED_FOOTER
+    write_stdout(notes)
     return 0
 
 

@@ -18,6 +18,7 @@ import {
   retitleTab,
   tabTitle,
   tabsToReopen,
+  unsavedPaths,
   upsertTab,
   type DocTab,
 } from './tabs'
@@ -252,6 +253,23 @@ describe('tabs', () => {
     ])
     const previewPinned = placeDocTab([tab('a.md')], tab('a.md'), 'preview')
     expect(previewPinned).toEqual([tab('a.md')])
+  })
+
+  it('lists unsaved files and drops the open file after it is saved', () => {
+    const source: DocumentSource = {
+      text: 'saved',
+      eol: 'lf',
+      bom: false,
+      trailingNewline: true,
+      encoding: 'utf8',
+      writable: true,
+      readonlyReason: null,
+    }
+    const dirty = { ...tab('a.md'), docSourceMeta: source, draftText: 'draft' }
+    const clean = { ...tab('b.md'), docSourceMeta: source, draftText: 'saved' }
+    expect(unsavedPaths([dirty, clean], null, false)).toEqual(['a.md'])
+    expect(unsavedPaths([clean], 'notes.md', true)).toEqual(['notes.md'])
+    expect(unsavedPaths([dirty], 'a.md', false)).toEqual([])
   })
 
   it('pins a dirty preview instead of replacing unsaved text', () => {

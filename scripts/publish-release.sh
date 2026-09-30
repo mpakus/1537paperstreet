@@ -33,6 +33,10 @@ notes_args=(scripts/changelog-section.py "$version")
 if [[ "$edit_notes" -eq 1 ]]; then
   notes_args+=(--signed-footer)
 fi
+# Windows runners open Python stdout as cp1252. UTF-8 mode must be set
+# before the interpreter starts; reconfigure does not stick on a redirect.
+export PYTHONUTF8=1
+export PYTHONIOENCODING=utf-8
 python3 "${notes_args[@]}" > notes.md
 
 for attempt in 1 2 3 4 5 6; do

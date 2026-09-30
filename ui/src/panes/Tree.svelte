@@ -53,6 +53,7 @@
     watchSeq = 0,
     watchDirs = [],
     externalDropRel = null,
+    dirtyRelPaths = [],
     onerror,
     onopen,
     onselect,
@@ -73,6 +74,7 @@
     watchSeq?: number
     watchDirs?: string[]
     externalDropRel?: string | null
+    dirtyRelPaths?: string[]
     onerror: (message: string) => void
     onopen: (relPath: string, mode?: 'preview' | 'pin') => void
     onselect: (nodes: TreeNode[]) => void
@@ -774,6 +776,7 @@
           {@const open = isDir && expanded.has(row.node.relPath)}
           {@const markdown = fileIconKind(row.node) === 'markdown'}
           {@const editing = renaming === row.node.relPath}
+          {@const dirty = !isDir && dirtyRelPaths.includes(row.node.relPath)}
           {@const highlighted =
             dropTarget === row.node.relPath ||
             (isDir && externalDropRel === row.node.relPath)}
@@ -826,7 +829,11 @@
             <span class="twist" aria-hidden="true">
               {#if isDir}{open ? '▾' : '▸'}{/if}
             </span>
-            <span class="icon" aria-hidden="true">
+            <span class="icon" aria-hidden={dirty ? undefined : 'true'}>
+              {#if dirty}
+                <span class="dirty-dot" role="img" aria-label="Unsaved changes"
+                ></span>
+              {/if}
               {#if isDir}
                 <svg viewBox="0 0 16 16">
                   <path
@@ -1208,11 +1215,23 @@
   }
 
   .icon {
+    position: relative;
     display: inline-flex;
     width: var(--space-4);
     height: var(--space-4);
     flex: none;
     color: var(--fg-muted);
+  }
+
+  .dirty-dot {
+    position: absolute;
+    top: -2px;
+    left: -3px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--dirty);
+    box-shadow: 0 0 0 1px var(--sidebar);
   }
 
   .row.markdown .icon,

@@ -1,6 +1,8 @@
 # Editing and saving
 
-Open a file in the tree. Markdown is rendered; other UTF-8 files show as
+Open a file in the tree. A tiny red dot at the top-left of a file icon means
+the editor has changes that are not saved yet. Saving the file removes the
+dot. Markdown is rendered; other UTF-8 files show as
 highlighted source when a language is known, or as plain text. The title
 bar shows what you can do with the document:
 
@@ -17,7 +19,10 @@ bar shows what you can do with the document:
 - **AI** — Assistant tab (⌘⌥A)
 
 Top-right of the preview — a small **Full size** button: preview fills the
-window (under the title bar). Click again or press Escape to return.
+window (under the title bar). Click again or press Escape to return. Beside
+it, a contents button shows or hides the table of contents. Pressed in, the
+list is visible; raised, it is hidden. The choice is saved as
+`viewer.show_toc`, the same setting as Settings → Show table of contents.
 
 In Edit, Text / Links / Media buttons appear for Markdown files (bold, italic,
 link, wiki link `[[Note]]`, task item `- [ ]`, heading, and so on). Source

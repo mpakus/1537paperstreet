@@ -5,6 +5,16 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.21] - 2026-09-30
+
+### Added
+
+- A file with unsaved editor changes shows a tiny red dot at the top-left of
+  its icon in the tree. Saving the file removes the dot.
+- Preview has a contents button that shows or hides the table of contents.
+  Pressed in, the list is visible; raised, it is hidden. The choice is saved
+  with Settings → Show table of contents.
+
 ## [0.8.20] - 2026-09-29
 
 ### Fixed
@@ -529,7 +539,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.20...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.21...HEAD
+[0.8.21]: https://github.com/mpakus/1537paperstreet/compare/v0.8.20...v0.8.21
 [0.8.20]: https://github.com/mpakus/1537paperstreet/compare/v0.8.19...v0.8.20
 [0.8.19]: https://github.com/mpakus/1537paperstreet/compare/v0.8.18...v0.8.19
 [0.8.18]: https://github.com/mpakus/1537paperstreet/compare/v0.8.17...v0.8.18

@@ -89,6 +89,7 @@
     promptAfterRename,
     removeTab,
     tabTitle,
+    unsavedPaths,
     type DocTab,
     type TabOpenMode,
     type WorkspacePage,
@@ -366,6 +367,14 @@
     })
   })
 
+  const dirtyRelPaths = $derived(
+    unsavedPaths(
+      tabs,
+      openMeta?.relPath ?? null,
+      isDraftDirty(editorOpened, docSourceMeta, draftText),
+    ),
+  )
+
   const emptyMessage = $derived(
     destMode
       ? 'Choose a destination folder in the tree.'
@@ -583,6 +592,25 @@
     }
     await configSet(config)
     applyConfig(config)
+  }
+
+  async function toggleToc() {
+    const next = !showToc
+    showToc = next
+    if (appConfig) {
+      appConfig.viewer.show_toc = next
+    }
+    try {
+      const config = await configGet()
+      config.viewer.show_toc = next
+      await configSet(config)
+    } catch (cause) {
+      showToc = !next
+      if (appConfig) {
+        appConfig.viewer.show_toc = !next
+      }
+      throw cause
+    }
   }
 
   async function persistPanelWidth(
@@ -1424,6 +1452,9 @@
     )
     if (docMeta) {
       docMeta = { ...docMeta, hash: written.hash, size: written.size }
+    }
+    if (docSourceMeta) {
+      docSourceMeta = { ...docSourceMeta, text: draftText }
     }
     if (viewMode !== 'editor') {
       await openDocument(openMeta.relPath)
@@ -2359,6 +2390,7 @@
             {watchSeq}
             {watchDirs}
             externalDropRel={finderDropRel}
+            {dirtyRelPaths}
             onerror={(message) => {
               showError(message)
             }}
@@ -2604,7 +2636,8 @@
             <Preview
               {html}
               {emptyMessage}
-              toc={showToc ? (docMeta?.toc ?? []) : []}
+              toc={docMeta?.toc ?? []}
+              tocOpen={showToc}
               {tocWidth}
               banner={docMeta?.readonlyReason ?? null}
               themeId={activeThemeId}
@@ -2631,6 +2664,11 @@
               }}
               onerror={(message) => {
                 showError(message)
+              }}
+              ontoc={() => {
+                void toggleToc().catch((cause) => {
+                  showError(errorMessage(cause))
+                })
               }}
               ontocresize={(event) => {
                 event.preventDefault()
