@@ -9,7 +9,7 @@ Ways to open a folder — each **adds it to Projects** if it is not there yet:
 - File → Open Folder…
 - File → Open File… — registers the folder that contains the `.md` and opens
   the file
-- Drop a folder or a `.md` from Finder onto the window
+- Drop a folder or a `.md` from Finder, Explorer, or the file manager onto the window
 
 Opening the same folder again reuses the existing list entry. Dropping a
 Markdown file opens it and registers the containing folder. Dropping onto a

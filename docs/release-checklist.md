@@ -29,47 +29,59 @@ Reader (current product):
    width is remembered after relaunch.
 6. Icons: folder, Markdown, and other files are visually distinct.
 7. Context menu and File/Go: New File/Folder, Rename, Duplicate, Copy/Move
-   to…, Reveal in Finder, Open in External Editor, Move to Trash.
-8. DnD inside the tree moves; ⌥ copies; drop from Finder into a tree folder
-   imports. Drag a file onto another project in the list to move it; ⌥ copies.
+   to…, Reveal (Finder, Explorer, or Show in Files), Open in External Editor,
+   Move to Trash. Search on a folder and ⌘⇧F search file contents.
+8. DnD inside the tree moves; ⌥ copies; drop from the file manager into a tree
+   folder imports. Drag a file onto another project in the list to move it;
+   ⌥ copies.
 9. Name clash: Replace / Keep Both / Skip, apply to all.
 10. ⇧/⌘ select several nodes; group Move to Trash asks for confirmation.
-11. Live tree: editing a file in Finder updates the tree without losing
-    selection. An open file changed in another program asks to Reload or Keep
-    this version.
+11. Live tree: editing a file in the file manager updates the tree without
+    losing selection. An open file changed in another program asks to Reload
+    or Keep this version. A file with unsaved editor changes shows a red dot
+    on its icon; Save removes the dot.
 12. ⌘P opens a file inside the project; ⌘⇧P switches project; project search
     highlights the match.
 13. Unavailable project: Find Folder… relocates the record and does not
     touch files on disk. Removing a project from the list does not delete the
     folder.
-14. Preview: TOC, jump to an anchor, read-only banner, images without layout
-    jump, broken / too large / binary file — a clear error, not a crash.
-15. Links: `.md` inside the project opens in the viewer; http(s) in the
-    browser; `javascript:` does not open. A `file:` link opens only if it is
-    inside the current project.
+14. Preview: TOC, the contents button shows and hides it and the choice
+    survives relaunch, jump to a heading in the same page, images without
+    layout jump, broken / too large / binary file — a clear error, not a crash.
+    PNG, JPEG, GIF, WebP, and SVG open in Preview; Edit and Split stay off.
+15. Links: a project file opens in a new tab, at the heading when the link has
+    one, and the document you left stays where it was. http(s) opens in the
+    browser and does not move the reading pane. `javascript:` does not open.
+    A `file:` link opens only if it is inside the current project. A source
+    file opens in the editor. Clicking a task checkbox writes `[x]` or `[ ]`.
 16. ⌘F searches the preview; ⌘, opens Settings; ⌘1 / ⌘2 hide panes.
 17. Themes: ⌘⌥T follows the system or the session and does not rewrite the
     light/dark pair in config; user JSON from `~/.1537paperstreet/themes/`
     appears in the list.
-18. Mermaid: the diagram draws on scroll-in, click opens zoom, Copy SVG and
-    Save PNG use the native dialog; a syntax error shows the source and does
-    not break the page. Turning it off in Settings leaves a clear message.
+18. Mermaid: the diagram draws on scroll-in. Click opens a window you can drag,
+    resize, and zoom; size, zoom, and position come back next time. Copy SVG
+    and Save PNG use the native dialog. A syntax error shows the source and
+    does not break the page. Turning it off in Settings leaves a clear message.
 19. KaTeX: formulas draw lazily; turning it off in Settings does not crash
     preview.
-20. Code block: Copy copies the text; highlight colors come from theme
-    tokens.
-21. ⌘+ / ⌘− / ⌘0 change preview type size and persist in config.
+20. Code block and quote: Copy copies the text; highlight colors come from
+    theme tokens.
+21. ⌘+ / ⌘− / ⌘0 change chrome type size and persist in config. A− / A+ change
+    reading size in Preview and Split.
 22. No outgoing network requests while reading a local document (Activity
     Monitor / Little Snitch if you want to confirm).
 23. `~/.1537paperstreet/logs/app.log` does not contain the open document’s
     text.
 24. Dock icon is `icon.png`; File → About and About in the application menu
     show the logo, version, “Made in Austin ✩ Texas”, and open aomega.co in
-    the browser. File → Check for Updates… opens About, asks GitHub Releases,
-    and installs a newer zip when one exists, then restarts.
-25. The red traffic light hides the window; the icon stays on the right of
-    the menu bar; click shows the window; Quit in that menu / ⌘Q quit the
-    process.
+    the browser. File → Check for Updates… asks GitHub Releases. On macOS a
+    newer zip installs over the running app and restarts. On Linux and Windows
+    the same check opens the release page.
+25. On macOS the red traffic light hides the window; the icon stays on the
+    right of the menu bar; click shows the window; Quit in that menu / ⌘Q
+    quit the process. Linux and Windows use a normal window frame.
 
-After the editor (P9+) add: autosave, ⌘S, `base_hash` conflict, crash draft,
-history pane, ZIP export. Do not check those items until the features exist.
+Already in the app, so check them: ⌘S, Format, Split preview of unsaved
+editor text, and a refused save when `base_hash` disagrees with the file.
+Still absent: autosave, crash drafts, the history pane, ZIP export. Do not
+check those until they exist.

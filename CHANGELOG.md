@@ -5,6 +5,19 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.22] - 2026-09-30
+
+### Fixed
+
+- Publishing a Windows release writes the changelog as UTF-8. An arrow in the
+  notes, such as Settings → Show table of contents, is included.
+
+### Changed
+
+- The website lists reading, search, the file tree, and editing as they work
+  now, including task checkboxes, the contents button, and the unsaved-file
+  dot.
+
 ## [0.8.21] - 2026-09-30
 
 ### Added
@@ -539,7 +552,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.21...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.22...HEAD
+[0.8.22]: https://github.com/mpakus/1537paperstreet/compare/v0.8.21...v0.8.22
 [0.8.21]: https://github.com/mpakus/1537paperstreet/compare/v0.8.20...v0.8.21
 [0.8.20]: https://github.com/mpakus/1537paperstreet/compare/v0.8.19...v0.8.20
 [0.8.19]: https://github.com/mpakus/1537paperstreet/compare/v0.8.18...v0.8.19
