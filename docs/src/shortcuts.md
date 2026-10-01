@@ -1,6 +1,6 @@
 # Keyboard shortcuts
 
-Working in the reader:
+Working in the app:
 
 | Keys | Action |
 | --- | --- |
@@ -8,6 +8,7 @@ Working in the reader:
 | ⌘O | Open File… |
 | ⌘P | Quick-open a file |
 | ⌘⇧P | Switch project |
+| ⌘⇧F | Search in files |
 | ⌘F | Find in preview |
 | ⌘G / ⌘⇧G | Next / previous find match |
 | ⌘1 / ⌘2 | Hide projects / tree |
@@ -20,11 +21,11 @@ Working in the reader:
 | ⌘⌥T | Light / dark theme |
 | ⌘⌥A | Assistant tab |
 | ⌘+ / ⌘− / ⌘0 | Larger / smaller / reset type |
-| ⌘⇧R | Reveal in Finder |
+| ⌘⇧R | Reveal in Finder, Show in Explorer, or Show in Files |
 | ⌘⇧O | Open in External Editor |
 | ⌘⌫ | Move to Trash |
 
-The same actions appear in the title bar: Preview / Edit / Split,
+The same actions appear in the title bar: Preview / Edit / Split, Search,
 Save, Format, Export, Board, AI. In Preview and Split on the right —
 A− / A+ (type size) and − / % / + (preview zoom). Full size sits in the
 preview corner. Format is also in the Edit menu. Markdown markup

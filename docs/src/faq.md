@@ -17,14 +17,16 @@ the bottom of the window (Message history keeps recent ones).
 Right-click → Open / `xattr -cr` as in [Install](install.md), or download a
 newer signed release. From source, use `cargo tauri dev`.
 
-**I closed the window and the menu-bar icon is still there?** That is
+**I closed the window and the menu-bar icon is still there?** On macOS that is
 intentional. Click the icon to show the window; Quit in its menu or ⌘Q
-quits the process.
+quits the process. Linux and Windows use a normal window frame.
 
 **Is there a cloud, account, or telemetry?** No. Update checking runs at
 launch (unless you turn it off in Settings) and when you choose File → Check
-for Updates… or the button in About. It talks to GitHub Releases, downloads
-the installer zip when a newer version exists, and does not send documents.
+for Updates… or the button in About. It talks to GitHub Releases. On macOS
+it downloads the universal zip when a newer version exists, installs it, and
+restarts. On Linux and Windows the same check opens the release page. It
+does not send documents.
 
 **How do I send an Assistant prompt?** Shift+Enter, Ctrl+Enter, or ⌘Enter.
 Plain Enter is a new line. While the agent is working, Stop cancels the turn.

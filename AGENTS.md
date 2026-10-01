@@ -1,9 +1,9 @@
 # AGENTS.md — правила для AI-агентов
 
-Проект: **1537paperstreet**, локальный Markdown-ридер для macOS на Rust + Tauri 2 + Svelte 5.
+Проект: **1537paperstreet**, локальный Markdown-ридер и редактор для macOS, Linux и Windows на Rust + Tauri 2 + Svelte 5.
 Читать перед началом любой задачи. Вместе с `PLAN.md` (архитектура) и `CHECKLIST.md` (задачи).
 
-**Текущий продукт — ридер**; фаза P9 (запись документов и редактор) начата с T-160. Фазы P0–P8, P11 и P16 реализованы. P10 (история) и P12 (ZIP-экспорт) **не начинать**, пока пользователь явно не попросит.
+**Текущий продукт — ридер с редактором.** В окне есть Preview / Edit / Split, атомарное сохранение, Format, чекбоксы задач в превью и живое превью Split из буфера редактора (`doc_preview`). Фазы P0–P8, P11 и P16 реализованы. Открытые пункты P9 в `CHECKLIST.md` (черновики, автосохранение, инкрементальный рендер, найти-и-заменить) **не доделывать**, пока пользователь явно не попросит. P10 (история) и P12 (ZIP-экспорт) **не начинать**, пока пользователь явно не попросит.
 
 ---
 
@@ -62,7 +62,8 @@
 - Публичные типы, пересекающие IPC-границу, экспортируются в TypeScript через генератор. Ручное дублирование типов — ошибка ревью.
 - Логи (`ps-core::log`) не содержат текст документов и **не содержат текст промптов Assistant**. Только действия, пути служебных файлов, ошибки.
 - CSS тем генерируется в Rust (`themes_css`). JSON тем — kebab-case токены; IPC `ThemeInfo` — camelCase. UI не собирает карту токенов сам.
-- `window.show_in_dock` (по умолчанию true), `window.diagram_w` / `diagram_h` / `diagram_zoom` (896×576, zoom 1), `window.diagram_x` / `diagram_y` (null = центр), `files.show_hidden` (по умолчанию true), `viewer.preview_*` (пусто / `0` = тема) и `agents` добавляются в `config.json` без bump `schema_version`.
+- `window.show_in_dock` (по умолчанию true, только macOS), `window.diagram_w` / `diagram_h` / `diagram_zoom` (896×576, zoom 1), `window.diagram_x` / `diagram_y` (null = центр), `files.show_hidden` (по умолчанию true), `viewer.preview_*` (пусто / `0` = тема), `viewer.show_toc` и `agents` добавляются в `config.json` без bump `schema_version`.
+- Точка несохранённого файла — токен `--dirty` в `ui/src/styles/tokens/tokens.css`. В JSON тем его не добавлять: пользовательские темы должны грузиться без этого поля.
 - Кэш Mermaid: ключ = blake3(`source_hash + "\0" + theme_id`); хеш — 64 hex-символа; `theme_id` — slug (ASCII-буквы, цифры, дефис). Не-SVG и файлы > 2 MB отклоняются.
 - Codex: spawn `codex app-server --stdio` (пресет Codex или `command` basename `codex` с args `["acp"]`). Это не `codex acp` (TUI). Диалект `AgentWire::CodexApp`. `login_path()` дополняет PATH (`~/.local/bin`, Homebrew и т.п.).
 - История промптов Assistant (`PromptHistory` / `agents/prompts.json`) — не P10 (история документов). IPC: `agent_prompt_history`, `agent_prompt_history_remove`, `agent_prompt_history_clear`. Удаление — явное действие пользователя, снимок `pre_*` не требуется.
@@ -78,7 +79,7 @@
 - IPC только через `ui/src/lib/ipc.ts`. В тестах — `ui/src/lib/ipc.mock.ts`. Молчаливый `catch {}` — ошибка ревью.
 - Ошибки IPC обрабатываются и показываются пользователю.
 - Никаких сетевых запросов. Все ассеты — локальные. Mermaid и KaTeX — pinned npm + dynamic import, без CDN. Точка входа Mermaid — `ui/vendor/mermaid.esm.min.mjs`.
-- Overlay-титлбар: полная полоса `--titlebar-h` (52px) сверху окна; drag-регион — внутренний элемент с `data-tauri-drag-region` и `-webkit-app-region: drag`, чтобы полоса не выпадала из потока. Слева `--traffic-pad` (88px) под traffic lights, затем Preview / Edit / Split / Save / Export / Board / AI. Текст заголовка в полосе не показывается (`hiddenTitle`); `setWindowTitle` по-прежнему ставит имя для Mission Control. Интерактивные контролы — `no-drag`.
+- Overlay-титлбар на macOS: полная полоса `--titlebar-h` (52px) сверху окна; drag-регион — внутренний элемент с `data-tauri-drag-region` и `-webkit-app-region: drag`, чтобы полоса не выпадала из потока. Слева `--traffic-pad` (88px) под traffic lights, затем Preview / Edit / Split / Search / Save / Format / Export / Board / AI. Текст заголовка в полосе не показывается (`hiddenTitle`); `setWindowTitle` по-прежнему ставит имя для Mission Control. Интерактивные контролы — `no-drag`. Linux и Windows используют обычную рамку окна; та же полоса команд остаётся. `window.show_in_dock` действует только на macOS.
 - Тема: UI ставит только атрибут `data-theme`. Переключение ⌘⌥T использует сессионный `forcedThemeId` и **не** меняет пару `theme` / `theme_dark` в конфиге.
 
 **Исключения из «логика в Rust»:**
@@ -145,7 +146,7 @@
 
 ## 9. Что не делать по своей инициативе
 
-Список из `PLAN.md` § 18 — не входит в v1. Если возникло желание «заодно добавить редактирование» или «раз уж мы тут, сделаем экспорт в PDF» — не надо. Это отдельные задачи в бэклоге, и они там намеренно.
+Список из `PLAN.md` § 18 — не входит в текущий продукт. Редактор и экспорт PDF уже есть. Если возникло желание «заодно сделать панель истории», ZIP-экспорт, автосохранение, черновики или инкрементальный рендер — не надо, пока пользователь явно не попросит.
 
 ---
 
@@ -153,9 +154,9 @@
 
 - `ps-core`: `config`, `agents`, `dashboard`, `projects`, `fsops`, `tree`, `watch`, `docio`, `log`, `themes`, `mermaid_cache`, `ui_state`, `search`, `store`, `paths`, `updates`
 - `ps-app`: тонкие IPC-команды, overlay-окно, нативное меню, `asset://`, `WatchHub`, `save_user_file`, ACP-хост (включая Codex app-server)
-- `ui`: панели Svelte 5 (`Projects`, `Tree`, `Preview`, `Settings`, `QuickOpen`, `QuickSwitch`, `FindBar`, `Conflict`, `About`, `Assistant`, `Dashboard`, `ChromeToolbar`)
+- `ui`: панели Svelte 5 (`Projects`, `Tree`, `Preview`, `Settings`, `QuickOpen`, `QuickSwitch`, `ContentSearch`, `FindBar`, `Conflict`, `About`, `Assistant`, `Dashboard`, `ChromeToolbar`)
 - Темы: `crates/ps-core/themes/*.json` плюс `~/.1537paperstreet/themes/`
 - Кэш диаграмм: `~/.1537paperstreet/cache/mermaid/`
-- Состояние UI: `ui-state.json` (раскрытые узлы, ширины панелей)
+- Состояние UI: `ui-state.json` (раскрытые узлы, ширины панелей, последняя сессия: проект, вкладки документов и их режим, Dashboard, Assistant)
 - Логи: `~/.1537paperstreet/logs/app.log`
 - История промптов Assistant: `~/.1537paperstreet/agents/prompts.json`

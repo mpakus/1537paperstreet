@@ -1,7 +1,7 @@
 # Conflicts
 
 Today the app has one kind of conflict — a **file name** clash on copy, move,
-or import from Finder.
+or import from the file manager.
 
 The dialog offers Replace, Keep Both, or Skip. A checkbox applies the choice
 to the rest of the clashes in the same operation. Replace snapshots the

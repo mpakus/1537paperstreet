@@ -7,10 +7,11 @@ The Assistant talks to **local** coding agents through the
 
 The **Dashboard** tab (View → Dashboard) shows local library and agent
 counts: projects, Markdown files in the open folder, configured agents, the
-live session, and recent prompts. Nothing on that page is sent off the Mac.
+live session, and recent prompts. Nothing on that page is sent off this
+computer.
 
 This app does not call a model API and does not install agents from a
-registry. You add a CLI that is already on your Mac.
+registry. You add a CLI that is already on this computer.
 
 ## Settings
 
@@ -41,5 +42,6 @@ to put it back in the composer. × removes that prompt; **Clear History**
 deletes every stored prompt. New chat starts a fresh ACP session in the
 current project folder.
 
-The agent process may use the network. The reader still does not, except
-Check for Updates.
+The agent process may use the network. The app still does not, except
+Check for Updates. On macOS that check can install a newer build. On Linux
+and Windows it opens the release page.

@@ -2,10 +2,11 @@
 
 **Your Markdown. Your folders. A quieter way to work.**
 
-1537paperstreet turns ordinary folders of Markdown into a focused macOS
-workspace. Browse a project, read beautifully rendered documents, edit the
-source, preview diagrams and math, export a PDF, or work with a local AI agent —
-without importing files into a vault or signing in to a service.
+1537paperstreet turns ordinary folders of Markdown into a focused workspace
+on macOS, Linux, and Windows. Browse a project, read beautifully rendered
+documents, edit the source, preview diagrams and math, export a PDF, or work
+with a local AI agent — without importing files into a vault or signing in to
+a service.
 
 Made in Austin ✩ Texas · [aomega.co](https://aomega.co)
 
@@ -20,11 +21,11 @@ projects. 1537paperstreet makes those files comfortable to navigate and read
 without changing where they live or how they are stored.
 
 - **Open any folder.** There is no migration, database, or proprietary vault.
-  Add an existing folder and keep using the same files with Git, Finder, your
-  editor, and every other tool you trust.
+  Add an existing folder and keep using the same files with Git, your file
+  manager, and every other tool you trust.
 - **Read more than basic Markdown.** GitHub Flavored Markdown, syntax-highlighted
-  code, tables, alerts, footnotes, wiki links, Mermaid diagrams, and KaTeX math
-  render in a calm, themeable reading view.
+  code, tables, task lists, alerts, footnotes, wiki links, images, Mermaid
+  diagrams, and KaTeX math render in a calm, themeable reading view.
 - **Move naturally between reading and writing.** Preview, Edit, and Split modes
   share one window. Saves are atomic, preserve file characteristics, and refuse
   to overwrite a file changed elsewhere.
@@ -35,7 +36,8 @@ without changing where they live or how they are stored.
   Claude, or OpenCode. The Assistant works in the open project; the app does not
   send documents to a model service itself.
 - **Stay local by default.** Reading, editing, themes, Mermaid, KaTeX, search,
-  and analytics run on the Mac. There is no account, cloud library, or telemetry.
+  and the Dashboard run on this computer. There is no account, cloud library,
+  or telemetry.
 
 ## Why it exists
 
@@ -60,8 +62,8 @@ Keep several folders in the **Projects** list. Search filters by name and path.
 
 Add a folder with Open Folder…, File → Open Folder…, File → Open File…
 (registers the containing folder and opens the `.md`), or drop a folder or
-Markdown file from Finder onto the window. Opening the same folder again
-reuses the existing entry.
+Markdown file from Finder, Explorer, or the file manager onto the window.
+Opening the same folder again reuses the existing entry.
 
 If you moved a folder, the row turns dim; context menu → Find Folder… points
 the record at the new location. Remove from List only drops the list entry.
@@ -73,26 +75,32 @@ you can open it again.
 
 The tree loads one directory level at a time. Expanded folders and pane widths
 persist. Icons distinguish folders, Markdown (`.md`, `.markdown`, `.mdown`,
-`.mdwn`), and other files. Double-click a file to open it in a tab; a single
-click expands a folder. UTF-8 text is
-editable, with highlighting when a language mode exists. Folders such as
-`.docs` and `.git` are always listed. ⌘2 hides the tree. ⌘P quick-opens Markdown in the
-current project.
+`.mdwn`), and other files. A single click opens a file in a preview tab that
+the next single click replaces. Double-click pins the tab. A single click on
+a folder expands it. A red dot at the top-left of a file icon means the editor
+has changes that are not saved yet. UTF-8 text is editable, with highlighting
+when a language mode exists. Images open in Preview and are not saved as text.
+Folders such as `.docs` and `.git` are always listed. ⌘2 hides the tree. ⌘P
+quick-opens a file in the current project. ⌘⇧F, the toolbar search icon, or
+Search on a folder searches file contents (plain text or a regular expression;
+a plain query also fuzzy-matches paths).
 
 Context menu and File / Go:
 
-| Action                  | How                                                    |
-| ----------------------- | ------------------------------------------------------ |
-| New File / New Folder   | ⌘N / ⌘⇧N in the selected folder                        |
-| Rename                  | click the selected name again, F2, or the context menu |
-| Duplicate               | copy beside the original                               |
-| Copy to… / Move to…     | pick a destination folder                              |
-| Reveal in Finder        | ⌘⇧R                                                    |
-| Open in External Editor | ⌘⇧O                                                    |
-| Move to Trash           | ⌘⌫, with confirmation                                  |
+| Action                  | How                                                        |
+| ----------------------- | ---------------------------------------------------------- |
+| New File / New Folder   | ⌘N / ⌘⇧N in the selected folder                            |
+| Refresh                 | context menu on a folder — reload that folder from disk    |
+| Search                  | context menu on a folder, or ⌘⇧F                           |
+| Rename                  | click the selected name again, F2, or the context menu     |
+| Duplicate               | copy beside the original                                   |
+| Copy to… / Move to…     | pick a destination folder                                  |
+| Reveal                  | ⌘⇧R — Reveal in Finder, Show in Explorer, or Show in Files |
+| Open in External Editor | ⌘⇧O                                                        |
+| Move to Trash           | ⌘⌫, with confirmation                                      |
 
 Drag inside the tree to move; hold ⌥ to copy. Hovering a folder expands it.
-Drop from Finder into a tree folder copies into the project. Drag a file onto
+Drop from the file manager into a tree folder copies into the project. Drag a file onto
 another project in the Projects list to move it there; hold ⌥ to copy.
 
 Name clashes offer Replace, Keep Both, or Skip (optionally apply to all).
@@ -109,20 +117,35 @@ Markdown:
 - alerts (`> [!NOTE]`), definition lists
 - YAML front matter as a key/value card
 - wiki links `[[Note]]` / `[[Note|label]]` to `Note.md` in the project
-- fenced code (Rust, Python, Ruby, Elixir, YAML, JS/TS, and others) with a
-  Copy control on the block
+- fenced code (Rust, Python, Ruby, Elixir, YAML, JS/TS, and others); each code
+  block and quote has a Copy button
 - Mermaid diagrams and KaTeX math (`$...$` / `$$...$$`)
+- images (PNG, JPEG, GIF, WebP, SVG, and the other common formats) in Preview
 
-The table of contents tracks headings. In-project `.md` links open in the
-viewer; `http(s)` links open in the browser; heading anchors scroll smoothly.
-Images reserve width and height from the file header so layout does not jump.
+A line written `[ ] one` or `- [x] two` is a checkbox. Clicking it writes
+`[x]` or `[ ]` back into the file. Split updates the page from the editor,
+including text that is not saved yet.
+
+The table of contents tracks headings. A button in the preview corner shows
+or hides that list; pressed in, it is visible, and the choice is saved with
+Settings → Show table of contents. A link to another project file opens a new
+tab, at the heading when the link has one. The document you left stays where
+it was. A web address opens in the browser and leaves the reading pane in
+place. A source file (Ruby, JavaScript, Elixir, and the other editor
+languages) opens in the code editor. Images reserve width and height from the
+file header so layout does not jump.
 
 A file that is too large (> 8 MB), binary, or missing shows a message instead
 of a blank pane. ⌘F finds text in the preview and highlights matches as you
 type; ⌘G / ⌘⇧G move to the next or previous hit.
 
 Top-right of the preview — **Full size**: reading fills the window under the
-title bar. Click again or Escape to return.
+title bar. Click again or Escape to return. The contents button sits beside it.
+
+Each document tab remembers Preview, Edit, or Split.
+The last folder, those tabs, Dashboard, and Assistant come back the next time
+the app starts. A missing file is skipped, and a note is added to Message
+history.
 
 In Preview and Split, the bar has A− / A+ (reading size) and − / % / +
 (session zoom, 50–200 %). ⌘+ / ⌘− / ⌘0 change chrome type size.
@@ -144,9 +167,13 @@ headings, lists, task items, quotes, links, wiki links, and images (⌘B, ⌘I,
 ⌘K, and heading shortcuts).
 
 **Save** (⌘S) writes atomically and restores BOM, line endings, and a trailing
-newline. Open and save with no edits — the file is byte-for-byte the same. If
-the file on disk no longer matches what was opened, the write is refused
-instead of overwriting.
+newline. The red dot on that file goes away. Open and save with no edits — the
+file is byte-for-byte the same. If the file on disk no longer matches what was
+opened, the write is refused instead of overwriting. Renaming a file that is
+open keeps the unsaved text.
+
+**Format** aligns Markdown tables or pretty-prints JSON. Find in the open page
+is ⌘F. Find and replace is not available yet.
 
 If another program (including Open in External Editor) saves the open file, a
 dialog asks to **Reload** or **Keep this version**, in Preview and Edit.
@@ -160,11 +187,11 @@ Reload discards unsaved edits in this app.
   Night, GitHub — light and dark pairs)
 - follow system appearance; ⌘⌥T flips light/dark for the session without
   rewriting the Settings pair
-- body and mono fonts (system faces already on the Mac), size, line height,
-  and measure
+- body and mono fonts (faces already on this computer; missing faces fall
+  through the stack), size, line height, and measure
 - Preview & Split reading font, size, and optional custom colors (empty / `0`
   means the theme)
-- keep the Dock icon when the window is hidden
+- on macOS, keep the Dock icon when the window is hidden
 - table of contents, confirm Trash, show hidden files (dot folders such as
   `.docs` and `.git` are always listed)
 - render Mermaid diagrams and KaTeX mathematics
@@ -199,15 +226,17 @@ prompts. It does not send telemetry.
 **Export** / File → Export PDF… / ⌘⌥E saves the open document as PDF: native
 Save dialog, then a snapshot of the preview (theme, diagrams, images).
 
-Click a Mermaid diagram for a modal: wheel zoom, drag to pan, Copy SVG, Save
-PNG.
+Click a Mermaid diagram to open its window: drag the title, resize from the
+edges, zoom up to 3200%, pan, Copy SVG, Save PNG. Size, zoom, and position are
+remembered. PDF export is on macOS; on Linux and Windows the command says so.
 
 ZIP of a whole project is not in this version.
 
 ### Keep it ready, without keeping it in the way
 
-Closing the red traffic light hides the window; the menu-bar icon stays.
-Click it to show the window again. Quit from that menu or ⌘Q.
+On macOS, closing the red traffic light hides the window; the menu-bar icon
+stays. Click it to show the window again. Quit from that menu or ⌘Q. Linux and
+Windows use a normal window frame.
 
 File → About 1537paperstreet shows version and a link to aomega.co.
 File → Check for Updates… (same control in About) compares your version to

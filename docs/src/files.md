@@ -6,7 +6,8 @@ expand a folder. Expanded folders and pane width persist across sessions.
 a slim strip remains so you can open it again.
 
 Icons distinguish folders, Markdown (`.md`, `.markdown`, `.mdown`, `.mdwn`),
-and other files. A single click opens a file in a preview tab (the next
+and other files. A red dot at the top-left of a file icon means the editor
+has changes that are not saved yet. A single click opens a file in a preview tab (the next
 single-click file replaces it). Double-click pins a permanent tab. A single
 click expands a folder. UTF-8 text is editable. Preview and Edit highlight JavaScript,
 TypeScript, Ruby, Elixir, Go, Rust, C#, Java, and PHP (and other languages
@@ -29,13 +30,13 @@ Tree context menu and File / Go:
 | Copy name | basename to the clipboard |
 | Copy path | absolute path to the clipboard |
 | Copy to… / Move to… | pick a destination folder |
-| Reveal in Finder | ⌘⇧R |
+| Reveal | ⌘⇧R — Reveal in Finder, Show in Explorer, or Show in Files |
 | Open in External Editor | ⌘⇧O |
 | Move to Trash | ⌘⌫, with confirmation |
 
 Drag inside the tree moves a file. Hold ⌥ while dropping to copy. A stacked
 ghost of the dragged names follows the pointer and eases into the folder. Drop from
-Finder into a tree folder copies files into the project. Drag a file onto
+the file manager into a tree folder copies files into the project. Drag a file onto
 another project in the Projects list to move it there; hold ⌥ to copy.
 
 ⇧ and ⌘ select several nodes for group copy, move, duplicate, and trash.
