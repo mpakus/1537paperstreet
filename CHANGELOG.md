@@ -5,6 +5,18 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.24] - 2026-10-07
+
+### Changed
+
+- The guide, README, and website describe Split as it works now: the preview
+  updates in place, and a contents heading scrolls the page and the source.
+
+### Fixed
+
+- Dependency audit: KaTeX 0.19.0 (Mermaid still asks for 0.16), source-map-js
+  1.2.2, and postcss-selector-parser 7.1.6.
+
 ## [0.8.23] - 2026-10-07
 
 ### Added
@@ -564,7 +576,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.23...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.24...HEAD
+[0.8.24]: https://github.com/mpakus/1537paperstreet/compare/v0.8.23...v0.8.24
 [0.8.23]: https://github.com/mpakus/1537paperstreet/compare/v0.8.22...v0.8.23
 [0.8.22]: https://github.com/mpakus/1537paperstreet/compare/v0.8.21...v0.8.22
 [0.8.21]: https://github.com/mpakus/1537paperstreet/compare/v0.8.20...v0.8.21

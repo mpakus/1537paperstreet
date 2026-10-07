@@ -3,6 +3,11 @@
 **Why can’t I type in the preview?** Preview is read-only. Switch to Edit or
 Split (⌘E / ⌘⇧E) and save with ⌘S, or Open in External Editor (⌘⇧O).
 
+**Does Split follow what I type?** Yes. The page updates as you type and stays
+where you were reading. Choosing a heading in the contents list scrolls the
+preview and the editor to that heading. In Preview, the list only moves the
+page.
+
 **A project disappeared from the list?** The folder was probably moved.
 Context menu → Find Folder….
 

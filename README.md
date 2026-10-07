@@ -27,8 +27,10 @@ without changing where they live or how they are stored.
   code, tables, task lists, alerts, footnotes, wiki links, images, Mermaid
   diagrams, and KaTeX math render in a calm, themeable reading view.
 - **Move naturally between reading and writing.** Preview, Edit, and Split modes
-  share one window. Saves are atomic, preserve file characteristics, and refuse
-  to overwrite a file changed elsewhere.
+  share one window. In Split the page updates as you type and keeps your place;
+  a contents heading scrolls the page and the source. Saves are atomic,
+  preserve file characteristics, and refuse to overwrite a file changed
+  elsewhere.
 - **Find the document, not the app feature.** Projects, a virtualized file tree,
   tabs, quick open, table of contents, and full-size reading keep large folders
   manageable.

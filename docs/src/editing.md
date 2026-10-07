@@ -26,6 +26,8 @@ window (under the title bar). Click again or press Escape to return. Beside
 it, a contents button shows or hides the table of contents. Pressed in, the
 list is visible; raised, it is hidden. The choice is saved as
 `viewer.show_toc`, the same setting as Settings → Show table of contents.
+In Split, choosing a heading in that list scrolls the preview to the heading
+and the editor to the same place in the source.
 
 In Edit, Text / Links / Media buttons appear for Markdown files (bold, italic,
 link, wiki link `[[Note]]`, task item `- [ ]`, heading, and so on). Source

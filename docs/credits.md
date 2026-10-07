@@ -30,8 +30,8 @@ JetBrains Mono is not bundled in v1; it is used when the user has it installed.
 
 | Library | Version | License |
 | --- | --- | --- |
-| [Mermaid](https://github.com/mermaid-js/mermaid) | 11.12.2 | MIT |
-| [KaTeX](https://github.com/KaTeX/KaTeX) | 0.16.22 | MIT |
+| [Mermaid](https://github.com/mermaid-js/mermaid) | 11.17.2 | MIT |
+| [KaTeX](https://github.com/KaTeX/KaTeX) | 0.19.0 | MIT |
 
 Both are pinned in `ui/package.json` and loaded with a dynamic import only when a
 document contains a diagram or a formula. `ui/vendor/mermaid.esm.min.mjs` is the

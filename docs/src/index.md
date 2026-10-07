@@ -7,9 +7,11 @@ not send document contents over the network.
 The app reads and edits files you already have: projects on the left, a file
 tree in the middle, preview on the right. The title bar has Preview, Edit, and
 Split, then Search, Save, Format, Export, Board (Dashboard), and AI
-(Assistant). On macOS that bar sits beside the window controls. Linux and
-Windows use a normal window frame. To use another editor, Open in External
-Editor (⌘⇧O) — the tree picks up disk changes on its own.
+(Assistant). In Split the page updates as you type and stays where you were
+reading; a heading in the contents list scrolls the page and the source. On
+macOS that bar sits beside the window controls. Linux and Windows use a
+normal window frame. To use another editor, Open in External Editor (⌘⇧O) —
+the tree picks up disk changes on its own.
 
 ![Preview of a Markdown file with syntax highlighting, the Projects list, and the file tree](../screen01.png)
 

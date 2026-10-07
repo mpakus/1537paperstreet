@@ -3,7 +3,7 @@
 Проект: **1537paperstreet**, локальный Markdown-ридер и редактор для macOS, Linux и Windows на Rust + Tauri 2 + Svelte 5.
 Читать перед началом любой задачи. Вместе с `PLAN.md` (архитектура) и `CHECKLIST.md` (задачи).
 
-**Текущий продукт — ридер с редактором.** В окне есть Preview / Edit / Split, атомарное сохранение, Format, чекбоксы задач в превью и живое превью Split из буфера редактора (`doc_preview`). Фазы P0–P8, P11 и P16 реализованы. Открытые пункты P9 в `CHECKLIST.md` (черновики, автосохранение, инкрементальный рендер, найти-и-заменить) **не доделывать**, пока пользователь явно не попросит. P10 (история) и P12 (ZIP-экспорт) **не начинать**, пока пользователь явно не попросит.
+**Текущий продукт — ридер с редактором.** В окне есть Preview / Edit / Split, атомарное сохранение, Format, чекбоксы задач в превью и живое превью Split из буфера редактора (`doc_preview`). Это превью не заменяется целиком: `patchPreviewHtml` (`ui/src/lib/preview-patch.ts`) оставляет блоки с тем же `data-hash`, чтобы скролл и уже нарисованные диаграммы не прыгали. Клик по пункту оглавления в Split скроллит и превью, и редактор к строке `data-src-line` (`sourceLineForHeading`, `MarkdownEditor::scrollToLine`). В режиме Preview редактор не скроллить. Фазы P0–P8, P11 и P16 реализованы. Открытые пункты P9 в `CHECKLIST.md` (черновики, автосохранение, инкрементальный рендер, найти-и-заменить) **не доделывать**, пока пользователь явно не попросит. Клиентский патч блоков — не замена `render_incremental` (T-167, T-184). P10 (история) и P12 (ZIP-экспорт) **не начинать**, пока пользователь явно не попросит.
 
 ---
 
@@ -86,7 +86,7 @@
 
 1. Текстовый буфер редактора — CodeMirror (ADR-008), P9.
 2. Ленивый клиентский рендер уже санитизированных шаблонов Mermaid и KaTeX (`IntersectionObserver`, `rootMargin: 400px`, `securityLevel: 'strict'`). Исходник, BLAKE3-хеш и HTML приходят из `ps-render`.
-3. Презентационные хелперы: плоский список строк дерева и подсветка поискового запроса в `ui/src/lib/tree.ts` и `text.ts`; язык редактора по расширению в `ui/src/editor/language.ts`; список форматов Settings в `ui/src/editor/formats.ts`; аккорды отправки промпта Assistant в `ui/src/lib/keys.ts`. Без парсинга Markdown и без работы с путями на диске.
+3. Презентационные хелперы: плоский список строк дерева и подсветка поискового запроса в `ui/src/lib/tree.ts` и `text.ts`; язык редактора по расширению в `ui/src/editor/language.ts`; список форматов Settings в `ui/src/editor/formats.ts`; аккорды отправки промпта Assistant в `ui/src/lib/keys.ts`; патч уже санитизированного HTML превью по `data-block` / `data-hash` и чтение `data-src-line` для прокрутки редактора. Без парсинга Markdown и без работы с путями на диске.
 
 ---
 
@@ -154,7 +154,7 @@
 
 - `ps-core`: `config`, `agents`, `dashboard`, `projects`, `fsops`, `tree`, `watch`, `docio`, `log`, `themes`, `mermaid_cache`, `ui_state`, `search`, `store`, `paths`, `updates`
 - `ps-app`: тонкие IPC-команды, overlay-окно, нативное меню, `asset://`, `WatchHub`, `save_user_file`, ACP-хост (включая Codex app-server)
-- `ui`: панели Svelte 5 (`Projects`, `Tree`, `Preview`, `Settings`, `QuickOpen`, `QuickSwitch`, `ContentSearch`, `FindBar`, `Conflict`, `About`, `Assistant`, `Dashboard`, `ChromeToolbar`)
+- `ui`: панели Svelte 5 (`Projects`, `Tree`, `Preview`, `Settings`, `QuickOpen`, `QuickSwitch`, `ContentSearch`, `FindBar`, `Conflict`, `About`, `Assistant`, `Dashboard`, `ChromeToolbar`). Живое превью Split — `ui/src/lib/preview-patch.ts`. Строка исходника для оглавления — `ui/src/lib/toc.ts`.
 - Темы: `crates/ps-core/themes/*.json` плюс `~/.1537paperstreet/themes/`
 - Кэш диаграмм: `~/.1537paperstreet/cache/mermaid/`
 - Состояние UI: `ui-state.json` (раскрытые узлы, ширины панелей, последняя сессия: проект, вкладки документов и их режим, Dashboard, Assistant)
