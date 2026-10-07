@@ -79,9 +79,10 @@ Copy path put the basename or the absolute path on the clipboard.
 
 The title bar: Preview / Edit / Split, Search, Save, Format, Export, Board, and AI;
 in Preview and Split — type size and zoom. In Split the preview updates as you
-type and keeps its place. A contents heading scrolls both the preview and the
-editor. Board opens the Dashboard tab; AI opens the Assistant. More in
-[editing](editing.md) and [assistant](assistant.md).
+type and keeps the edited text visible. A contents heading scrolls both panels
+and focuses the cursor at the start of its source line. Board opens the
+Dashboard tab; AI opens the Assistant. More in [editing](editing.md) and
+[assistant](assistant.md).
 
 Images get width and height from the file header so layout does not jump.
 A file that is too large (> 8 MB), binary, or missing shows a message instead

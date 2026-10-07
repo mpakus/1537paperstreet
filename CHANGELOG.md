@@ -5,6 +5,17 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.25] - 2026-10-07
+
+### Fixed
+
+- Split keeps preview chunk containers in place while typing, avoiding layout
+  jumps in long documents. Live updates reveal the edited source line without
+  moving text that is already visible; the debounce is now 120 ms.
+- Choosing a contents heading in Split focuses the editor with the cursor at
+  the beginning of the heading's source line. Reused headings receive fresh
+  anchors when an earlier heading with the same slug changes.
+
 ## [0.8.24] - 2026-10-07
 
 ### Changed
@@ -576,7 +587,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.24...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.25...HEAD
+[0.8.25]: https://github.com/mpakus/1537paperstreet/compare/v0.8.24...v0.8.25
 [0.8.24]: https://github.com/mpakus/1537paperstreet/compare/v0.8.23...v0.8.24
 [0.8.23]: https://github.com/mpakus/1537paperstreet/compare/v0.8.22...v0.8.23
 [0.8.22]: https://github.com/mpakus/1537paperstreet/compare/v0.8.21...v0.8.22

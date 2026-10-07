@@ -5,7 +5,7 @@
   import { enhanceCodeBlocks } from '../lib/code'
   import { observeMermaid } from '../lib/diagrams'
   import { observeMath } from '../lib/math'
-  import { patchPreviewHtml } from '../lib/preview-patch'
+  import { patchPreviewHtml, revealPreviewLine } from '../lib/preview-patch'
   import { scrollBeforeLink } from '../lib/tabs'
   import { sourceLineForHeading } from '../lib/toc'
   import { taskByteOffset } from '../lib/tasks'
@@ -17,6 +17,7 @@
 
   let {
     html,
+    sourcePosition = null,
     emptyMessage,
     toc = [],
     tocOpen = true,
@@ -45,6 +46,7 @@
     ondiagramchrome,
   }: {
     html: string
+    sourcePosition?: { line: number; lines: number } | null
     emptyMessage: string
     toc?: TocEntry[]
     tocOpen?: boolean
@@ -176,6 +178,7 @@
     const theme = themeId
     const mermaid = mermaidEnabled
     const math = mathEnabled
+    const source = sourcePosition
     if (!host || !markup || typeof document === 'undefined') {
       if (!host || !markup) {
         for (const node of [...enhancements.keys()]) {
@@ -218,6 +221,9 @@
         },
         unwrap,
       })
+    }
+    if (source) {
+      revealPreviewLine(host, source)
     }
     const headings = [...host.querySelectorAll('h1, h2, h3, h4, h5, h6')]
     if (headings.length === 0) {

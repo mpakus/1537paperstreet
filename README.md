@@ -27,7 +27,7 @@ without changing where they live or how they are stored.
   code, tables, task lists, alerts, footnotes, wiki links, images, Mermaid
   diagrams, and KaTeX math render in a calm, themeable reading view.
 - **Move naturally between reading and writing.** Preview, Edit, and Split modes
-  share one window. In Split the page updates as you type and keeps your place;
+  share one window. In Split the page updates as you type and follows your edits;
   a contents heading scrolls the page and the source. Saves are atomic,
   preserve file characteristics, and refuse to overwrite a file changed
   elsewhere.
@@ -126,13 +126,14 @@ Markdown:
 
 A line written `[ ] one` or `- [x] two` is a checkbox. Clicking it writes
 `[x]` or `[ ]` back into the file. Split updates the page from the editor as
-you type, including text that is not saved yet, and keeps the reading
-position.
+you type, including text that is not saved yet, and keeps the edited text
+visible.
 
 The table of contents tracks headings. A button in the preview corner shows
 or hides that list; pressed in, it is visible, and the choice is saved with
 Settings → Show table of contents. In Split, choosing a heading scrolls the
-preview and the editor to that heading. A link to another project file opens a new
+preview and the editor to that heading, focusing the cursor at the start of its
+source line. A link to another project file opens a new
 tab, at the heading when the link has one. The document you left stays where
 it was. A web address opens in the browser and leaves the reading pane in
 place. A source file (Ruby, JavaScript, Elixir, and the other editor

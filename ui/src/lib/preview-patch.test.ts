@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { patchPreviewHtml } from './preview-patch'
+import { patchPreviewHtml, revealPreviewLine } from './preview-patch'
 
 function block(
   index: number,
@@ -67,6 +67,33 @@ describe('patchPreviewHtml', () => {
     expect(article.querySelector('[data-hash="bbb"]')?.textContent).toBe('Hi!')
   })
 
+  it('keeps chunk containers and never detaches unchanged blocks while typing', () => {
+    const { article } = mount()
+    patchPreviewHtml(
+      article,
+      doc(block(0, 'aaa', '<p>One</p>') + block(1, 'bbb', '<p>Two</p>')) +
+        doc(block(2, 'ddd', '<p>Three</p>')),
+    )
+    const chunks = [...article.children]
+    const kept = article.querySelector('[data-hash="bbb"]')!
+    const observer = new MutationObserver(() => {})
+    observer.observe(article, { childList: true, subtree: true })
+
+    patchPreviewHtml(
+      article,
+      doc(block(0, 'ccc', '<p>One!</p>') + block(1, 'bbb', '<p>Two</p>')) +
+        doc(block(2, 'ddd', '<p>Three</p>')),
+    )
+
+    const removed = observer
+      .takeRecords()
+      .flatMap((record) => [...record.removedNodes])
+    observer.disconnect()
+    expect([...article.children]).toEqual(chunks)
+    expect(removed).not.toContain(kept)
+    expect(removed).not.toContain(chunks[1])
+  })
+
   it('renumbers a reused block when a block is inserted above it', () => {
     const { article } = mount()
     patchPreviewHtml(article, doc(block(0, 'aaa', '<p>Tail</p>', 1)))
@@ -82,6 +109,28 @@ describe('patchPreviewHtml', () => {
     expect(article.querySelector('[data-hash="aaa"]')).toBe(tail)
     expect(tail?.getAttribute('data-block')).toBe('1')
     expect(tail?.getAttribute('data-src-line')).toBe('3')
+  })
+
+  it('handles blocks moving across chunk boundaries and removal of the last chunk', () => {
+    const { article } = mount()
+    patchPreviewHtml(
+      article,
+      doc(block(0, 'aaa', '<p>One</p>') + block(1, 'bbb', '<p>Two</p>')) +
+        doc(block(2, 'ccc', '<p>Three</p>')),
+    )
+    const kept = article.querySelector('[data-hash="bbb"]')
+    const reflowed =
+      doc(block(0, 'aaa', '<p>One</p>')) +
+      doc(block(1, 'bbb', '<p>Two</p>') + block(2, 'ccc', '<p>Three</p>'))
+
+    patchPreviewHtml(article, reflowed)
+
+    expect(article.innerHTML).toBe(reflowed)
+    expect(article.querySelector('[data-hash="bbb"]')).toBe(kept)
+    const shortened = doc(block(0, 'bbb', '<p>Two</p>'))
+    patchPreviewHtml(article, shortened)
+    expect(article.innerHTML).toBe(shortened)
+    expect(article.querySelector('[data-hash="bbb"]')).toBe(kept)
   })
 
   it('leaves the reading position in place', () => {
@@ -122,5 +171,36 @@ describe('patchPreviewHtml', () => {
     expect(article.textContent).toBe('Yo')
     patchPreviewHtml(article, '')
     expect(article.childNodes).toHaveLength(0)
+  })
+})
+
+describe('revealPreviewLine', () => {
+  it('reveals the edited line inside a tall block and leaves visible text still', () => {
+    const { scroller, article } = mount()
+    patchPreviewHtml(
+      article,
+      doc(
+        block(0, 'aaa', '<pre>Long code</pre>', 1) +
+          block(1, 'bbb', '<p>Tail</p>', 101),
+      ),
+    )
+    scroller.getBoundingClientRect = () => ({ top: 0, bottom: 400 }) as DOMRect
+    const code = article.querySelector<HTMLElement>('[data-block="0"]')!
+    code.getBoundingClientRect = () =>
+      ({ top: -scroller.scrollTop, height: 2000 }) as DOMRect
+
+    revealPreviewLine(article, { line: 75, lines: 101 })
+    expect(scroller.scrollTop).toBeGreaterThan(1000)
+    const top = scroller.scrollTop
+    revealPreviewLine(article, { line: 75, lines: 101 })
+    expect(scroller.scrollTop).toBe(top)
+    revealPreviewLine(article, { line: 2, lines: 101 })
+    expect(scroller.scrollTop).toBe(0)
+
+    scroller.scrollTop = 200
+    code.getBoundingClientRect = () =>
+      ({ top: 200 - scroller.scrollTop, height: 2000 }) as DOMRect
+    revealPreviewLine(article, { line: 1, lines: 101 })
+    expect(scroller.scrollTop).toBe(200)
   })
 })

@@ -45,17 +45,13 @@ export function patchPreviewHtml(
     }
   }
 
-  if (sameBlocks(currentBlocks, nextBlocks)) {
-    appliedHtml.set(article, nextHtml)
-    return { changed: [], removed: [] }
-  }
-
   const reused = reuseByHash(currentBlocks, nextBlocks)
   const reusedSet = new Set(
     reused.filter((node): node is HTMLElement => node !== null),
   )
   const anchor = captureAnchor(scroller, currentBlocks, reusedSet)
   const changed: HTMLElement[] = []
+  const replacements = new Map<Node, Node>()
   for (let index = 0; index < nextBlocks.length; index += 1) {
     const next = nextBlocks[index]
     const kept = reused[index]
@@ -64,40 +60,88 @@ export function patchPreviewHtml(
     }
     if (kept) {
       syncBlockIdentity(kept, next)
-      next.replaceWith(kept)
+      replacements.set(next, kept)
     } else {
       changed.push(next)
     }
   }
   const removed = currentBlocks.filter((node) => !reusedSet.has(node))
-  article.replaceChildren(...holder.childNodes)
+  // Keep chunk containers: replacing them discards content-visibility's
+  // remembered heights, even if the blocks inside are reused.
+  const chunks = [...article.children].filter((node) => node.matches('.chunk'))
+  let chunkIndex = 0
+  const roots = [...holder.childNodes].map((node) => {
+    if (node instanceof HTMLElement && node.matches('.chunk')) {
+      const chunk = chunks[chunkIndex++] ?? node
+      reconcileChildren(
+        chunk,
+        [...node.childNodes].map((child) => replacements.get(child) ?? child),
+      )
+      return chunk
+    }
+    return replacements.get(node) ?? node
+  })
+  reconcileChildren(article, roots)
   appliedHtml.set(article, nextHtml)
   pinReadingPosition(scroller, anchor, fallback)
   return { changed, removed }
 }
 
-function blocksIn(root: ParentNode): HTMLElement[] {
-  return [...root.querySelectorAll<HTMLElement>('section[data-block]')]
-}
-
-function sameBlocks(current: HTMLElement[], next: HTMLElement[]): boolean {
-  if (current.length !== next.length) {
-    return false
-  }
-  for (let index = 0; index < current.length; index += 1) {
-    const left = current[index]
-    const right = next[index]
-    if (
-      !left ||
-      !right ||
-      left.getAttribute('data-hash') !== right.getAttribute('data-hash') ||
-      left.getAttribute('data-block') !== right.getAttribute('data-block') ||
-      left.getAttribute('data-src-line') !== right.getAttribute('data-src-line')
-    ) {
-      return false
+function reconcileChildren(parent: Element, children: Node[]) {
+  const wanted = new Set(children)
+  for (const child of [...parent.childNodes]) {
+    if (!wanted.has(child)) {
+      child.remove()
     }
   }
-  return true
+  let cursor = parent.firstChild
+  for (const child of children) {
+    if (child === cursor) {
+      cursor = cursor.nextSibling
+    } else {
+      parent.insertBefore(child, cursor)
+    }
+  }
+}
+
+/** Reveals the active source line without moving an already visible edit. */
+export function revealPreviewLine(
+  article: HTMLElement,
+  source: { line: number; lines: number },
+) {
+  const scroller = article.parentElement
+  const blocks = blocksIn(article)
+  if (!scroller || blocks.length === 0) {
+    return
+  }
+  let target = blocks[0]!
+  let endLine = source.lines + 1
+  for (const block of blocks) {
+    const line = Number(block.dataset.srcLine)
+    if (line > source.line) {
+      endLine = line
+      break
+    }
+    target = block
+  }
+  const startLine = Number(target.dataset.srcLine)
+  const fraction = Math.max(
+    0,
+    Math.min(1, (source.line - startLine) / Math.max(1, endLine - startLine)),
+  )
+  const rect = target.getBoundingClientRect()
+  const viewport = scroller.getBoundingClientRect()
+  const top = rect.top + fraction * rect.height
+  if (top < viewport.top - 0.5 || top >= viewport.bottom) {
+    scroller.scrollTop = Math.max(
+      0,
+      scroller.scrollTop + top - (viewport.top + viewport.bottom) / 2,
+    )
+  }
+}
+
+function blocksIn(root: ParentNode): HTMLElement[] {
+  return [...root.querySelectorAll<HTMLElement>('section[data-block]')]
 }
 
 /** Reuses current blocks in source order when the same hash appears twice. */
@@ -127,6 +171,18 @@ function syncBlockIdentity(kept: HTMLElement, next: HTMLElement) {
     if (value != null && kept.getAttribute(name) !== value) {
       kept.setAttribute(name, value)
     }
+  }
+  // Heading IDs depend on earlier headings, not just this block's source hash.
+  const selector = 'h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]'
+  const headings = next.querySelectorAll<HTMLElement>(selector)
+  if (headings.length > 0) {
+    const current = kept.querySelectorAll<HTMLElement>(selector)
+    headings.forEach((heading, index) => {
+      const node = current[index]
+      if (node && node.id !== heading.id) {
+        node.id = heading.id
+      }
+    })
   }
 }
 

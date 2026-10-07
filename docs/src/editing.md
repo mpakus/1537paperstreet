@@ -9,7 +9,7 @@ bar shows what you can do with the document:
 - **Preview** — reading (⌘E toggles from the editor)
 - **Edit** — source with syntax highlighting (⌘E)
 - **Split** — preview and source side by side (⌘⇧E). Typing updates the
-  preview in place and leaves the reading position where it is. Choosing a
+  preview in place and keeps the edited text visible. Choosing a
   heading in the contents list scrolls the preview and the editor to that
   heading. Drag the divider to change editor width (stored as
   `window.editor_w`).
@@ -27,7 +27,10 @@ it, a contents button shows or hides the table of contents. Pressed in, the
 list is visible; raised, it is hidden. The choice is saved as
 `viewer.show_toc`, the same setting as Settings → Show table of contents.
 In Split, choosing a heading in that list scrolls the preview to the heading
-and the editor to the same place in the source.
+and the editor to the same place in the source, with the cursor focused at the
+start of the heading's line. Live updates follow the editor's active source
+line when `editor.sync_scroll` is enabled (the default); an edit that is already
+visible does not move the preview.
 
 In Edit, Text / Links / Media buttons appear for Markdown files (bold, italic,
 link, wiki link `[[Note]]`, task item `- [ ]`, heading, and so on). Source

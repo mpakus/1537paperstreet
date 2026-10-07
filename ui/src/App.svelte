@@ -312,7 +312,11 @@
   }
 
   let draftPreviewGen = 0
+  let previewSourcePosition = $state<{ line: number; lines: number } | null>(
+    null,
+  )
   $effect(() => {
+    previewSourcePosition = null
     if (viewMode !== 'split' || !active || !openMeta || !docSourceMeta) {
       return
     }
@@ -328,12 +332,18 @@
         .then((preview) => {
           if (
             generation !== draftPreviewGen ||
+            active?.id !== projectId ||
             openMeta?.relPath !== relPath ||
+            draftText !== text ||
             viewMode !== 'split'
           ) {
             return
           }
           html = preview.html
+          previewSourcePosition =
+            (appConfig?.editor.sync_scroll ?? true)
+              ? (editorApi?.activeSourceLine() ?? null)
+              : null
           if (
             docMeta &&
             openMeta?.relPath === relPath &&
@@ -347,8 +357,11 @@
             showError(errorMessage(cause))
           }
         })
-    }, 180)
-    return () => clearTimeout(handle)
+    }, 120)
+    return () => {
+      clearTimeout(handle)
+      draftPreviewGen += 1
+    }
   })
 
   function showError(message: string) {
@@ -2658,6 +2671,9 @@
           {#if viewMode !== 'editor'}
             <Preview
               {html}
+              sourcePosition={viewMode === 'split'
+                ? previewSourcePosition
+                : null}
               {emptyMessage}
               toc={docMeta?.toc ?? []}
               tocOpen={showToc}

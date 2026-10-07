@@ -10,7 +10,7 @@ function block(index: number, hash: string, inner: string): string {
 }
 
 type LivePreview = {
-  setHtml: (next: string) => void
+  setHtml: (next: string, source?: { line: number; lines: number }) => void
   setToc: (next: { level: number; title: string; id: string }[]) => void
   line: () => number | null
 }
@@ -67,5 +67,53 @@ describe('Preview live html', () => {
     link?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
     expect(fixture.line()).toBe(12)
+
+    fixture.setHtml(
+      '<section data-block="2" data-src-line="17" data-hash="abc"><h2 id="topic">Topic</h2></section>',
+    )
+    flushSync()
+    link?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(fixture.line()).toBe(17)
+  })
+
+  it('follows the edited source line after the new HTML has been patched', () => {
+    target = document.createElement('div')
+    document.body.append(target)
+    fixture = mount(PreviewLiveFixture, { target }) as LivePreview
+    fixture.setHtml(block(0, 'aaa', '<p>One</p>'))
+    flushSync()
+    const scroller = target.querySelector<HTMLElement>('.preview')!
+    scroller.getBoundingClientRect = () =>
+      ({ top: -400, bottom: -100 }) as DOMRect
+    fixture.setHtml(block(0, 'bbb', '<p>Edited here</p>'), {
+      line: 1,
+      lines: 1,
+    })
+    flushSync()
+    expect(scroller.scrollTop).toBe(250)
+    expect(scroller.textContent).toContain('Edited here')
+  })
+
+  it('updates a reused heading anchor when an earlier colliding heading changes', () => {
+    target = document.createElement('div')
+    document.body.append(target)
+    fixture = mount(PreviewLiveFixture, { target }) as LivePreview
+    fixture.setHtml(
+      block(0, 'aaa', '<h2 id="topic">Topic!</h2>') +
+        block(1, 'bbb', '<h2 id="topic-1">Topic</h2>'),
+    )
+    flushSync()
+
+    fixture.setToc([{ level: 2, title: 'Topic', id: 'topic' }])
+    fixture.setHtml(
+      block(0, 'ccc', '<h2 id="other">Other</h2>') +
+        block(1, 'bbb', '<h2 id="topic">Topic</h2>'),
+    )
+    flushSync()
+    target
+      .querySelector('a[href="#topic"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(fixture.line()).toBe(2)
   })
 })

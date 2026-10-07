@@ -225,6 +225,14 @@ export function createMarkdownEditor(
       const range = view.state.selection.main
       return { start: range.from, end: range.to }
     },
+    activeSourceLine() {
+      return view.hasFocus
+        ? {
+            line: view.state.doc.lineAt(view.state.selection.main.head).number,
+            lines: view.state.doc.lines,
+          }
+        : null
+    },
     setTextAndSelection(text, start, end) {
       const length = text.length
       const from = clamp(start, length)
@@ -246,6 +254,7 @@ export function createMarkdownEditor(
         selection: { anchor: pos },
         effects: EditorView.scrollIntoView(pos, { y: 'start' }),
       })
+      view.focus()
     },
     focus() {
       view.focus()

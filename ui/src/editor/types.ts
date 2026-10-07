@@ -20,8 +20,10 @@ export type MarkdownEditor = {
   setSoftWrap: (on: boolean) => void
   setIndentUnit: (spaces: number) => void
   selection: () => { start: number; end: number }
+  /** Active cursor line and document length; null while focus is elsewhere. */
+  activeSourceLine: () => { line: number; lines: number } | null
   setTextAndSelection: (text: string, start: number, end: number) => void
-  /** Moves the cursor to a one-based source line and scrolls it to the top. */
+  /** Focuses the cursor at the start of a one-based line and scrolls it to the top. */
   scrollToLine: (line: number) => void
   focus: () => void
   refresh: () => void

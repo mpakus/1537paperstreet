@@ -5,9 +5,11 @@
   let html = $state('')
   let toc = $state<TocEntry[]>([])
   let sourceLine = $state<number | null>(null)
+  let sourcePosition = $state<{ line: number; lines: number } | null>(null)
 
-  export function setHtml(next: string) {
+  export function setHtml(next: string, source: typeof sourcePosition = null) {
     html = next
+    sourcePosition = source
   }
 
   export function setToc(next: TocEntry[]) {
@@ -21,6 +23,7 @@
 
 <Preview
   {html}
+  {sourcePosition}
   {toc}
   emptyMessage="empty"
   onnavigate={() => {}}

@@ -20,12 +20,15 @@ describe('scrollToLine', () => {
       onChange() {},
     })
 
+    expect(editor.activeSourceLine()).toBeNull()
     editor.scrollToLine(3)
 
     expect(editor.selection()).toEqual({
       start: doc.indexOf('##'),
       end: doc.indexOf('##'),
     })
+    expect(host.querySelector('.cm-content')).toBe(document.activeElement)
+    expect(editor.activeSourceLine()).toEqual({ line: 3, lines: 4 })
     editor.scrollToLine(99)
     expect(editor.selection().start).toBe(doc.length)
     editor.destroy()
