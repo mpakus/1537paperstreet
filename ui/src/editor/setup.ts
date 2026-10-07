@@ -238,6 +238,15 @@ export function createMarkdownEditor(
         scrollIntoView: true,
       })
     },
+    scrollToLine(line) {
+      const count = view.state.doc.lines
+      const lineNo = Math.min(count, Math.max(1, Math.floor(line)))
+      const pos = view.state.doc.line(lineNo).from
+      view.dispatch({
+        selection: { anchor: pos },
+        effects: EditorView.scrollIntoView(pos, { y: 'start' }),
+      })
+    },
     focus() {
       view.focus()
     },

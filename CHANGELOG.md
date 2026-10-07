@@ -5,6 +5,13 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.23] - 2026-10-07
+
+### Added
+
+- In Split, choosing a heading in the table of contents scrolls the editor to
+  that heading as well as the preview.
+
 ### Fixed
 
 - Split updates the preview as you type. The reading pane stays where it is
@@ -557,7 +564,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.22...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.23...HEAD
+[0.8.23]: https://github.com/mpakus/1537paperstreet/compare/v0.8.22...v0.8.23
 [0.8.22]: https://github.com/mpakus/1537paperstreet/compare/v0.8.21...v0.8.22
 [0.8.21]: https://github.com/mpakus/1537paperstreet/compare/v0.8.20...v0.8.21
 [0.8.20]: https://github.com/mpakus/1537paperstreet/compare/v0.8.19...v0.8.20

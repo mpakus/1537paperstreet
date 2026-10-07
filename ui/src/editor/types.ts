@@ -21,6 +21,8 @@ export type MarkdownEditor = {
   setIndentUnit: (spaces: number) => void
   selection: () => { start: number; end: number }
   setTextAndSelection: (text: string, start: number, end: number) => void
+  /** Moves the cursor to a one-based source line and scrolls it to the top. */
+  scrollToLine: (line: number) => void
   focus: () => void
   refresh: () => void
   destroy: () => void

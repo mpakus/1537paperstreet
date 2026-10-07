@@ -11,6 +11,8 @@ function block(index: number, hash: string, inner: string): string {
 
 type LivePreview = {
   setHtml: (next: string) => void
+  setToc: (next: { level: number; title: string; id: string }[]) => void
+  line: () => number | null
 }
 
 describe('Preview live html', () => {
@@ -48,5 +50,22 @@ describe('Preview live html', () => {
     expect(article?.querySelector('#kept-diagram')).toBe(marker)
     expect(article?.textContent).toContain('One!')
     expect(article?.textContent).toContain('Two')
+  })
+
+  it('reports the source line when a contents heading is chosen', () => {
+    target = document.createElement('div')
+    document.body.append(target)
+    fixture = mount(PreviewLiveFixture, { target }) as LivePreview
+    fixture.setToc([{ level: 2, title: 'Topic', id: 'topic' }])
+    fixture.setHtml(
+      '<section data-block="1" data-src-line="12" data-hash="abc"><h2 id="topic">Topic</h2></section>',
+    )
+    flushSync()
+
+    const link = target.querySelector('a[href="#topic"]')
+    expect(link).toBeTruthy()
+    link?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    expect(fixture.line()).toBe(12)
   })
 })

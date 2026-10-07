@@ -7,6 +7,7 @@
   import { observeMath } from '../lib/math'
   import { patchPreviewHtml } from '../lib/preview-patch'
   import { scrollBeforeLink } from '../lib/tabs'
+  import { sourceLineForHeading } from '../lib/toc'
   import { taskByteOffset } from '../lib/tasks'
   import {
     DIAGRAM_FRAME_DEFAULT_HEIGHT,
@@ -36,6 +37,7 @@
     diagramTop = null,
     articleEl = $bindable(),
     onnavigate,
+    onsource,
     ontoggle,
     onerror,
     ontoc,
@@ -63,6 +65,7 @@
     diagramTop?: number | null
     articleEl?: HTMLElement | undefined
     onnavigate: (href: string, scrollTop: number) => void
+    onsource?: (line: number) => void
     ontoggle?: (byteOffset: number) => void
     onerror?: (message: string) => void
     ontoc?: (open: boolean) => void
@@ -126,7 +129,14 @@
   function jump(event: MouseEvent, id: string) {
     event.preventDefault()
     const heading = articleEl?.querySelector(`#${CSS.escape(id)}`)
-    heading?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    if (!(heading instanceof HTMLElement)) {
+      return
+    }
+    heading.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    const line = sourceLineForHeading(heading)
+    if (line != null) {
+      onsource?.(line)
+    }
   }
 
   function hasChildren(index: number): boolean {

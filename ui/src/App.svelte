@@ -2685,6 +2685,11 @@
                   showError(errorMessage(cause))
                 })
               }}
+              onsource={(line) => {
+                if (viewMode === 'split') {
+                  editorApi?.scrollToLine(line)
+                }
+              }}
               onerror={(message) => {
                 showError(message)
               }}

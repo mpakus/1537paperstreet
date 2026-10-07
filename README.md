@@ -129,7 +129,8 @@ position.
 
 The table of contents tracks headings. A button in the preview corner shows
 or hides that list; pressed in, it is visible, and the choice is saved with
-Settings → Show table of contents. A link to another project file opens a new
+Settings → Show table of contents. In Split, choosing a heading scrolls the
+preview and the editor to that heading. A link to another project file opens a new
 tab, at the heading when the link has one. The document you left stays where
 it was. A web address opens in the browser and leaves the reading pane in
 place. A source file (Ruby, JavaScript, Elixir, and the other editor
