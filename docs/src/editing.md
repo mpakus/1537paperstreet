@@ -8,8 +8,9 @@ bar shows what you can do with the document:
 
 - **Preview** — reading (⌘E toggles from the editor)
 - **Edit** — source with syntax highlighting (⌘E)
-- **Split** — preview and source side by side (⌘⇧E); drag the divider to
-  change editor width (stored as `window.editor_w`).
+- **Split** — preview and source side by side (⌘⇧E). Typing updates the
+  preview in place and leaves the reading position where it is. Drag the
+  divider to change editor width (stored as `window.editor_w`).
 - **Save** — write the file (⌘S); the button is disabled until a file is open
   and writable
 - **Format** — align Markdown tables or pretty-print JSON

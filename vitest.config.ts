@@ -3,6 +3,10 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [svelte({ configFile: 'ui/svelte.config.js' })],
+  resolve: {
+    // `svelte` defaults to the server build. Component tests need `mount`.
+    conditions: ['browser'],
+  },
   test: {
     include: ['ui/src/**/*.test.ts'],
     environmentMatchGlobs: [

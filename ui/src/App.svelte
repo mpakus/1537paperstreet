@@ -288,6 +288,29 @@
     writeSession(snapshot)
   })
 
+  function sameToc(
+    left: DocumentMeta['toc'],
+    right: DocumentMeta['toc'],
+  ): boolean {
+    if (left.length !== right.length) {
+      return false
+    }
+    for (let index = 0; index < left.length; index += 1) {
+      const before = left[index]
+      const after = right[index]
+      if (
+        !before ||
+        !after ||
+        before.level !== after.level ||
+        before.title !== after.title ||
+        before.id !== after.id
+      ) {
+        return false
+      }
+    }
+    return true
+  }
+
   let draftPreviewGen = 0
   $effect(() => {
     if (viewMode !== 'split' || !active || !openMeta || !docSourceMeta) {
@@ -310,12 +333,12 @@
           ) {
             return
           }
-          const top = previewScrollTop() ?? 0
           html = preview.html
-          if (top > 0) {
-            restoreReadingScroll(relPath, top)
-          }
-          if (docMeta && openMeta?.relPath === relPath) {
+          if (
+            docMeta &&
+            openMeta?.relPath === relPath &&
+            !sameToc(docMeta.toc, preview.toc)
+          ) {
             docMeta = { ...docMeta, toc: preview.toc }
           }
         })

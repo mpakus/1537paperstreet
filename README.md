@@ -123,8 +123,9 @@ Markdown:
 - images (PNG, JPEG, GIF, WebP, SVG, and the other common formats) in Preview
 
 A line written `[ ] one` or `- [x] two` is a checkbox. Clicking it writes
-`[x]` or `[ ]` back into the file. Split updates the page from the editor,
-including text that is not saved yet.
+`[x]` or `[ ]` back into the file. Split updates the page from the editor as
+you type, including text that is not saved yet, and keeps the reading
+position.
 
 The table of contents tracks headings. A button in the preview corner shows
 or hides that list; pressed in, it is visible, and the choice is saved with
@@ -155,7 +156,8 @@ In Preview and Split, the bar has A− / A+ (reading size) and − / % / +
 ### Edit without giving up file control
 
 **Edit** (⌘E) and **Split** (⌘⇧E) show the source. Split places the
-editor beside a live preview; drag the divider (width is remembered).
+editor beside a live preview that updates in place; drag the divider
+(width is remembered).
 
 The editor loads CodeMirror the first time you leave Preview. Markup marks
 (`#`, `*`, `` ` ``) are faded; headings, emphasis, links, and fenced code stay

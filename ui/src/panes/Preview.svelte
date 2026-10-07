@@ -5,6 +5,7 @@
   import { enhanceCodeBlocks } from '../lib/code'
   import { observeMermaid } from '../lib/diagrams'
   import { observeMath } from '../lib/math'
+  import { patchPreviewHtml } from '../lib/preview-patch'
   import { scrollBeforeLink } from '../lib/tabs'
   import { taskByteOffset } from '../lib/tasks'
   import {
@@ -81,6 +82,46 @@
   let pointerScroll: number | null = null
   const collapsed = new SvelteSet<string>()
   let expanded = $state(false)
+  let optionsKey = ''
+  // Observer registry for the blocks already on screen. SvelteMap would
+  // schedule this component again on every insert.
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
+  const enhancements = new Map<
+    HTMLElement,
+    { stopObservers: () => void; unwrap: () => void }
+  >()
+
+  function disconnectEnhancement(node: HTMLElement) {
+    const bag = enhancements.get(node)
+    if (!bag) {
+      return
+    }
+    bag.stopObservers()
+    enhancements.delete(node)
+  }
+
+  function releaseEnhancement(node: HTMLElement) {
+    const bag = enhancements.get(node)
+    if (!bag) {
+      return
+    }
+    bag.stopObservers()
+    bag.unwrap()
+    enhancements.delete(node)
+  }
+
+  function previewRoots(host: HTMLElement): HTMLElement[] {
+    const blocks = [
+      ...host.querySelectorAll<HTMLElement>('section[data-block]'),
+    ]
+    if (blocks.length > 0) {
+      return blocks
+    }
+    if (host.childNodes.length > 0) {
+      return [host]
+    }
+    return []
+  }
 
   function jump(event: MouseEvent, id: string) {
     event.preventDefault()
@@ -112,31 +153,65 @@
   }
 
   $effect(() => {
+    return () => {
+      for (const node of [...enhancements.keys()]) {
+        releaseEnhancement(node)
+      }
+    }
+  })
+
+  $effect(() => {
     const host = articleEl
     const markup = html
     const theme = themeId
-    if (!host || !markup) {
+    const mermaid = mermaidEnabled
+    const math = mathEnabled
+    if (!host || !markup || typeof document === 'undefined') {
+      if (!host || !markup) {
+        for (const node of [...enhancements.keys()]) {
+          releaseEnhancement(node)
+        }
+      }
       return
     }
-    for (const image of host.querySelectorAll('img')) {
-      image.loading = 'lazy'
-      image.decoding = 'async'
+    const key = `${theme}\0${mermaid}\0${math}`
+    const refresh = key !== optionsKey
+    optionsKey = key
+    const patch = patchPreviewHtml(host, markup)
+    for (const node of patch.removed) {
+      releaseEnhancement(node)
     }
-    const stopCode = enhanceCodeBlocks(host, (message) => {
-      onerror?.(message)
-    })
-    const preview = host.parentElement
-    const stopMermaid = preview
-      ? observeMermaid(preview, theme, mermaidEnabled, onerror)
-      : () => {}
-    const stopMath = observeMath(host, mathEnabled)
+    if (refresh) {
+      for (const node of [...enhancements.keys()]) {
+        disconnectEnhancement(node)
+      }
+    }
+    const targets = refresh ? previewRoots(host) : patch.changed
+    const scroller = host.parentElement
+    for (const node of targets) {
+      const previous = enhancements.get(node)
+      previous?.stopObservers()
+      const root = scroller ?? node
+      for (const image of node.querySelectorAll<HTMLImageElement>('img')) {
+        image.loading = 'lazy'
+        image.decoding = 'async'
+      }
+      const unwrap = enhanceCodeBlocks(node, (message) => {
+        onerror?.(message)
+      })
+      const stopMermaid = observeMermaid(root, theme, mermaid, onerror, node)
+      const stopMath = observeMath(root, math, node)
+      enhancements.set(node, {
+        stopObservers() {
+          stopMermaid()
+          stopMath()
+        },
+        unwrap,
+      })
+    }
     const headings = [...host.querySelectorAll('h1, h2, h3, h4, h5, h6')]
     if (headings.length === 0) {
-      return () => {
-        stopCode()
-        stopMermaid()
-        stopMath()
-      }
+      return
     }
     const observer = new IntersectionObserver(
       (entries) => {
@@ -158,9 +233,6 @@
     }
     return () => {
       observer.disconnect()
-      stopCode()
-      stopMermaid()
-      stopMath()
     }
   })
 
@@ -361,11 +433,14 @@
           onnavigate(href, scrollTop)
         }}
       >
-        <!-- HTML is sanitized by ps-render before it crosses IPC. -->
-        <article bind:this={articleEl} style:zoom={readingZoom}>
-          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-          {@html html}
-        </article>
+        <article bind:this={articleEl} style:zoom={readingZoom}></article>
+        {#if typeof document === 'undefined'}
+          <div hidden>
+            <!-- HTML is sanitized by ps-render before it crosses IPC. -->
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html html}
+          </div>
+        {/if}
       </div>
     {:else}
       <p class="empty" style:zoom={readingZoom}>{emptyMessage}</p>

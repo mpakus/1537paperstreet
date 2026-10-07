@@ -5,6 +5,11 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Split updates the preview as you type. The reading pane stays where it is
+  instead of jumping when the editor changes.
+
 ## [0.8.22] - 2026-09-30
 
 ### Fixed

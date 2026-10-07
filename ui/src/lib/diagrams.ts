@@ -157,14 +157,18 @@ export function showDiagramError(
   return message
 }
 
-/** Observes mermaid figures and renders them just before they enter view. */
+/**
+ * Observes mermaid figures and renders them just before they enter view.
+ * `scope` limits which figures are new; `root` is the scrolling pane.
+ */
 export function observeMermaid(
   root: HTMLElement,
   themeId: string,
   enabled: boolean,
   onerror?: (message: string) => void,
+  scope: ParentNode = root,
 ): () => void {
-  const figures = [...root.querySelectorAll<HTMLElement>('figure.mermaid')]
+  const figures = [...scope.querySelectorAll<HTMLElement>('figure.mermaid')]
   if (figures.length === 0) {
     return () => {}
   }

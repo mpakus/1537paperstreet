@@ -38,9 +38,16 @@ export function renderMathSpan(
   }
 }
 
-/** Observes math spans and typesets them just before they enter view. */
-export function observeMath(root: HTMLElement, enabled: boolean): () => void {
-  const nodes = [...root.querySelectorAll<HTMLElement>('.math')]
+/**
+ * Observes math spans and typesets them just before they enter view.
+ * `scope` limits which spans are new; `root` is the scrolling pane.
+ */
+export function observeMath(
+  root: HTMLElement,
+  enabled: boolean,
+  scope: ParentNode = root,
+): () => void {
+  const nodes = [...scope.querySelectorAll<HTMLElement>('.math')]
   if (nodes.length === 0 || !enabled) {
     return () => {}
   }

@@ -82,6 +82,7 @@ Reader (current product):
     quit the process. Linux and Windows use a normal window frame.
 
 Already in the app, so check them: ⌘S, Format, Split preview of unsaved
-editor text, and a refused save when `base_hash` disagrees with the file.
+editor text (the reading pane stays put while you type), and a refused save
+when `base_hash` disagrees with the file.
 Still absent: autosave, crash drafts, the history pane, ZIP export. Do not
 check those until they exist.
