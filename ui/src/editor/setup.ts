@@ -1,7 +1,14 @@
 import { jsonParseLinter } from '@codemirror/lang-json'
 import { indentUnit, syntaxHighlighting } from '@codemirror/language'
 import { linter, lintGutter } from '@codemirror/lint'
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  isolateHistory,
+  undo,
+  redo,
+} from '@codemirror/commands'
 import { Compartment, EditorState, type Extension } from '@codemirror/state'
 import {
   drawSelection,
@@ -156,12 +163,13 @@ export function createMarkdownEditor(
     }),
   })
 
-  function setDoc(text: string) {
+  function setDoc(text: string, isolated = false) {
     if (view.state.doc.toString() === text) {
       return
     }
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: text },
+      annotations: isolated ? isolateHistory.of('full') : [],
     })
   }
 
@@ -189,6 +197,8 @@ export function createMarkdownEditor(
 
   return {
     setDoc,
+    undo: () => undo(view),
+    redo: () => redo(view),
     setFileName(next) {
       if (next === currentFileName) {
         return

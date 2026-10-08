@@ -146,7 +146,7 @@ impl RenderCache {
 
 fn cache_key(markdown: &str, options: RenderOptions) -> String {
     let mut hasher = blake3::Hasher::new();
-    hasher.update(b"1537paperstreet-render-v1\0");
+    hasher.update(b"1537paperstreet-render-v2-markers\0");
     hasher.update(&[u8::from(options.allow_raw_html)]);
     hasher.update(markdown.as_bytes());
     hasher.finalize().to_hex().to_string()

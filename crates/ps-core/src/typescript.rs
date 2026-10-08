@@ -15,6 +15,7 @@ use crate::docio::{
     DocChunkEvent, DocDoneEvent, DocOpenResult, DocPreview, DocumentEncoding, DocumentMeta,
     DocumentSource, DocumentStat, LineEnding, RestoreTraits, TocEntry, WrittenDocument,
 };
+use crate::edit::{HighlightRange, HighlightSource};
 use crate::fsops::{ConflictStrategy, UntitledKind};
 use crate::projects::{OpenDropResult, Project, ProjectsListQuery, ProjectsListResult};
 use crate::themes::{ThemeAppearance, ThemeInfo};
@@ -77,6 +78,8 @@ pub fn ipc_typescript() -> String {
         DocumentMeta::decl(&ts),
         DocOpenResult::decl(&ts),
         DocPreview::decl(&ts),
+        HighlightRange::decl(&ts),
+        HighlightSource::decl(&ts),
         DocChunkEvent::decl(&ts),
         DocDoneEvent::decl(&ts),
         WatchUpdate::decl(&ts),

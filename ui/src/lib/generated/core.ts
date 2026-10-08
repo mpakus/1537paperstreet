@@ -761,6 +761,34 @@ html: string,
  */
 toc: Array<TocEntry>, };
 
+export type HighlightRange = { 
+/**
+ * UTF-8 start of the source run.
+ */
+start: number, 
+/**
+ * UTF-8 end of the source run.
+ */
+end: number, 
+/**
+ * Selection start in the displayed run (UTF-16 code units).
+ */
+from: number, 
+/**
+ * Selection end in the displayed run (UTF-16 code units).
+ */
+to: number, };
+
+export type HighlightSource = { 
+/**
+ * HTML containing authenticated text-run positions.
+ */
+html: string, 
+/**
+ * BLAKE3 of the exact source buffer, also included in each mapping attribute.
+ */
+hash: string, };
+
 export type DocChunkEvent = { 
 /**
  * Registered project that owns the file.

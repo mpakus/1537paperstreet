@@ -451,6 +451,29 @@ pub(crate) async fn text_format(rel_path: PathBuf, text: String) -> Result<Strin
 }
 
 #[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn doc_highlight_source(
+    text: String,
+) -> Result<ps_core::edit::HighlightSource, String> {
+    tauri::async_runtime::spawn_blocking(move || ps_render::highlight_source(&text))
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn doc_highlight(
+    text: String,
+    ranges: Vec<ps_core::edit::HighlightRange>,
+    color: Option<String>,
+) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        ps_render::apply_highlight(&text, &ranges, color.as_deref())
+    })
+    .await
+    .map_err(|error| error.to_string())
+    .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
 pub(crate) async fn doc_open(
     app: tauri::AppHandle,
     state: State<'_, AppState>,

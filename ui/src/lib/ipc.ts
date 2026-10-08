@@ -3,6 +3,8 @@ import type {
   ConflictStrategy,
   DocOpenResult,
   DocPreview,
+  HighlightSource,
+  HighlightRange,
   DocumentMeta,
   DocumentSource,
   DocumentStat,
@@ -223,6 +225,18 @@ export function docPreview(
     rel_path: relPath,
     text,
   })
+}
+
+export function docHighlightSource(text: string): Promise<HighlightSource> {
+  return invokeIpc('doc_highlight_source', { text })
+}
+
+export function docHighlight(
+  text: string,
+  ranges: HighlightRange[],
+  color: string | null,
+): Promise<string> {
+  return invokeIpc('doc_highlight', { text, ranges, color })
 }
 
 /** Reads a document's source text and on-disk traits. */

@@ -130,3 +130,28 @@
 .preview dd {
   margin: 0 0 var(--space-2) var(--space-4);
 }
+mark.text-highlight {
+  background: var(--marker-default);
+  color: var(--marker-fg);
+  border-radius: 0.12em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+mark.text-highlight[data-highlight='red'] {
+  background: var(--marker-red);
+}
+mark.text-highlight[data-highlight='orange'] {
+  background: var(--marker-orange);
+}
+mark.text-highlight[data-highlight='yellow'] {
+  background: var(--marker-yellow);
+}
+mark.text-highlight[data-highlight='green'] {
+  background: var(--marker-green);
+}
+mark.text-highlight[data-highlight='blue'] {
+  background: var(--marker-blue);
+}
+mark.text-highlight[data-highlight='purple'] {
+  background: var(--marker-purple);
+}

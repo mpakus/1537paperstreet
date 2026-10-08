@@ -6,6 +6,16 @@ use std::path::PathBuf;
 /// The error type shared by `ps-core` modules.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    /// A preview selection no longer matches editable Markdown text.
+    #[error(
+        "That selection cannot be highlighted. Select the text again; code, math, images and raw HTML are not supported."
+    )]
+    InvalidHighlightSelection,
+
+    /// The requested marker color is outside the supported palette.
+    #[error("Use a palette color or an HTML hex color such as #fc0 or #ffcc00.")]
+    InvalidHighlightColor,
+
     /// The application data directory could not be determined.
     #[error(
         "The application data directory could not be found. Set PAPERSTREET_HOME and try again."

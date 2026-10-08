@@ -61,7 +61,7 @@ skips the write when the encoded bytes already match disk, and does not
 overwrite when `base_hash` disagrees with the file. Open and save with no
 edits — the file is byte-for-byte the same.
 
-The editor loads CodeMirror the first time you leave Preview. Markdown markup
+The editor loads CodeMirror the first time you leave Preview or apply a highlight. Markdown markup
 marks (`#`, `*`, `` ` ``) are faded; headings, emphasis, and links stay readable.
 Other files use a language highlighter when one is available. JavaScript,
 TypeScript, Go, Rust, Java, and PHP underline syntax errors; JSON shows parse
@@ -72,3 +72,34 @@ Renaming the file in the tree does not reload it from
 disk, so unsaved edits stay in the editor. An external editor is still
 available (⌘⇧O). If that editor (or another program) saves the open file, a
 dialog asks whether to reload it.
+
+## Text highlights
+
+Select text in Preview or the reading side of Split. A small palette offers
+red, orange, yellow, green, blue, purple, and the theme's default marker color.
+Enter a three- or six-digit HTML hex color (`#fc0` or `#ffcc00`), or use the
+color picker, then choose **Apply**. Custom colors use black or white text for
+contrast. Escape closes the palette; right-click a selection to focus its
+controls and navigate them with Tab, Enter, or Space.
+
+Click a highlight, or select part of it, to recolor or remove the whole marker.
+New highlights preserve bold, italic and explicit link labels. A selection
+across formatting can be stored as several adjacent markers. Code, equations,
+images, generated content, wiki links and automatic/shortcut links cannot be
+highlighted. If the preview is stale, select the text again after it refreshes.
+
+Changes stay in the editor buffer until **Save** / ⌘S. Split updates the source
+immediately; Preview also reflects unsaved changes. Undo and redo work with
+⌘Z / ⌘⇧Z (Ctrl on Windows/Linux). Switching modes retains the current document's
+undo history; switching documents starts a new history.
+
+```markdown
+==Default highlight==
+==🟢Green highlight==
+=={#ffcc00}Custom hex highlight==
+```
+
+The default and emoji presets follow [Obsidian's documented highlight syntax](https://obsidian.md/help/syntax#Highlight%20colors).
+The hex form is a 1537paperstreet extension; three-digit values entered through
+the palette are saved as six digits. Other Markdown viewers may show the
+delimiters or color metadata literally. No plugin or sidecar file is required.

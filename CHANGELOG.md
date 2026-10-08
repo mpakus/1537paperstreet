@@ -5,6 +5,18 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Select text in Preview or Split to highlight it with a preset color, an HTML
+  hex value, or the native color picker. Click a highlight to recolor or remove
+  it. Markers stay in Markdown and use normal Save and undo/redo.
+
+### Fixed
+
+- Preview reflects unsaved marker edits. A completed save does not discard edits
+  made while it was running, and switching documents starts a separate editor
+  undo history.
+
 ## [0.8.25] - 2026-10-07
 
 ### Fixed

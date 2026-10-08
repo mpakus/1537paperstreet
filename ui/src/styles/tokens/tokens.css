@@ -8,6 +8,14 @@
   --border: #e3dfd8;
   --accent: #c1452f;
   --dirty: #e23b32;
+  --marker-red: #ffb3b3;
+  --marker-orange: #ffd099;
+  --marker-yellow: #ffe680;
+  --marker-green: #b6e8a5;
+  --marker-blue: #a8d8ff;
+  --marker-purple: #dabaff;
+  --marker-default: var(--marker-yellow);
+  --marker-fg: #000000;
   --selection: #f0dfd8;
   --code-bg: #f4f2ed;
   --hl-kw: #6e5368;

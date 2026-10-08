@@ -31,6 +31,9 @@ without changing where they live or how they are stored.
   a contents heading scrolls the page and the source. Saves are atomic,
   preserve file characteristics, and refuse to overwrite a file changed
   elsewhere.
+- **Mark passages as you read.** Select text in Preview or Split and choose a
+  preset or custom hex highlight. Colors stay in Markdown, with undo and normal
+  Save. See [highlight syntax and compatibility](docs/src/editing.md#text-highlights).
 - **Find the document, not the app feature.** Projects, a virtualized file tree,
   tabs, quick open, table of contents, and full-size reading keep large folders
   manageable.

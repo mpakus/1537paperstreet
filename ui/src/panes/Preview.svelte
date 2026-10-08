@@ -9,6 +9,8 @@
   import { scrollBeforeLink } from '../lib/tabs'
   import { sourceLineForHeading } from '../lib/toc'
   import { taskByteOffset } from '../lib/tasks'
+  import { captureHighlight, type HighlightSelection } from '../lib/highlights'
+  import HighlightPalette from './HighlightPalette.svelte'
   import {
     DIAGRAM_FRAME_DEFAULT_HEIGHT,
     DIAGRAM_FRAME_DEFAULT_WIDTH,
@@ -40,6 +42,7 @@
     onnavigate,
     onsource,
     ontoggle,
+    onhighlight,
     onerror,
     ontoc,
     ontocresize,
@@ -69,6 +72,10 @@
     onnavigate: (href: string, scrollTop: number) => void
     onsource?: (line: number) => void
     ontoggle?: (byteOffset: number) => void
+    onhighlight?: (
+      selection: HighlightSelection,
+      color: string | null,
+    ) => Promise<void>
     onerror?: (message: string) => void
     ontoc?: (open: boolean) => void
     ontocresize?: (event: PointerEvent) => void
@@ -88,6 +95,63 @@
   const collapsed = new SvelteSet<string>()
   let expanded = $state(false)
   let optionsKey = ''
+  let highlight = $state<{
+    selection: HighlightSelection
+    revision: string
+    left: number
+    top: number
+    current: string
+  } | null>(null)
+  let highlighting = $state(false)
+
+  function selectHighlight() {
+    if (!onhighlight || !articleEl || highlighting) return
+    const selection = window.getSelection()
+    if (!selection?.rangeCount || selection.isCollapsed) {
+      highlight = null
+      return
+    }
+    const range = selection.getRangeAt(0)
+    const captured = captureHighlight(articleEl, range)
+    if (!captured) {
+      highlight = null
+      return
+    }
+    const rect = range.getBoundingClientRect()
+    const element =
+      range.startContainer instanceof Element
+        ? range.startContainer
+        : range.startContainer.parentElement
+    highlight = {
+      selection: captured,
+      revision: html,
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - 308)),
+      top: Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - 214)),
+      current:
+        element
+          ?.closest('mark.text-highlight')
+          ?.getAttribute('data-highlight') ?? '',
+    }
+  }
+
+  async function applyHighlight(color: string | null) {
+    if (!highlight || highlighting) return
+    if (highlight.revision !== html) {
+      highlight = null
+      onerror?.('The preview changed. Select the text again.')
+      return
+    }
+    highlighting = true
+    try {
+      await onhighlight?.(highlight.selection, color)
+      highlight = null
+      window.getSelection()?.removeAllRanges()
+    } catch (cause) {
+      onerror?.(cause instanceof Error ? cause.message : String(cause))
+    } finally {
+      highlighting = false
+    }
+  }
   // Observer registry for the blocks already on screen. SvelteMap would
   // schedule this component again on every insert.
   // eslint-disable-next-line svelte/prefer-svelte-reactivity
@@ -273,6 +337,35 @@
   })
 </script>
 
+<svelte:window
+  onkeydown={(event) => {
+    if (event.key === 'Escape') highlight = null
+  }}
+  onpointerdown={(event) => {
+    if (
+      event.target instanceof Element &&
+      !event.target.closest('.highlight-palette') &&
+      !articleEl?.contains(event.target)
+    )
+      highlight = null
+  }}
+/>
+
+{#if highlight}
+  <HighlightPalette
+    left={highlight.left}
+    top={highlight.top}
+    current={highlight.current}
+    busy={highlighting}
+    onapply={(color) => {
+      void applyHighlight(color)
+    }}
+    onclose={() => {
+      highlight = null
+    }}
+  />
+{/if}
+
 <div
   class="pane"
   class:is-full={expanded}
@@ -393,6 +486,19 @@
       <div
         class="preview"
         role="presentation"
+        onpointerup={selectHighlight}
+        onkeyup={selectHighlight}
+        oncontextmenu={(event) => {
+          selectHighlight()
+          if (highlight) {
+            event.preventDefault()
+            requestAnimationFrame(() =>
+              document
+                .querySelector<HTMLButtonElement>('.highlight-palette button')
+                ?.focus(),
+            )
+          }
+        }}
         onpointerdowncapture={(event) => {
           const target = event.target
           const scroller = event.currentTarget
@@ -408,6 +514,20 @@
         onclickcapture={(event) => {
           const target = event.target
           if (!(target instanceof Element)) {
+            return
+          }
+          if (window.getSelection()?.toString()) {
+            event.preventDefault()
+            return
+          }
+          const marker = target.closest('mark.text-highlight')
+          if (marker && onhighlight) {
+            const range = document.createRange()
+            range.selectNodeContents(marker)
+            const selected = window.getSelection()
+            selected?.removeAllRanges()
+            selected?.addRange(range)
+            selectHighlight()
             return
           }
           const figure = target.closest('figure.mermaid')

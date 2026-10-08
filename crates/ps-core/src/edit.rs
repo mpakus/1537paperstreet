@@ -5,6 +5,30 @@ use std::path::Path;
 use crate::projects::is_markdown_path;
 use crate::{Error, Result};
 
+/// An exact rendered text run and the selected UTF-16 offsets within it.
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, ts_rs::TS)]
+#[serde(rename_all = "camelCase")]
+pub struct HighlightRange {
+    /// UTF-8 start of the source run.
+    pub start: usize,
+    /// UTF-8 end of the source run.
+    pub end: usize,
+    /// Selection start in the displayed run (UTF-16 code units).
+    pub from: usize,
+    /// Selection end in the displayed run (UTF-16 code units).
+    pub to: usize,
+}
+
+/// Temporary, sanitized source mapping generated only for a highlight action.
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize, ts_rs::TS)]
+#[serde(rename_all = "camelCase")]
+pub struct HighlightSource {
+    /// HTML containing authenticated text-run positions.
+    pub html: String,
+    /// BLAKE3 of the exact source buffer, also included in each mapping attribute.
+    pub hash: String,
+}
+
 /// Pretty-prints Markdown tables or JSON. Other files are left to an external editor.
 pub fn format_text(rel_path: &Path, text: &str) -> Result<String> {
     if is_markdown_path(rel_path) {

@@ -71,6 +71,18 @@ pub fn render_document_with_options(
     markdown: &str,
     render_options: RenderOptions,
 ) -> RenderedDocument {
+    render_document_inner(markdown, render_options, false)
+}
+
+pub(crate) fn render_mapped(markdown: &str) -> RenderedDocument {
+    render_document_inner(markdown, RenderOptions::default(), true)
+}
+
+fn render_document_inner(
+    markdown: &str,
+    render_options: RenderOptions,
+    mapping: bool,
+) -> RenderedDocument {
     let parser_input = normalize_parser_input(markdown);
     let raw_html_seen = Cell::new(false);
     let events = sanitize::Events::new(
@@ -84,6 +96,7 @@ pub fn render_document_with_options(
         render_options,
         &raw_html_seen,
         &mut blocks,
+        mapping,
     );
     RenderedDocument { html, toc, blocks }
 }
@@ -127,6 +140,7 @@ pub fn render_project_with_options(
         render_options,
         &raw_html_seen,
         &mut blocks,
+        false,
     );
     RenderedDocument {
         html: crate::images::reserve_sizes(&html, project_root, project_scope),
@@ -141,11 +155,13 @@ fn finish_render<'events>(
     render_options: RenderOptions,
     raw_html_seen: &Cell<bool>,
     blocks: &mut Vec<RenderedBlock>,
+    mapping: bool,
 ) -> (String, Vec<TocItem>) {
     let mut output = String::new();
     let mut toc = Vec::new();
     let mut mermaid_figures = Vec::new();
     let has_headings = may_have_heading(markdown);
+    let events = crate::markers::Markers::new(events, markdown, mapping);
     let events = WikiHtml::new(TaskLists::new(FrontMatter::new(events), markdown));
 
     let mermaid_prefix = if markdown.contains("mermaid") {
@@ -262,7 +278,7 @@ fn may_have_heading(markdown: &str) -> bool {
         .any(|byte| matches!(byte, b'#' | b'=' | b'-'))
 }
 
-fn normalize_parser_input(markdown: &str) -> Cow<'_, str> {
+pub(crate) fn normalize_parser_input(markdown: &str) -> Cow<'_, str> {
     if !needs_parser_normalization(markdown) {
         return Cow::Borrowed(markdown);
     }
@@ -296,7 +312,7 @@ fn needs_parser_normalization(markdown: &str) -> bool {
     })
 }
 
-fn markdown_options() -> Options {
+pub(crate) fn markdown_options() -> Options {
     Options::ENABLE_TABLES
         | Options::ENABLE_FOOTNOTES
         | Options::ENABLE_STRIKETHROUGH

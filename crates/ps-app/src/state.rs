@@ -1749,6 +1749,81 @@ mod tests {
     }
 
     #[test]
+    fn highlights_preserve_file_traits_and_never_overwrite_a_conflict() {
+        let (temporary, state) = open_state();
+        let root = temporary.path().join("notes");
+        fs::create_dir(&root).expect("directory");
+        let path = root.join("note.md");
+        let original = b"\xef\xbb\xbfSaved.\r\n";
+        fs::write(&path, original).expect("fixture");
+        let project = state.projects_add("Notes".into(), root).expect("project");
+        let rel = PathBuf::from("note.md");
+        let source = state
+            .doc_source(project.id.clone(), rel.clone())
+            .expect("source");
+        let opened = state
+            .doc_open(project.id.clone(), rel.clone())
+            .expect("open");
+        let unchanged = state
+            .doc_save(
+                project.id.clone(),
+                rel.clone(),
+                source.text.clone(),
+                opened.result.meta.hash.clone(),
+                RestoreTraits::from_source(&source),
+            )
+            .expect("round trip");
+        assert!(unchanged.skipped);
+        assert_eq!(fs::read(&path).expect("bytes"), original);
+        let draft = "Saved. Unsaved.\n";
+        let next = ps_render::apply_highlight(
+            draft,
+            &[ps_core::edit::HighlightRange {
+                start: 0,
+                end: 15,
+                from: 7,
+                to: 14,
+            }],
+            Some("#fc0"),
+        )
+        .expect("marker");
+        let preview = state
+            .doc_preview(project.id.clone(), rel.clone(), next.clone())
+            .expect("preview");
+        assert!(preview.html.contains("background-color:#ffcc00"));
+        assert_eq!(fs::read(&path).expect("no implicit write"), original);
+        let saved = state
+            .doc_save(
+                project.id.clone(),
+                rel.clone(),
+                next.clone(),
+                opened.result.meta.hash,
+                RestoreTraits::from_source(&source),
+            )
+            .expect("save");
+        assert_eq!(
+            fs::read(&path).expect("saved bytes"),
+            "\u{feff}Saved. =={#ffcc00}Unsaved==.\r\n".as_bytes()
+        );
+        fs::write(&path, b"Changed elsewhere").expect("external change");
+        assert!(
+            state
+                .doc_save(
+                    project.id,
+                    rel,
+                    next,
+                    saved.hash,
+                    RestoreTraits::from_source(&source)
+                )
+                .is_err()
+        );
+        assert_eq!(
+            fs::read(&path).expect("external bytes"),
+            b"Changed elsewhere"
+        );
+    }
+
+    #[test]
     fn document_commands_read_source_and_return_the_first_chunk() {
         let (temporary, state) = open_state();
         let project_root = temporary.path().join("notes");

@@ -12,7 +12,10 @@ export type MarkdownEditorOptions = {
 
 /** Imperative handle used by the toolbar and formatting commands. */
 export type MarkdownEditor = {
-  setDoc: (text: string) => void
+  setDoc: (text: string, isolated?: boolean) => void
+  /** Undo/redo also serve formatting actions made from Preview. */
+  undo: () => boolean
+  redo: () => boolean
   setFileName: (fileName: string) => void
   setWritable: (writable: boolean) => void
   setSpellcheck: (on: boolean) => void

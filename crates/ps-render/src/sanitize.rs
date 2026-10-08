@@ -56,7 +56,22 @@ pub(crate) fn clean(html: &str) -> String {
     let mut sanitizer = ammonia::Builder::default();
     sanitizer
         .add_tags(["input", "section"])
-        .add_generic_attributes(["class", "id", "data-block", "data-src-line", "data-hash"])
+        .add_generic_attributes([
+            "class",
+            "id",
+            "data-block",
+            "data-src-line",
+            "data-hash",
+            "data-ps-map",
+        ])
+        .add_tag_attributes("mark", ["data-highlight", "style"])
+        .attribute_filter(|tag, attribute, value| {
+            if tag == "mark" && attribute == "style" && !crate::markers::safe_style(value) {
+                None
+            } else {
+                Some(value.into())
+            }
+        })
         .add_tag_attributes("input", ["checked", "disabled", "type", "data-task-at"])
         .add_tag_attributes("a", ["href", "title", "class"])
         .add_tag_attributes(

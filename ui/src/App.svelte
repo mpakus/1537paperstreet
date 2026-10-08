@@ -9,6 +9,8 @@
     copyConflicts,
     docOpen,
     docPreview,
+    docHighlightSource,
+    docHighlight,
     docSave,
     docSource,
     docStat,
@@ -66,6 +68,10 @@
   } from './lib/ipc'
   import type { MarkdownEditor } from './editor/types'
   import { applyMarkdownCommand, toggleTaskAt } from './lib/markdown'
+  import {
+    mapHighlightSelection,
+    type HighlightSelection,
+  } from './lib/highlights'
   import { modeForTab, openSession, savedViewMode } from './lib/session'
   import type { OpenSession } from './lib/ipc'
   import {
@@ -317,7 +323,7 @@
   )
   $effect(() => {
     previewSourcePosition = null
-    if (viewMode !== 'split' || !active || !openMeta || !docSourceMeta) {
+    if (viewMode === 'editor' || !active || !openMeta || !docSourceMeta) {
       return
     }
     if (!isMarkdownPath(openMeta.relPath)) {
@@ -335,13 +341,13 @@
             active?.id !== projectId ||
             openMeta?.relPath !== relPath ||
             draftText !== text ||
-            viewMode !== 'split'
+            viewMode === 'editor'
           ) {
             return
           }
           html = preview.html
           previewSourcePosition =
-            (appConfig?.editor.sync_scroll ?? true)
+            viewMode === 'split' && (appConfig?.editor.sync_scroll ?? true)
               ? (editorApi?.activeSourceLine() ?? null)
               : null
           if (
@@ -1374,7 +1380,17 @@
     if (!active) {
       return
     }
-    const loaded = await docSource(active.id, relPath)
+    const projectId = active.id
+    const previous = docSourceMeta
+    const text = draftText
+    const loaded = await docSource(projectId, relPath)
+    if (
+      active?.id !== projectId ||
+      openMeta?.relPath !== relPath ||
+      docSourceMeta !== previous ||
+      draftText !== text
+    )
+      return
     docSourceMeta = loaded
     draftText = loaded.text
   }
@@ -1421,7 +1437,7 @@
         showError(docSourceMeta.readonlyReason ?? 'This file cannot be edited.')
         return
       }
-      const current = viewMode === 'preview' ? docSourceMeta.text : draftText
+      const current = draftText
       const next = toggleTaskAt(current, byteOffset)
       if (next === null) {
         showError('That checkbox is no longer in the file.')
@@ -1466,6 +1482,44 @@
     }
   }
 
+  async function highlightSelection(
+    selection: HighlightSelection,
+    color: string | null,
+  ) {
+    if (!active || !openMeta || !isMarkdownPath(openMeta.relPath)) return
+    const projectId = active.id
+    const relPath = openMeta.relPath
+    const stillOpen = () =>
+      active?.id === projectId && openMeta?.relPath === relPath
+    if (!docSourceMeta) {
+      const source = await docSource(projectId, relPath)
+      if (!stillOpen()) return
+      if (!docSourceMeta) {
+        docSourceMeta = source
+        draftText = source.text
+      }
+    }
+    if (!docSourceMeta.writable)
+      throw new Error(
+        docSourceMeta.readonlyReason ?? 'This file cannot be edited.',
+      )
+    const text = draftText
+    const mapped = await docHighlightSource(text)
+    const ranges = mapHighlightSelection(selection, mapped)
+    const next = await docHighlight(text, ranges, color)
+    if (!stillOpen()) return
+    if (draftText !== text)
+      throw new Error('The document changed. Select the text again.')
+    if (next === text) return
+    editorOpened = true
+    if (!(await waitForEditor()) || !editorApi)
+      throw new Error('The editor could not be opened. Try highlighting again.')
+    if (!stillOpen() || draftText !== text)
+      throw new Error('The document changed. Select the text again.')
+    editorApi.setDoc(next, true)
+    draftText = next
+  }
+
   async function saveDocument() {
     if (!active || !openMeta || !docSourceMeta) {
       showError('Open a document in the editor first.')
@@ -1475,10 +1529,13 @@
       showError(docSourceMeta.readonlyReason ?? 'This file cannot be saved.')
       return
     }
+    const projectId = active.id
+    const relPath = openMeta.relPath
+    const text = draftText
     const written = await docSave(
-      active.id,
-      openMeta.relPath,
-      draftText,
+      projectId,
+      relPath,
+      text,
       docMeta?.hash ?? '',
       {
         eol: docSourceMeta.eol,
@@ -1486,14 +1543,12 @@
         trailingNewline: docSourceMeta.trailingNewline,
       },
     )
+    if (active?.id !== projectId || openMeta?.relPath !== relPath) return
     if (docMeta) {
       docMeta = { ...docMeta, hash: written.hash, size: written.size }
     }
     if (docSourceMeta) {
-      docSourceMeta = { ...docSourceMeta, text: draftText }
-    }
-    if (viewMode !== 'editor') {
-      await openDocument(openMeta.relPath)
+      docSourceMeta = { ...docSourceMeta, text }
     }
   }
 
@@ -1622,6 +1677,8 @@
     try {
       const opened = await docOpen(active.id, relPath)
       const nextScroll = switching ? 0 : (previewScrollTop() ?? 0)
+      docSourceMeta = null
+      draftText = ''
       docMissing = false
       docMeta = opened.meta
       openMeta = {
@@ -1947,7 +2004,7 @@
     relPath: string
     html: string
   }) {
-    if (viewMode === 'split') {
+    if (viewMode === 'split' || docSourceMeta) {
       return
     }
     if (
@@ -2203,6 +2260,21 @@
     })
   }}
   onkeydown={(event) => {
+    const typing =
+      event.target instanceof Element &&
+      event.target.closest('input, textarea, [contenteditable="true"]')
+    if (
+      !typing &&
+      viewMode !== 'editor' &&
+      (event.metaKey || event.ctrlKey) &&
+      event.key.toLowerCase() === 'z' &&
+      editorApi
+    ) {
+      event.preventDefault()
+      if (event.shiftKey) editorApi.redo()
+      else editorApi.undo()
+      return
+    }
     if (event.key === 'Escape') {
       destMode = null
     }
@@ -2638,19 +2710,21 @@
               onclose={() => (findOpen = false)}
             />
           {/if}
-          {#if editorOpened}
-            <Editor
-              bind:value={draftText}
-              bind:api={editorApi}
-              fileName={openMeta?.relPath ?? ''}
-              writable={docSourceMeta?.writable ?? false}
-              spellcheck={(appConfig?.editor.spellcheck ?? true) &&
-                isMarkdownPath(openMeta?.relPath ?? '')}
-              lineNumbers={appConfig?.editor.line_numbers ?? false}
-              softWrap={appConfig?.editor.soft_wrap ?? true}
-              indentUnit={appConfig?.editor.indent_unit ?? 2}
-              hidden={viewMode === 'preview'}
-            />
+          {#if editorOpened && docSourceMeta}
+            {#key `${openMeta?.projectId}:${openMeta?.relPath}`}
+              <Editor
+                bind:value={draftText}
+                bind:api={editorApi}
+                fileName={openMeta?.relPath ?? ''}
+                writable={docSourceMeta?.writable ?? false}
+                spellcheck={(appConfig?.editor.spellcheck ?? true) &&
+                  isMarkdownPath(openMeta?.relPath ?? '')}
+                lineNumbers={appConfig?.editor.line_numbers ?? false}
+                softWrap={appConfig?.editor.soft_wrap ?? true}
+                indentUnit={appConfig?.editor.indent_unit ?? 2}
+                hidden={viewMode === 'preview'}
+              />
+            {/key}
           {/if}
           {#if viewMode === 'split'}
             <div
@@ -2669,59 +2743,70 @@
             ></div>
           {/if}
           {#if viewMode !== 'editor'}
-            <Preview
-              {html}
-              sourcePosition={viewMode === 'split'
-                ? previewSourcePosition
-                : null}
-              {emptyMessage}
-              toc={docMeta?.toc ?? []}
-              tocOpen={showToc}
-              {tocWidth}
-              banner={docMeta?.readonlyReason ?? null}
-              themeId={activeThemeId}
-              mermaidEnabled={appConfig?.viewer.mermaid_enabled ?? true}
-              mathEnabled={appConfig?.viewer.math_enabled ?? true}
-              previewFont={appConfig?.viewer.preview_font ?? ''}
-              previewFontSize={appConfig?.viewer.preview_font_size ?? 0}
-              previewBg={appConfig?.viewer.preview_bg ?? ''}
-              previewFg={appConfig?.viewer.preview_fg ?? ''}
-              readingZoom={previewZoom}
-              {diagramWidth}
-              {diagramHeight}
-              {diagramZoom}
-              {diagramLeft}
-              {diagramTop}
-              bind:articleEl
-              ontoggle={(offset) => {
-                void toggleCheckbox(offset)
-              }}
-              onnavigate={(href, scrollTop) => {
-                void navigate(href, scrollTop).catch((cause) => {
-                  showError(errorMessage(cause))
-                })
-              }}
-              onsource={(line) => {
-                if (viewMode === 'split') {
-                  editorApi?.scrollToLine(line)
-                }
-              }}
-              onerror={(message) => {
-                showError(message)
-              }}
-              ontoc={() => {
-                void toggleToc().catch((cause) => {
-                  showError(errorMessage(cause))
-                })
-              }}
-              ontocresize={(event) => {
-                event.preventDefault()
-                resizeStart = { kind: 'toc', x: event.clientX, width: tocWidth }
-              }}
-              ondiagramchrome={(next) => {
-                rememberDiagramChrome(next, next.immediate)
-              }}
-            />
+            {#key `${openMeta?.projectId}:${openMeta?.relPath}`}
+              <Preview
+                {html}
+                sourcePosition={viewMode === 'split'
+                  ? previewSourcePosition
+                  : null}
+                {emptyMessage}
+                toc={docMeta?.toc ?? []}
+                tocOpen={showToc}
+                {tocWidth}
+                banner={docMeta?.readonlyReason ?? null}
+                themeId={activeThemeId}
+                mermaidEnabled={appConfig?.viewer.mermaid_enabled ?? true}
+                mathEnabled={appConfig?.viewer.math_enabled ?? true}
+                previewFont={appConfig?.viewer.preview_font ?? ''}
+                previewFontSize={appConfig?.viewer.preview_font_size ?? 0}
+                previewBg={appConfig?.viewer.preview_bg ?? ''}
+                previewFg={appConfig?.viewer.preview_fg ?? ''}
+                readingZoom={previewZoom}
+                {diagramWidth}
+                {diagramHeight}
+                {diagramZoom}
+                {diagramLeft}
+                {diagramTop}
+                bind:articleEl
+                ontoggle={(offset) => {
+                  void toggleCheckbox(offset)
+                }}
+                onhighlight={docMeta?.writable &&
+                openMeta &&
+                isMarkdownPath(openMeta.relPath)
+                  ? highlightSelection
+                  : undefined}
+                onnavigate={(href, scrollTop) => {
+                  void navigate(href, scrollTop).catch((cause) => {
+                    showError(errorMessage(cause))
+                  })
+                }}
+                onsource={(line) => {
+                  if (viewMode === 'split') {
+                    editorApi?.scrollToLine(line)
+                  }
+                }}
+                onerror={(message) => {
+                  showError(message)
+                }}
+                ontoc={() => {
+                  void toggleToc().catch((cause) => {
+                    showError(errorMessage(cause))
+                  })
+                }}
+                ontocresize={(event) => {
+                  event.preventDefault()
+                  resizeStart = {
+                    kind: 'toc',
+                    x: event.clientX,
+                    width: tocWidth,
+                  }
+                }}
+                ondiagramchrome={(next) => {
+                  rememberDiagramChrome(next, next.immediate)
+                }}
+              />
+            {/key}
           {/if}
         </div>
       {/if}
