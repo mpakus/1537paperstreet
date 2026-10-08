@@ -55,12 +55,15 @@ const editorTheme = EditorView.theme({
   '.cm-cursor, .cm-dropCursor': {
     borderLeftColor: 'var(--ed-cursor)',
   },
-  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection':
+  '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground':
     {
       backgroundColor: 'var(--ed-sel)',
     },
   '.cm-activeLine': {
     backgroundColor: 'var(--ed-active-line)',
+  },
+  '&[data-selecting] .cm-activeLine': {
+    backgroundColor: 'transparent',
   },
   '.cm-gutters': {
     backgroundColor: 'var(--bg)',
@@ -149,6 +152,11 @@ export function createMarkdownEditor(
         highlighting.of(highlightExtension(currentFileName)),
         lint.of(lintExtension(currentFileName)),
         editorTheme,
+        EditorView.editorAttributes.of((view) =>
+          view.state.selection.ranges.some((range) => !range.empty)
+            ? { 'data-selecting': 'true' }
+            : null,
+        ),
         writable.of(EditorState.readOnly.of(!options.writable)),
         numbers.of(lineNumberExtension(options.lineNumbers)),
         wrap.of(wrapExtension(options.softWrap)),

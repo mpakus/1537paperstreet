@@ -8,12 +8,14 @@ Same checkout and development profile for both runs:
 
 | Measure | Before | After |
 | --- | ---: | ---: |
-| Estimate | 16.175 ms | 15.302 ms |
-| Confidence interval | 16.107–16.239 ms | 15.275–15.335 ms |
+| Estimate | 16.175 ms | 15.562 ms |
+| Confidence interval | 16.107–16.239 ms | 15.533–15.598 ms |
 
 No regression was observed; the apparent improvement is not a claimed
 optimization. Normal previews have no additional source-map DOM nodes.
 Temporary mappings are generated only when applying a highlight.
+The final run includes continuous markers across source line breaks; the
+earlier implementation measured 15.302 ms under the same conditions.
 
 ```sh
 rtk cargo bench --profile dev -p ps-render --bench render -- \

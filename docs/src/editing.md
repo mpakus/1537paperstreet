@@ -83,8 +83,10 @@ contrast. Escape closes the palette; right-click a selection to focus its
 controls and navigate them with Tab, Enter, or Space.
 
 Click a highlight, or select part of it, to recolor or remove the whole marker.
-New highlights preserve bold, italic and explicit link labels. A selection
-across formatting can be stored as several adjacent markers. Code, equations,
+New highlights preserve bold, italic and explicit link labels. Each paragraph
+or list item uses one marker, including source line breaks and inline formatting.
+To join an older fragmented highlight, select its text and apply a color again.
+Code, equations,
 images, generated content, wiki links and automatic/shortcut links cannot be
 highlighted. If the preview is stale, select the text again after it refreshes.
 

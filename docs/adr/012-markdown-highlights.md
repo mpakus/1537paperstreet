@@ -9,8 +9,9 @@ and the local extension `=={#rrggbb}text==`. Hex accepts three or six digits;
 the UI writes canonical lowercase six-digit values. No dependency, schema,
 sidecar, network access, or new file-writing path is introduced.
 
-Rust pairs delimiters inside editable inline blocks and renders each text run
-as a mark, preserving nested emphasis without crossing HTML tag boundaries.
+Rust pairs delimiters inside editable inline blocks and keeps consecutive text
+runs and source line breaks in one mark. Nested emphasis keeps valid HTML tag
+boundaries without adding extra delimiters to Markdown.
 Code, math, image labels, front matter, and links whose label determines their
 destination are excluded. Styles are limited to validated marker background
 hex and a computed black/white foreground. The sanitizer does not accept other
@@ -36,8 +37,10 @@ without opening Edit. Save uses the existing atomic, base-hash-checked path.
 
 ## Consequences
 
-Selections crossing formatting may produce several markers. Selecting part
-of an existing marker recolors/removes the entire original marker. Exact hex
+Each continuous selection uses one marker per paragraph or list item, including
+source line breaks and inline formatting. Recoloring a selection joins older
+adjacent markers. Separate blocks and unselected text remain separate. Selecting
+part of an existing marker recolors/removes the entire original marker. Exact hex
 colors are not promised to render in other Markdown applications. Source maps
 are produced only during an explicit action, keeping ordinary previews small.
 Changing document identity creates a fresh editor history; changing view mode

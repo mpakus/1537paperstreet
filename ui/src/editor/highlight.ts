@@ -36,7 +36,6 @@ export const markdownHighlightStyle = HighlightStyle.define([
   { tag: tags.meta, class: 'cm-md-mark' },
   { tag: tags.punctuation, class: 'cm-md-mark' },
   { tag: tags.escape, class: 'cm-md-mark' },
-  { tag: tags.list, class: 'cm-md-mark' },
   { tag: tags.contentSeparator, class: 'cm-md-mark' },
   { tag: tags.atom, class: 'cm-md-mark' },
   { tag: tags.character, class: 'cm-md-mark' },

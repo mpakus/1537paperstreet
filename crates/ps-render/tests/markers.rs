@@ -64,8 +64,67 @@ fn preserves_markdown_when_selection_crosses_emphasis() {
     let ranges = [range(source, "one ", 0, 4), range(source, "two", 0, 3)];
     assert_eq!(
         apply_highlight(source, &ranges, Some("default")).unwrap(),
-        "==one ==**==two==** three"
+        "==one **two==** three"
     );
+}
+
+#[test]
+fn highlights_soft_wrapped_paragraphs_and_list_items_once() {
+    let source = "first line\nsecond line\n\n- list first\n  list second\n- next item";
+    let ranges: Vec<_> = [
+        "first line",
+        "second line",
+        "list first",
+        "list second",
+        "next item",
+    ]
+    .iter()
+    .map(|word| range(source, word, 0, word.len()))
+    .collect();
+    let marked = apply_highlight(source, &ranges, Some("green")).unwrap();
+    assert_eq!(
+        marked,
+        "==🟢first line\nsecond line==\n\n- ==🟢list first\n  list second==\n- ==🟢next item=="
+    );
+    assert_eq!(render(&marked).matches("<mark ").count(), 3);
+}
+
+#[test]
+fn combines_entities_and_formatting_without_highlighting_unselected_text() {
+    let source = "one &amp; **two** three";
+    // Disjoint selections must not fill the unselected words in between.
+    let source2 = "one middle last";
+    assert_eq!(
+        apply_highlight(
+            source2,
+            &[
+                range(source2, source2, 0, 3),
+                range(source2, source2, 11, 15)
+            ],
+            Some("blue")
+        )
+        .unwrap(),
+        "==🔵one== middle ==🔵last=="
+    );
+    let ranges = [
+        range(source, "one ", 0, 4),
+        range(source, "&amp;", 0, 1),
+        range(source, "two", 0, 3),
+        range(source, " three", 0, 6),
+    ];
+    assert_eq!(
+        apply_highlight(source, &ranges, Some("default")).unwrap(),
+        "==one &amp; **two** three=="
+    );
+}
+
+#[test]
+fn rejoins_previously_fragmented_markers_when_recoloring() {
+    let source = "==🔵first==\n==🔵second==";
+    let ranges = [range(source, "first", 0, 5), range(source, "second", 0, 6)];
+    let marked = apply_highlight(source, &ranges, Some("green")).unwrap();
+    assert_eq!(marked, "==🟢first\nsecond==");
+    assert_eq!(render(&marked).matches("<mark ").count(), 1);
 }
 
 #[test]

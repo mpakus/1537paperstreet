@@ -159,12 +159,12 @@ fn markers(events: &[SpannedEvent<'_>], source: &str) -> Vec<Marker> {
 }
 
 /// Splits a text event at marker delimiters while preserving parser source ranges.
-fn pieces<'a>(
+fn pieces<'a, 'm>(
     text: &pulldown_cmark::CowStr<'a>,
     range: &Range<usize>,
     source: &str,
-    marks: &[Marker],
-) -> Vec<(pulldown_cmark::CowStr<'a>, Range<usize>, Option<String>)> {
+    marks: &'m [Marker],
+) -> Vec<(pulldown_cmark::CowStr<'a>, Range<usize>, Option<&'m Marker>)> {
     let first = marks.partition_point(|m| m.end <= range.start);
     let relevant: Vec<_> = marks[first..]
         .iter()
@@ -174,11 +174,7 @@ fn pieces<'a>(
         return vec![(text.clone(), range.clone(), None)];
     }
     if source.get(range.clone()) != Some(text.as_ref()) {
-        return vec![(
-            text.clone(),
-            range.clone(),
-            relevant.first().map(|m| m.color.clone()),
-        )];
+        return vec![(text.clone(), range.clone(), relevant.first().copied())];
     }
     let mut bounds = vec![range.start, range.end];
     for marker in &relevant {
@@ -208,7 +204,7 @@ fn pieces<'a>(
             Some((
                 source[part.clone()].to_owned().into(),
                 part,
-                marker.map(|m| m.color.clone()),
+                marker.copied(),
             ))
         })
         .collect()
@@ -276,12 +272,25 @@ impl<'a, I: Iterator<Item = SpannedEvent<'a>>> Markers<'a, I> {
         };
         let mut output = Vec::with_capacity(events.len());
         let mut editable = Editable::default();
+        let mut open: Option<&Marker> = None;
         for (event, range) in events {
             let allowed = editable.includes(&event);
             if let Event::Text(ref text) = event
                 && allowed
             {
                 for (text, part, marker) in pieces(text, &range, source, &marks) {
+                    if open.map(|m| m.start) != marker.map(|m| m.start) {
+                        if open.is_some() {
+                            output.push((Event::InlineHtml("</mark>".into()), part.clone()));
+                        }
+                        if let Some(mark) = marker {
+                            output.push((
+                                Event::InlineHtml(mark_html(&mark.color).into()),
+                                part.clone(),
+                            ));
+                        }
+                        open = marker;
+                    }
                     if mapping {
                         output.push((
                             Event::InlineHtml(
@@ -294,18 +303,19 @@ impl<'a, I: Iterator<Item = SpannedEvent<'a>>> Markers<'a, I> {
                             part.clone(),
                         ));
                     }
-                    if let Some(ref color) = marker {
-                        output.push((Event::InlineHtml(mark_html(color).into()), part.clone()));
-                    }
                     output.push((Event::Text(text), part.clone()));
-                    if marker.is_some() {
-                        output.push((Event::InlineHtml("</mark>".into()), part.clone()));
-                    }
                     if mapping {
                         output.push((Event::InlineHtml("</span>".into()), part));
                     }
                 }
             } else {
+                let inside = matches!(event, Event::SoftBreak | Event::HardBreak)
+                    && open.is_some_and(|m| {
+                        m.content.start <= range.start && range.end <= m.content.end
+                    });
+                if !inside && open.take().is_some() {
+                    output.push((Event::InlineHtml("</mark>".into()), range.clone()));
+                }
                 output.push((event, range));
             }
         }
@@ -356,21 +366,34 @@ pub fn apply_highlight(
     let marks = markers(&events, source);
     let mut runs = Vec::new();
     let mut editable = Editable::default();
+    let mut group = 0;
     for (event, range) in &events {
         let allowed = editable.includes(event);
+        if !allowed
+            || (!matches!(event, Event::Text(_) | Event::SoftBreak | Event::HardBreak)
+                && !matches!(event, Event::Start(tag) if inline_start(tag))
+                && !matches!(event, Event::End(tag) if inline_end(tag)))
+        {
+            group += 1;
+        }
         if let Event::Text(text) = event
             && allowed
         {
-            runs.extend(pieces(text, range, source, &marks));
+            runs.extend(
+                pieces(text, range, source, &marks)
+                    .into_iter()
+                    .map(|(text, run, marker)| (text, run, marker, group)),
+            );
         }
     }
     let mut edits: Vec<(Range<usize>, String)> = Vec::new();
     let mut touched = std::collections::BTreeSet::new();
+    let mut selected = Vec::new();
     let mut previous = 0;
     for selection in ranges {
-        let (text, run, _) = runs
+        let (text, run, marker, group) = runs
             .iter()
-            .find(|(_, run, _)| run.start == selection.start && run.end == selection.end)
+            .find(|(_, run, _, _)| run.start == selection.start && run.end == selection.end)
             .ok_or(Error::InvalidHighlightSelection)?;
         let from = utf16_byte(text, selection.from).ok_or(Error::InvalidHighlightSelection)?;
         let to = utf16_byte(text, selection.to).ok_or(Error::InvalidHighlightSelection)?;
@@ -402,28 +425,51 @@ pub fn apply_highlight(
         if text[from..to].trim().is_empty() {
             continue;
         }
-        if let Some((index, _)) = marks
-            .iter()
-            .enumerate()
-            .find(|(_, m)| m.content.start <= part.start && m.content.end >= part.end)
-        {
-            touched.insert(index);
-        } else if let Some(color) = &requested {
-            edits.push((
-                part.clone(),
-                format!("{}{}==", opening(color), &source[part]),
-            ));
+        if let Some(mark) = marker {
+            if touched.insert(mark.start) {
+                selected.push((mark.start..mark.end, *group));
+            }
+        } else if requested.is_some() {
+            selected.push((part, *group));
         }
     }
-    for index in touched {
-        let mark = &marks[index];
-        edits.push((
-            mark.start..mark.content.start,
-            requested.as_deref().map(opening).unwrap_or_default(),
-        ));
-        if requested.is_none() {
-            edits.push((mark.content.end..mark.end, String::new()));
+
+    selected.sort_by_key(|(range, _)| range.start);
+    let mut merged: Vec<(Range<usize>, usize)> = Vec::new();
+    for (part, group) in selected {
+        if let Some((last, last_group)) = merged.last_mut()
+            && *last_group == group
+            && runs.iter().all(|(text, run, _, _)| {
+                let from = run.start.max(last.end);
+                let to = run.end.min(part.start);
+                from >= to
+                    || if source.get(run.clone()) == Some(text.as_ref()) {
+                        source[from..to].trim().is_empty()
+                    } else {
+                        text.trim().is_empty()
+                    }
+            })
+        {
+            last.end = last.end.max(part.end);
+        } else {
+            merged.push((part, group));
         }
+    }
+    for (part, _) in merged {
+        let mut content = source[part.clone()].to_owned();
+        for mark in marks
+            .iter()
+            .rev()
+            .filter(|m| part.start <= m.start && m.end <= part.end)
+        {
+            content.replace_range(mark.content.end - part.start..mark.end - part.start, "");
+            content.replace_range(mark.start - part.start..mark.content.start - part.start, "");
+        }
+        let replacement = requested.as_deref().map_or_else(
+            || content.clone(),
+            |color| format!("{}{content}==", opening(color)),
+        );
+        edits.push((part, replacement));
     }
     edits.sort_by_key(|(range, _)| range.start);
     let mut output = source.to_owned();

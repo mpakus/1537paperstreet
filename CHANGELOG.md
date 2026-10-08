@@ -18,6 +18,10 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - Preview reflects unsaved marker edits. A completed save does not discard edits
   made while it was running, and switching documents starts a separate editor
   undo history.
+- A highlighted paragraph or list item uses one Markdown marker across source
+  line breaks and inline formatting. Recoloring joins older fragmented markers.
+- Edit mode keeps list text readable and paints the entire text selection,
+  including the active line, using the current theme's selection color.
 
 ## [0.8.25] - 2026-10-07
 
