@@ -5,6 +5,12 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Windows encrypted-note saves and Delete original read through the handle that
+  owns the file lock, avoiding a self-inflicted lock error. Conflict checks also
+  verify file identity before replacement; recovery and no-op saves stay intact.
+
 ## [0.9.0] - 2026-10-19
 
 ### Added

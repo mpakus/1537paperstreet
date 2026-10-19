@@ -17,6 +17,10 @@ private temporary files and replacement without unlinking the destination.
 `age::secrecy::SecretString` owns session passwords. Default age CLI/SSH/plugin
 features are disabled. The exact dependency graph is recorded in Cargo.lock.
 
+The Windows lock fix promotes the existing transitive `same-file` 1.0.6 to a
+direct dependency for portable file-identity checks on live handles. This adds
+no packages to the lockfile and avoids custom unsafe platform code.
+
 `ps-core::encrypted::EncryptedDocuments` serializes expensive operations and
 keeps authenticated bytes, password and ciphertext BLAKE3 per canonical project
 path. Every filesystem operation enters through `fsops::resolve`; encrypted
@@ -34,13 +38,22 @@ sync is attempted on Unix after replacement. Failure after commit does not
 falsely report that the old file was retained; power-loss durability still
 depends on the filesystem and OS.
 
-The file handle's advisory lock serializes cooperating processes during Save;
+The file handle's exclusive lock serializes cooperating processes during Save;
 hash comparison detects stale editors and checks again immediately before
-replacement. An unrelated writer that ignores locks can still race the final
+replacement. Windows byte-range locks deny reads through another handle, even
+in the same process, so locked reads rewind and reuse the lock-owning handle.
+Before each read, compare it with a fresh handle for the resolved path; an
+atomic replacement of that path is a conflict even if its bytes are unchanged.
+Keep the original lock alive through replacement or deletion. These rules also
+apply to the plaintext source while creating `pre_encrypt_delete` recovery.
+An unrelated writer that ignores locks can still race the final
 check/rename, as with ordinary document saves. This is not a filesystem-wide
 compare-and-swap or protection against a hostile local process changing parent
 directories. Windows replacement and open-handle behavior require native CI
 and manual acceptance before release.
+
+The lock behavior follows [Rust's file-lock documentation](https://doc.rust-lang.org/std/fs/struct.File.html#method.try_lock)
+and [Windows LockFileEx](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-lockfileex).
 
 Unchanged normalized text and restoration traits preserve the exact original
 ciphertext (including mixed original line endings). Changed content restores

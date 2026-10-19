@@ -127,6 +127,28 @@ gates. Full Rust/UI tests, type checks, lint, formatting, Clippy, the unsigned
 native build and the optimized workspace build passed. Earlier coverage and CLI interoperability evidence remains
 recorded above and below; those checks were not rerun for this follow-up.
 
+## Windows file-lock follow-up — 2026-10-19
+
+The [0.9.0 CI run](https://github.com/mpakus/1537paperstreet/actions/runs/39322099820)
+passed its macOS, Linux, coverage and security jobs but failed the Windows
+encrypted-note lifecycle and original-deletion tests with OS error 33. An
+exclusive Windows byte-range lock also blocks a second handle opened by the
+same process; hashing by reopening the locked path caused the failure.
+
+Save and Delete original now read through the lock-owning handle and rewind it
+for repeated hash checks. A live `same-file` handle comparison rejects path
+replacement before those reads. The lock remains held through atomic replacement
+or deletion; no-op ciphertext preservation and encrypted recovery still apply.
+`same-file` was already present transitively; its direct dependency adds no new
+lockfile packages. Windows CI now runs encryption unit tests as well as the
+crypto/lifecycle integration suites. Regressions cover lock contention and retry,
+repeated reads, atomic replacement while locked, changed paths with identical
+bytes, and recovery/write failures. Native desktop acceptance remains a separate
+release gate.
+
+Local validation: 363 Rust tests in 45 suites and 197 UI tests passed, along with
+Rust/UI formatting, Clippy, UI type checks, lint and Cargo deny.
+
 ## Independent format compatibility
 
 Go `age` 1.2.1 and Rust `rage` 0.12.1 both passed:

@@ -6,11 +6,12 @@
 
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
-use std::io::{Read, Write};
+use std::io::{Read, Seek, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 
 use age::secrecy::SecretString;
+use same_file::Handle;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use zeroize::Zeroizing;
@@ -176,7 +177,9 @@ impl EncryptedDocuments {
                 source.into(),
             )
         })?;
-        let bytes = Zeroizing::new(read_ciphertext(&source_path)?);
+        let lock = Handle::from_file(lock)
+            .map_err(|source| Error::io("identify the original note", &source_path, source))?;
+        let bytes = Zeroizing::new(read_locked_file(&source_path, &lock)?);
         check_hash(&original.rel, &bytes, &original.hash)?;
         check_hash(
             rel,
@@ -200,7 +203,7 @@ impl EncryptedDocuments {
             let current_encrypted = resolve(root, rel)?;
             check_hash(
                 &original.rel,
-                &read_ciphertext(&current_source)?,
+                &Zeroizing::new(read_locked_file(&current_source, &lock)?),
                 &original.hash,
             )?;
             check_hash(
@@ -376,7 +379,9 @@ impl EncryptedDocuments {
                 source.into(),
             )
         })?;
-        let disk = read_ciphertext(&path)?;
+        let lock_file = Handle::from_file(lock_file)
+            .map_err(|source| Error::io("identify the encrypted note", &path, source))?;
+        let disk = read_locked_file(&path, &lock_file)?;
         check_hash(rel, &disk, base_hash)?;
         if session.hash != base_hash {
             return Err(Error::DocumentConflict {
@@ -422,7 +427,13 @@ impl EncryptedDocuments {
                 persist(root, &backup, &disk, None, || Ok(()))?;
             }
         }
-        let result = persist_encrypted(root, rel, &plaintext, password, Some(base_hash))?;
+        let result = persist_encrypted(
+            root,
+            rel,
+            &plaintext,
+            password,
+            Some((base_hash, &lock_file)),
+        )?;
         session.plaintext = plaintext;
         session.hash = result.hash.clone();
         if let Some(password) = new_password {
@@ -509,6 +520,10 @@ fn resolve_regular(root: &Path, rel: &Path) -> Result<PathBuf> {
 fn read_ciphertext(path: &Path) -> Result<Vec<u8>> {
     let file =
         File::open(path).map_err(|source| Error::io("read the encrypted note", path, source))?;
+    read_file(&file, path)
+}
+
+fn read_file(file: &File, path: &Path) -> Result<Vec<u8>> {
     let mut bytes = Vec::new();
     file.take((crypto::MAX_CIPHERTEXT_BYTES + 1) as u64)
         .read_to_end(&mut bytes)
@@ -517,6 +532,24 @@ fn read_ciphertext(path: &Path) -> Result<Vec<u8>> {
         return Err(Error::EncryptedDocumentTooLarge);
     }
     Ok(bytes)
+}
+
+fn read_locked_file(path: &Path, locked: &Handle) -> Result<Vec<u8>> {
+    // Windows byte-range locks reject reads through separately opened handles,
+    // even in this process. Inspect identity without reading through that handle,
+    // then read through the handle that owns the lock. Keep both handles alive.
+    let current = Handle::from_path(path)
+        .map_err(|source| Error::io("identify the locked note", path, source))?;
+    if &current != locked {
+        return Err(Error::DocumentConflict {
+            path: path.into(),
+            disk_hash: hash(&Zeroizing::new(read_file(current.as_file(), path)?)),
+        });
+    }
+    let mut file = locked.as_file();
+    file.rewind()
+        .map_err(|source| Error::io("read the encrypted note", path, source))?;
+    read_file(file, path)
 }
 
 fn validate_header(bytes: &[u8]) -> Result<()> {
@@ -546,7 +579,7 @@ fn persist(
     root: &Path,
     rel: &Path,
     bytes: &[u8],
-    expected: Option<&str>,
+    expected: Option<(&str, &Handle)>,
     before_replace: impl FnOnce() -> Result<()>,
 ) -> Result<()> {
     persist_with(
@@ -567,7 +600,7 @@ fn persist_encrypted(
     rel: &Path,
     plaintext: &[u8],
     password: &SecretString,
-    expected: Option<&str>,
+    expected: Option<(&str, &Handle)>,
 ) -> Result<WrittenDocument> {
     persist_with(
         root,
@@ -595,7 +628,7 @@ fn persist_encrypted(
 fn persist_with<T>(
     root: &Path,
     rel: &Path,
-    expected: Option<&str>,
+    expected: Option<(&str, &Handle)>,
     write: impl FnOnce(&mut tempfile::NamedTempFile) -> Result<T>,
     before_replace: impl FnOnce() -> Result<()>,
 ) -> Result<T> {
@@ -628,8 +661,8 @@ fn persist_with<T>(
     if checked != path {
         return Err(Error::PathOutsideProject { path: rel.into() });
     }
-    if let Some(expected) = expected {
-        check_hash(rel, &read_ciphertext(&path)?, expected)?;
+    if let Some((expected, locked)) = expected {
+        check_hash(rel, &read_locked_file(&path, locked)?, expected)?;
         temporary
             .persist(&path)
             .map_err(|error| Error::io("replace the encrypted note", &path, error.error))?;
@@ -654,6 +687,63 @@ fn persist_with<T>(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn replace_file(path: &Path, bytes: &[u8]) {
+        let mut replacement = tempfile::NamedTempFile::new_in(path.parent().unwrap()).unwrap();
+        replacement.write_all(bytes).unwrap();
+        replacement.persist(path).unwrap();
+    }
+
+    #[test]
+    fn locked_reads_rewind_and_hold_exclusion_through_atomic_replacement() {
+        let root = tempfile::tempdir().unwrap();
+        let rel = Path::new("locked.md.age");
+        let path = root.path().join(rel);
+        fs::write(&path, b"saved ciphertext").unwrap();
+        let locked = Handle::from_file(File::open(&path).unwrap()).unwrap();
+        locked.as_file().try_lock().unwrap();
+        assert_eq!(
+            read_locked_file(&path, &locked).unwrap(),
+            b"saved ciphertext"
+        );
+        assert_eq!(
+            read_locked_file(&path, &locked).unwrap(),
+            b"saved ciphertext"
+        );
+        let expected = hash(b"saved ciphertext");
+        persist(
+            root.path(),
+            rel,
+            b"new ciphertext",
+            Some((&expected, &locked)),
+            || {
+                let contender = File::open(&path).unwrap();
+                assert!(matches!(
+                    contender.try_lock(),
+                    Err(fs::TryLockError::WouldBlock)
+                ));
+                Ok(())
+            },
+        )
+        .unwrap();
+        assert_eq!(fs::read(&path).unwrap(), b"new ciphertext");
+        let replaced = File::open(&path).unwrap();
+        replaced.try_lock().unwrap();
+    }
+
+    #[test]
+    fn locked_reads_reject_a_replaced_path_even_with_identical_bytes() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("locked.md.age");
+        fs::write(&path, b"saved ciphertext").unwrap();
+        let locked = Handle::from_file(File::open(&path).unwrap()).unwrap();
+        locked.as_file().try_lock().unwrap();
+        replace_file(&path, b"saved ciphertext");
+        assert!(matches!(
+            read_locked_file(&path, &locked),
+            Err(Error::DocumentConflict { .. })
+        ));
+    }
 
     #[test]
     fn deletion_aborts_on_recovery_failure_and_changes_during_snapshot() {
@@ -687,7 +777,7 @@ mod tests {
         );
         assert!(matches!(
             documents.delete_original_with(root.path(), destination, |_, _, _, _| {
-                fs::write(root.path().join(source), "Concurrent edit").unwrap();
+                replace_file(&root.path().join(source), b"Concurrent edit");
                 Ok(())
             }),
             Err(Error::DocumentConflict { .. })
@@ -716,10 +806,13 @@ mod tests {
         let rel = Path::new("test.md.age");
         fs::write(root.path().join(rel), b"old ciphertext").unwrap();
         let base = hash(b"old ciphertext");
+        let path = root.path().join(rel);
+        let locked = Handle::from_file(File::open(&path).unwrap()).unwrap();
+        locked.as_file().try_lock().unwrap();
         let partial_write: Result<()> = persist_with(
             root.path(),
             rel,
-            Some(&base),
+            Some((&base, &locked)),
             |temporary| {
                 temporary.write_all(b"partial ciphertext").unwrap();
                 Err(Error::EncryptionFailed)
@@ -727,20 +820,30 @@ mod tests {
             || Ok(()),
         );
         assert!(partial_write.is_err());
-        assert_eq!(fs::read(root.path().join(rel)).unwrap(), b"old ciphertext");
+        assert_eq!(read_locked_file(&path, &locked).unwrap(), b"old ciphertext");
         assert_eq!(fs::read_dir(root.path()).unwrap().count(), 1);
         assert!(
-            persist(root.path(), rel, b"new ciphertext", Some(&base), || Err(
-                Error::EncryptionFailed
-            ))
+            persist(
+                root.path(),
+                rel,
+                b"new ciphertext",
+                Some((&base, &locked)),
+                || Err(Error::EncryptionFailed)
+            )
             .is_err()
         );
-        assert_eq!(fs::read(root.path().join(rel)).unwrap(), b"old ciphertext");
+        assert_eq!(read_locked_file(&path, &locked).unwrap(), b"old ciphertext");
         assert_eq!(fs::read_dir(root.path()).unwrap().count(), 1);
-        let result = persist(root.path(), rel, b"new ciphertext", Some(&base), || {
-            fs::write(root.path().join(rel), b"external ciphertext").unwrap();
-            Ok(())
-        });
+        let result = persist(
+            root.path(),
+            rel,
+            b"new ciphertext",
+            Some((&base, &locked)),
+            || {
+                replace_file(&root.path().join(rel), b"external ciphertext");
+                Ok(())
+            },
+        );
         assert!(matches!(result, Err(Error::DocumentConflict { .. })));
         assert_eq!(
             fs::read(root.path().join(rel)).unwrap(),

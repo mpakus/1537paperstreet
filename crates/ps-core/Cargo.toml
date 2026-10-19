@@ -12,6 +12,7 @@ path = "src/lib.rs"
 age = { version = "=0.12.1", default-features = false }
 tempfile = "3.27.0"
 zeroize = "1"
+same-file = "1.0.6"
 nucleo = "0.5.0"
 regex = "1.11"
 notify = "8.2.0"
