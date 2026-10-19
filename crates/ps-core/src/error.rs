@@ -6,6 +6,35 @@ use std::path::PathBuf;
 /// The error type shared by `ps-core` modules.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    /// The document is not a supported binary age file.
+    #[error("This is not a valid binary age file. ASCII-armored files are not supported.")]
+    NotAgeFile,
+    /// Only passphrase recipients are supported.
+    #[error("Unsupported age recipient type. Open a file encrypted with a passphrase.")]
+    UnsupportedRecipient,
+    /// Authentication or complete stream verification failed.
+    #[error("Could not unlock this note. The password is incorrect or the file is damaged.")]
+    DecryptionFailed,
+    /// Encryption could not be completed.
+    #[error("Could not finish encrypting this note. The previous file has been kept.")]
+    EncryptionFailed,
+    /// Authenticated bytes are not UTF-8 Markdown.
+    #[error("The decrypted note is not valid UTF-8.")]
+    InvalidEncryptedUtf8,
+    /// Encrypted input or plaintext exceeds the resource policy.
+    #[error("Encrypted notes are limited to 8 MB of text and 9 MB on disk.")]
+    EncryptedDocumentTooLarge,
+    /// Untrusted scrypt settings exceed the resource policy.
+    #[error(
+        "This file requires more password-processing memory than the app allows. Use age or rage to re-encrypt it with a lower work factor."
+    )]
+    ExcessiveCryptoWork,
+    /// Secrets are available only in an unlocked session.
+    #[error("Unlock this encrypted note before editing or saving it.")]
+    DocumentLocked,
+    /// Creation or password changes require a non-empty password.
+    #[error("Enter a password. A long, unique passphrase is recommended.")]
+    EmptyPassphrase,
     /// A preview selection no longer matches editable Markdown text.
     #[error(
         "That selection cannot be highlighted. Select the text again; code, math, images and raw HTML are not supported."

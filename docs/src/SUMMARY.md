@@ -5,6 +5,7 @@
 - [First project](first-project.md)
 - [Working with files](files.md)
 - [Editing and saving](editing.md)
+- [Password-protected notes](encryption.md)
 - [Version history](history.md)
 - [Conflicts](conflicts.md)
 - [Mermaid](mermaid.md)

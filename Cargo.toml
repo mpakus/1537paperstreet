@@ -14,3 +14,7 @@ lto = "fat"
 codegen-units = 1
 panic = "abort"
 strip = "symbols"
+
+# Host proc-macro libraries must retain the symbols rustc loads at build time.
+[profile.release.build-override]
+strip = "none"

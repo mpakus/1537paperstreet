@@ -6,7 +6,7 @@ export type TreeRow = {
   depth: number
 }
 
-const MARKDOWN_NAME = /\.(md|markdown|mdown|mdwn)$/i
+const MARKDOWN_NAME = /\.(md|markdown|mdown|mdwn)(\.age)?$/i
 const IMAGE_NAME = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif|tiff?)$/i
 
 /** Returns whether a file name uses a recognized Markdown extension. */

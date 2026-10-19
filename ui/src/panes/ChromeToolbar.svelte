@@ -12,6 +12,8 @@
     mode,
     page = 'document',
     canSave = false,
+    security = 'plain',
+    canProtect = false,
     canFormat = false,
     canFormatDocument = false,
     canEdit = true,
@@ -23,6 +25,8 @@
     mode: ViewMode
     page?: WorkspacePage
     canSave?: boolean
+    security?: 'plain' | 'locked' | 'unlocked'
+    canProtect?: boolean
     canFormat?: boolean
     canFormatDocument?: boolean
     canEdit?: boolean
@@ -47,7 +51,9 @@
           type="button"
           class="seg"
           title={view.id !== 'preview' && !canEdit
-            ? 'Editing is not available for images'
+            ? security === 'locked'
+              ? 'Unlock this note to edit it'
+              : 'Editing is not available for images'
             : view.title}
           aria-pressed={page === 'document' && mode === view.id}
           disabled={view.id !== 'preview' && !canEdit}
@@ -102,6 +108,13 @@
       title="Export PDF (⌘⌥E)"
       disabled={!hasDocument}
       onclick={() => oncommand('file-export')}>Export</button
+    >
+    <button
+      type="button"
+      disabled={!canProtect}
+      title="Create or manage encrypted notes"
+      onclick={() => oncommand('encryption-manage')}
+      >{security === 'plain' ? 'Protect' : '🔒 Encrypted'}</button
     >
     <button
       type="button"

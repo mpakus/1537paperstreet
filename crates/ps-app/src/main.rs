@@ -5,7 +5,7 @@
 use std::error::Error;
 
 use ps_core::paths::AppPaths;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 mod agent;
 mod commands;
@@ -23,9 +23,11 @@ use commands::{
     agent_cancel, agent_make_server, agent_permission_reply, agent_presets, agent_prompt,
     agent_prompt_history, agent_prompt_history_clear, agent_prompt_history_remove, agent_set_model,
     agent_start, agent_stop, config_get, config_set, content_search, copy_conflicts, dashboard_get,
-    doc_highlight, doc_highlight_source, doc_open, doc_preview, doc_save, doc_source, doc_stat,
-    export_pdf, files_search, fs_copy, fs_create_file, fs_create_untitled, fs_import, fs_mkdir,
-    fs_move, fs_rename, fs_transfer, fs_trash, mermaid_cache_get, mermaid_cache_put,
+    doc_change_password, doc_create_encrypted, doc_delete_original, doc_encrypt_existing,
+    doc_export_decrypted, doc_highlight, doc_highlight_source, doc_lock, doc_lock_all, doc_open,
+    doc_preview, doc_save, doc_snapshot_encrypted, doc_source, doc_stat, doc_unlock, export_pdf,
+    files_search, finish_window_close, fs_copy, fs_create_file, fs_create_untitled, fs_import,
+    fs_mkdir, fs_move, fs_rename, fs_transfer, fs_trash, mermaid_cache_get, mermaid_cache_put,
     open_dropped_paths, open_external, open_url, projects_add, projects_list, projects_relocate,
     projects_remove, projects_rename, reveal_in_finder, save_user_file, session_restore,
     session_set, text_format, themes_css, themes_list, tree_expanded_get, tree_expanded_set,
@@ -107,6 +109,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             watch_start,
             watch_set_expanded,
             watch_stop,
+            doc_unlock,
+            doc_lock,
+            doc_lock_all,
+            doc_create_encrypted,
+            doc_change_password,
+            doc_export_decrypted,
+            finish_window_close,
+            doc_encrypt_existing,
+            doc_delete_original,
+            doc_snapshot_encrypted,
             doc_open,
             doc_preview,
             doc_highlight_source,
@@ -131,6 +143,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         ])
         .build(tauri::generate_context!())?
         .run(|app, event| {
+            if let tauri::RunEvent::ExitRequested { api, .. } = &event
+                && !app
+                    .state::<AppState>()
+                    .exit_confirmed
+                    .load(std::sync::atomic::Ordering::SeqCst)
+            {
+                api.prevent_exit();
+                let _ = app.emit(crate::menu::MENU_ACTION_EVENT, "app-quit");
+            }
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen { .. } = event {
                 crate::tray::show_main_window(app);

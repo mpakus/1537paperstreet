@@ -8,6 +8,16 @@
     configSet,
     copyConflicts,
     docOpen,
+    docEncryptExisting,
+    docDeleteOriginal,
+    docSnapshotEncrypted,
+    docUnlock,
+    docLock,
+    docLockAll,
+    docCreateEncrypted,
+    docChangePassword,
+    docExportDecrypted,
+    finishWindowClose,
     docPreview,
     docHighlightSource,
     docHighlight,
@@ -128,6 +138,10 @@
     targetDir,
     watchTouchesOpenFile,
   } from './lib/tree'
+  import EncryptionDialog, {
+    type EncryptionAction,
+  } from './panes/EncryptionDialog.svelte'
+  import SaveChangesDialog from './panes/SaveChangesDialog.svelte'
   import About from './panes/About.svelte'
   import Assistant from './panes/Assistant.svelte'
   import ChromeToolbar from './panes/ChromeToolbar.svelte'
@@ -256,6 +270,299 @@
     x: number
     width: number
   } | null>(null)
+
+  let encryptionAction = $state<EncryptionAction | null>(null)
+  let encryptionPath = $state('')
+  let convertedOriginal = $state<{
+    projectId: string
+    source: string
+    encrypted: string
+  } | null>(null)
+  let secureOperations = $state(0)
+  let closingDocuments = $state(false)
+  let documentGeneration = 0
+  let closePrompt = $state<{
+    path: string
+    resolve: (choice: 'save' | 'discard' | 'cancel') => void
+  } | null>(null)
+
+  function showEncryption(action: EncryptionAction) {
+    if (!active || secureOperations || closePrompt) return
+    encryptionPath =
+      action === 'create'
+        ? 'Untitled.md.age'
+        : action === 'encrypt'
+          ? `${openMeta?.relPath ?? 'Untitled.md'}.age`
+          : action === 'export'
+            ? (openMeta?.relPath ?? 'note.md.age').replace(/\.age$/i, '')
+            : (openMeta?.relPath ?? '')
+    encryptionAction = action
+  }
+
+  function closeEncryption() {
+    encryptionAction = null
+    convertedOriginal = null
+  }
+
+  async function submitEncryption(destination: string, password: string) {
+    if (!active) return
+    const projectId = active.id
+    const relPath = openMeta?.relPath
+    const action = encryptionAction
+    secureOperations += 1
+    try {
+      if (action === 'original' && convertedOriginal) {
+        const original = convertedOriginal
+        await docDeleteOriginal(original.projectId, original.encrypted)
+        tabs = removeTab(tabs, original.source)
+        treeReload += 1
+        closeEncryption()
+      } else if (action === 'create' || action === 'encrypt') {
+        if (action === 'encrypt' && relPath && !docSourceMeta)
+          await loadSource(relPath)
+        // The source file remains intact. Encrypt the current buffer, including unsaved edits.
+        if (action === 'encrypt') {
+          if (!relPath || !docSourceMeta || !docMeta)
+            throw new Error(
+              'The original note could not be loaded. Try opening it again.',
+            )
+          await docEncryptExisting(
+            projectId,
+            relPath,
+            destination,
+            draftText,
+            docMeta.hash,
+            {
+              eol: docSourceMeta.eol,
+              bom: docSourceMeta.bom,
+              trailingNewline: docSourceMeta.trailingNewline,
+            },
+            password,
+          )
+        } else await docCreateEncrypted(projectId, destination, '', password)
+        treeReload += 1
+        encryptionAction = null
+        await openDocument(
+          destination,
+          false,
+          'pin',
+          action === 'encrypt' ? 'preview' : 'editor',
+          undefined,
+          undefined,
+          true,
+        )
+        if (action === 'encrypt' && relPath) {
+          convertedOriginal = {
+            projectId,
+            source: relPath,
+            encrypted: destination,
+          }
+          encryptionPath = relPath
+          encryptionAction = 'original'
+        }
+      } else if (relPath && action === 'unlock') {
+        await docUnlock(projectId, relPath, password)
+        encryptionAction = null
+        await openDocument(
+          relPath,
+          true,
+          'pin',
+          'preview',
+          undefined,
+          undefined,
+          true,
+        )
+      } else if (relPath && (action === 'password' || action === 'export')) {
+        if (!docSourceMeta) await loadSource(relPath)
+        if (docSourceMeta && draftText !== docSourceMeta.text)
+          await saveDocument()
+        if (!docMeta) return
+        if (action === 'password') {
+          const written = await docChangePassword(
+            projectId,
+            relPath,
+            docMeta.hash,
+            password,
+          )
+          docMeta = { ...docMeta, hash: written.hash, size: written.size }
+        } else {
+          await docExportDecrypted(
+            projectId,
+            relPath,
+            destination,
+            docMeta.hash,
+          )
+          treeReload += 1
+        }
+        encryptionAction = null
+      }
+    } finally {
+      secureOperations -= 1
+    }
+  }
+
+  async function confirmEncryptedClose(relPath: string): Promise<boolean> {
+    if (!active) return true
+    const current =
+      openMeta?.relPath === relPath
+        ? snapshotCurrentTab()
+        : tabs.find((tab) => tab.relPath === relPath)
+    if (
+      !current ||
+      current.docMeta?.security !== 'unlocked' ||
+      !current.docSourceMeta ||
+      current.draftText === current.docSourceMeta.text
+    )
+      return true
+    const choice = await new Promise<'save' | 'discard' | 'cancel'>(
+      (resolve) => {
+        closePrompt = { path: relPath, resolve }
+      },
+    )
+    closePrompt = null
+    if (choice === 'cancel') return false
+    if (choice === 'discard') {
+      secureOperations += 1
+      try {
+        await docSnapshotEncrypted(active.id, relPath, current.draftText, {
+          eol: current.docSourceMeta.eol,
+          bom: current.docSourceMeta.bom,
+          trailingNewline: current.docSourceMeta.trailingNewline,
+        })
+        return true
+      } finally {
+        secureOperations -= 1
+      }
+    }
+    if (openMeta?.relPath === relPath) {
+      await saveDocument()
+      // Edits made while Save was running still need a choice.
+      return confirmEncryptedClose(relPath)
+    }
+    secureOperations += 1
+    try {
+      const written = await docSave(
+        active.id,
+        relPath,
+        current.draftText,
+        current.docMeta.hash,
+        {
+          eol: current.docSourceMeta.eol,
+          bom: current.docSourceMeta.bom,
+          trailingNewline: current.docSourceMeta.trailingNewline,
+        },
+      )
+      tabs = tabs.map((tab) =>
+        tab.relPath === relPath
+          ? {
+              ...tab,
+              docMeta: {
+                ...current.docMeta!,
+                hash: written.hash,
+                size: written.size,
+              },
+              docSourceMeta: {
+                ...current.docSourceMeta!,
+                text: current.draftText,
+              },
+            }
+          : tab,
+      )
+      return true
+    } finally {
+      secureOperations -= 1
+    }
+  }
+
+  async function lockNote() {
+    if (!active || !openMeta || secureOperations || closingDocuments) return
+    closingDocuments = true
+    try {
+      encryptionAction = null
+      const relPath = openMeta.relPath
+      if (!(await confirmEncryptedClose(relPath))) return
+      secureOperations += 1
+      try {
+        await docLock(active.id, relPath)
+        documentGeneration += 1
+        draftPreviewGen += 1
+        html = ''
+        draftText = ''
+        docSourceMeta = null
+        editorApi = null
+        editorOpened = false
+        findOpen = false
+        tabs = removeTab(tabs, relPath)
+        await openDocument(
+          relPath,
+          true,
+          'pin',
+          'preview',
+          undefined,
+          undefined,
+          true,
+        )
+      } finally {
+        secureOperations -= 1
+      }
+    } finally {
+      closingDocuments = false
+    }
+  }
+
+  async function clearEncryptedTabs(): Promise<boolean> {
+    if (closingDocuments) return false
+    closingDocuments = true
+    try {
+      const current = snapshotCurrentTab()
+      const all = current ? placeDocTab(tabs, current, 'keep') : tabs
+      for (const tab of all) {
+        if (!(await confirmEncryptedClose(tab.relPath))) return false
+      }
+      await docLockAll()
+      documentGeneration += 1
+      draftPreviewGen += 1
+      tabs = tabs.map((tab) =>
+        tab.docMeta?.security === 'unlocked'
+          ? {
+              ...tab,
+              html: '',
+              draftText: '',
+              docSourceMeta: null,
+              viewMode: 'preview',
+              docMeta: {
+                ...tab.docMeta,
+                security: 'locked',
+                toc: [],
+                writable: false,
+                sourceOnly: true,
+                chunkCount: 0,
+              },
+            }
+          : tab,
+      )
+      if (docMeta?.security === 'unlocked') {
+        html = ''
+        draftText = ''
+        docSourceMeta = null
+        editorApi = null
+        editorOpened = false
+        docMeta = {
+          ...docMeta,
+          security: 'locked',
+          toc: [],
+          writable: false,
+          sourceOnly: true,
+          chunkCount: 0,
+        }
+        viewMode = 'preview'
+        findOpen = false
+      }
+      return true
+    } finally {
+      closingDocuments = false
+    }
+  }
 
   function noteQuietly(message: string) {
     messageHistory = recordMessage(messageHistory, message)
@@ -425,9 +732,11 @@
         : docMeta?.sourceOnly
           ? (docMeta.readonlyReason ??
             'This file cannot be previewed as Markdown.')
-          : active
-            ? 'Select a file in the tree, or drop a Markdown file onto the window.'
-            : 'Your Markdown projects will appear here. Drop a Markdown file or a folder to open it.',
+          : openMeta
+            ? 'This note is empty.'
+            : active
+              ? 'Select a file in the tree, or drop a Markdown file onto the window.'
+              : 'Your Markdown projects will appear here. Drop a Markdown file or a folder to open it.',
   )
 
   function applyConfig(config: Config) {
@@ -771,7 +1080,9 @@
     openRelPath?: string | null,
     options?: { skipFile?: boolean },
   ) {
+    if (secureOperations || closePrompt) return
     if (active?.id !== project.id) {
+      if (active && !(await clearEncryptedTabs())) return
       tabs = []
     }
     active = project
@@ -818,6 +1129,18 @@
 
   async function handleMenu(id: string) {
     try {
+      if (secureOperations || closePrompt) return
+      if (id === 'encryption-manage') {
+        showEncryption('manage')
+        return
+      }
+      if (id === 'window-close' || id === 'app-quit') {
+        closeEncryption()
+        if (await clearEncryptedTabs())
+          await finishWindowClose(id === 'app-quit')
+        return
+      }
+      if (encryptionAction || closingDocuments) return
       if (id === 'file-open-file') {
         await pickOpen('file')
         return
@@ -903,6 +1226,12 @@
         return
       }
       if (id === 'file-export') {
+        if (docMeta?.security === 'unlocked') {
+          showError(
+            'Use Protect → Export decrypted .md to create an unencrypted copy.',
+          )
+          return
+        }
         if (!openMeta) {
           showError('Open a document first.')
           return
@@ -1352,6 +1681,26 @@
       closeTab(prompt.relPath)
       return
     }
+    if (
+      docMeta?.security === 'unlocked' &&
+      docSourceMeta &&
+      draftText !== docSourceMeta.text
+    ) {
+      // Reload explicitly discards the buffer. Preserve it before replacing it,
+      // including when external ciphertext no longer uses the session password.
+      closingDocuments = true
+      secureOperations += 1
+      try {
+        await docSnapshotEncrypted(active.id, prompt.relPath, draftText, {
+          eol: docSourceMeta.eol,
+          bom: docSourceMeta.bom,
+          trailingNewline: docSourceMeta.trailingNewline,
+        })
+      } finally {
+        closingDocuments = false
+        secureOperations -= 1
+      }
+    }
     await openDocument(prompt.relPath, true)
   }
 
@@ -1382,11 +1731,14 @@
     }
     const projectId = active.id
     const previous = docSourceMeta
+    const generation = documentGeneration
     const text = draftText
     const loaded = await docSource(projectId, relPath)
     if (
       active?.id !== projectId ||
       openMeta?.relPath !== relPath ||
+      generation !== documentGeneration ||
+      docMeta?.security === 'locked' ||
       docSourceMeta !== previous ||
       draftText !== text
     )
@@ -1400,6 +1752,10 @@
   }
 
   async function setViewMode(next: ViewMode) {
+    if (docMeta?.security === 'locked') {
+      showEncryption('unlock')
+      return
+    }
     if (openMeta && isImagePath(openMeta.relPath) && next !== 'preview') {
       showError('Images open in Preview. Editing is not available.')
       return
@@ -1420,10 +1776,12 @@
   }
 
   async function toggleCheckbox(byteOffset: number) {
-    if (checkboxBusy || !active || !openMeta) {
+    if (checkboxBusy || secureOperations || !active || !openMeta) {
       return
     }
     checkboxBusy = true
+    const protectedNote = docMeta?.security === 'unlocked'
+    if (protectedNote) secureOperations += 1
     const projectId = active.id
     const relPath = openMeta.relPath
     try {
@@ -1463,7 +1821,15 @@
         draftText = next
       }
       if (viewMode === 'preview') {
-        await openDocument(relPath, true)
+        await openDocument(
+          relPath,
+          true,
+          'keep',
+          undefined,
+          undefined,
+          undefined,
+          true,
+        )
         return
       }
       const caret = new TextDecoder().decode(
@@ -1479,6 +1845,7 @@
       showError(errorMessage(cause))
     } finally {
       checkboxBusy = false
+      if (protectedNote) secureOperations -= 1
     }
   }
 
@@ -1489,8 +1856,12 @@
     if (!active || !openMeta || !isMarkdownPath(openMeta.relPath)) return
     const projectId = active.id
     const relPath = openMeta.relPath
+    const generation = documentGeneration
     const stillOpen = () =>
-      active?.id === projectId && openMeta?.relPath === relPath
+      documentGeneration === generation &&
+      docMeta?.security !== 'locked' &&
+      active?.id === projectId &&
+      openMeta?.relPath === relPath
     if (!docSourceMeta) {
       const source = await docSource(projectId, relPath)
       if (!stillOpen()) return
@@ -1532,23 +1903,29 @@
     const projectId = active.id
     const relPath = openMeta.relPath
     const text = draftText
-    const written = await docSave(
-      projectId,
-      relPath,
-      text,
-      docMeta?.hash ?? '',
-      {
-        eol: docSourceMeta.eol,
-        bom: docSourceMeta.bom,
-        trailingNewline: docSourceMeta.trailingNewline,
-      },
-    )
-    if (active?.id !== projectId || openMeta?.relPath !== relPath) return
-    if (docMeta) {
-      docMeta = { ...docMeta, hash: written.hash, size: written.size }
-    }
-    if (docSourceMeta) {
-      docSourceMeta = { ...docSourceMeta, text }
+    const protectedNote = docMeta?.security === 'unlocked'
+    if (protectedNote) secureOperations += 1
+    try {
+      const written = await docSave(
+        projectId,
+        relPath,
+        text,
+        docMeta?.hash ?? '',
+        {
+          eol: docSourceMeta.eol,
+          bom: docSourceMeta.bom,
+          trailingNewline: docSourceMeta.trailingNewline,
+        },
+      )
+      if (active?.id !== projectId || openMeta?.relPath !== relPath) return
+      if (docMeta) {
+        docMeta = { ...docMeta, hash: written.hash, size: written.size }
+      }
+      if (docSourceMeta) {
+        docSourceMeta = { ...docSourceMeta, text }
+      }
+    } finally {
+      if (protectedNote) secureOperations -= 1
     }
   }
 
@@ -1630,7 +2007,10 @@
     nextView?: ViewMode,
     anchor?: string,
     scrollAtClick?: number,
+    allowSecureOperation = false,
   ) {
+    if (!allowSecureOperation && (secureOperations || closePrompt)) return
+    const generation = ++documentGeneration
     if (!active) {
       return
     }
@@ -1676,6 +2056,9 @@
     const switching = leaving?.relPath !== relPath
     try {
       const opened = await docOpen(active.id, relPath)
+      if (generation !== documentGeneration) return
+      if (opened.meta.security === 'locked') viewMode = 'preview'
+      if (opened.meta.security !== 'plain') mode = 'pin'
       const nextScroll = switching ? 0 : (previewScrollTop() ?? 0)
       docSourceMeta = null
       draftText = ''
@@ -1686,7 +2069,7 @@
         relPath: opened.meta.relPath,
       }
       html = opened.firstChunk ?? ''
-      if (viewMode !== 'preview') {
+      if (viewMode !== 'preview' && opened.meta.security !== 'locked') {
         await loadSource(opened.meta.relPath)
       } else {
         docSourceMeta = null
@@ -1702,6 +2085,7 @@
         restoreReadingScroll(relPath, nextScroll)
       }
     } catch (cause) {
+      if (generation !== documentGeneration) return
       html = ''
       docMeta = null
       openMeta = null
@@ -1889,6 +2273,28 @@
   }
 
   function closeTab(relPath: string) {
+    if (secureOperations || closePrompt || closingDocuments) return
+    const tab =
+      openMeta?.relPath === relPath
+        ? snapshotCurrentTab()
+        : tabs.find((item) => item.relPath === relPath)
+    if (tab?.docMeta?.security === 'unlocked' && active) {
+      const projectId = active.id
+      closingDocuments = true
+      void (async () => {
+        try {
+          if (!(await confirmEncryptedClose(relPath))) return
+          await docLock(projectId, relPath)
+          documentGeneration += 1
+          closeTabNow(relPath)
+        } finally {
+          closingDocuments = false
+        }
+      })().catch((cause) => showError(errorMessage(cause)))
+    } else closeTabNow(relPath)
+  }
+
+  function closeTabNow(relPath: string) {
     const next = nextAfterClose(tabs, relPath)
     const wasActive = openMeta?.relPath === relPath
     tabs = removeTab(tabs, relPath)
@@ -1917,6 +2323,9 @@
     docSourceMeta = null
     draftText = ''
     docMissing = false
+    // A closed file must reopen on a single click, not enter Rename because
+    // its now-stale tree selection survived closing the last tab.
+    setSelection([])
   }
 
   function closeActiveTab() {
@@ -2004,7 +2413,11 @@
     relPath: string
     html: string
   }) {
-    if (viewMode === 'split' || docSourceMeta) {
+    if (
+      (docMeta?.security && docMeta.security !== 'plain') ||
+      viewMode === 'split' ||
+      docSourceMeta
+    ) {
       return
     }
     if (
@@ -2377,7 +2790,10 @@
         (docSourceMeta?.writable ?? docMeta?.writable) &&
         (isMarkdownPath(openMeta.relPath) || isJsonPath(openMeta.relPath)),
       )}
-      canEdit={!isImagePath(openMeta?.relPath ?? '')}
+      security={docMeta?.security ?? 'plain'}
+      canProtect={Boolean(active) && !secureOperations}
+      canEdit={docMeta?.security !== 'locked' &&
+        !isImagePath(openMeta?.relPath ?? '')}
       readingZoom={previewZoom}
       onmode={(mode) => {
         workspacePage = 'document'
@@ -2703,6 +3119,14 @@
           class:split={viewMode === 'split'}
           bind:this={workspaceEl}
         >
+          {#if docMeta?.security === 'locked'}
+            <div class="locked-note">
+              <p>🔒 Encrypted note</p>
+              <button onclick={() => showEncryption('unlock')}
+                >Unlock note</button
+              >
+            </div>
+          {/if}
           {#if findOpen}
             <FindBar
               root={articleEl ?? null}
@@ -2716,8 +3140,10 @@
                 bind:value={draftText}
                 bind:api={editorApi}
                 fileName={openMeta?.relPath ?? ''}
-                writable={docSourceMeta?.writable ?? false}
-                spellcheck={(appConfig?.editor.spellcheck ?? true) &&
+                writable={!closingDocuments &&
+                  (docSourceMeta?.writable ?? false)}
+                spellcheck={docMeta?.security !== 'unlocked' &&
+                  (appConfig?.editor.spellcheck ?? true) &&
                   isMarkdownPath(openMeta?.relPath ?? '')}
                 lineNumbers={appConfig?.editor.line_numbers ?? false}
                 softWrap={appConfig?.editor.soft_wrap ?? true}
@@ -2742,9 +3168,10 @@
               }}
             ></div>
           {/if}
-          {#if viewMode !== 'editor'}
-            {#key `${openMeta?.projectId}:${openMeta?.relPath}`}
+          {#if viewMode !== 'editor' && docMeta?.security !== 'locked'}
+            {#key `${openMeta?.projectId}:${openMeta?.relPath}:${docMeta?.security}`}
               <Preview
+                privateDocument={docMeta?.security === 'unlocked'}
                 {html}
                 sourcePosition={viewMode === 'split'
                   ? previewSourcePosition
@@ -2787,7 +3214,11 @@
                   }
                 }}
                 onerror={(message) => {
-                  showError(message)
+                  showError(
+                    docMeta?.security === 'unlocked'
+                      ? 'The protected preview could not complete this action.'
+                      : message,
+                  )
                 }}
                 ontoc={() => {
                   void toggleToc().catch((cause) => {
@@ -2939,7 +3370,9 @@
         }}
         oncheck={() => updatesCheck()}
         oninstall={() => updatesInstall()}
-        onrelaunch={() => updatesRelaunch()}
+        onrelaunch={async () => {
+          if (await clearEncryptedTabs()) await updatesRelaunch()
+        }}
       />
     {/key}
   {/if}
@@ -3000,7 +3433,50 @@
   />
 </div>
 
+{#if encryptionAction}
+  {#key encryptionAction}
+    <EncryptionDialog
+      action={encryptionAction}
+      path={encryptionPath}
+      security={docMeta?.security ?? 'plain'}
+      canEncrypt={Boolean(
+        openMeta &&
+        isMarkdownPath(openMeta.relPath) &&
+        docMeta?.security !== 'locked',
+      )}
+      oncancel={closeEncryption}
+      onsubmit={submitEncryption}
+      onaction={(action) => {
+        if (action === 'lock')
+          void lockNote().catch((cause) => showError(errorMessage(cause)))
+        else showEncryption(action)
+      }}
+    />
+  {/key}
+{/if}
+{#if closePrompt}
+  <SaveChangesDialog
+    path={closePrompt.path}
+    onchoose={(choice) => closePrompt?.resolve(choice)}
+  />
+{/if}
+
 <style>
+  .locked-note {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: var(--space-3);
+    min-height: 12rem;
+    flex: 1;
+  }
+  .locked-note button {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-4);
+    background: var(--bg-elev);
+    color: var(--fg);
+  }
   .shell {
     display: flex;
     flex-direction: column;

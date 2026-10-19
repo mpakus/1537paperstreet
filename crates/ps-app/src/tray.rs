@@ -101,8 +101,7 @@ pub(crate) fn on_window_event(window: &tauri::Window, event: &WindowEvent) {
     }
     if let WindowEvent::CloseRequested { api, .. } = event {
         api.prevent_close();
-        let _ = window.hide();
-        apply_dock_visibility(window.app_handle());
+        let _ = window.emit(MENU_ACTION_EVENT, "window-close");
     }
 }
 

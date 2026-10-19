@@ -409,6 +409,9 @@ fn open_dropped_path(store: &mut ProjectStore, path: &Path) -> Result<OpenDropRe
 /// assert!(!is_markdown_path(Path::new("cover.png")));
 /// ```
 pub fn is_markdown_path(path: &Path) -> bool {
+    if crate::encrypted::is_encrypted_markdown(path) {
+        return true;
+    }
     path.extension()
         .and_then(|extension| extension.to_str())
         .is_some_and(|extension| {

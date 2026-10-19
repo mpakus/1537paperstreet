@@ -18,7 +18,7 @@ use ps_core::themes::ThemeInfo;
 use ps_core::tree::TreeNode;
 use ps_core::ui_state::{OpenSession, RestoredSession};
 use ps_core::updates::{UpdateCheck, UpdateInstall};
-use tauri::{Emitter, State};
+use tauri::{Emitter, Manager, State};
 
 use crate::fs_watch::{self, WatchHub};
 use crate::state::AppState;
@@ -587,7 +587,19 @@ pub(crate) async fn updates_install() -> Result<UpdateInstall, String> {
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub(crate) fn updates_relaunch(app: tauri::AppHandle) {
+pub(crate) async fn updates_relaunch(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    let worker = state.clone();
+    tauri::async_runtime::spawn_blocking(move || worker.doc_lock_all())
+        .await
+        .map_err(|_| "Could not lock encrypted notes.".to_owned())?
+        .map_err(to_command_error)?;
+    state
+        .exit_confirmed
+        .store(true, std::sync::atomic::Ordering::SeqCst);
     app.restart();
 }
 
@@ -779,4 +791,175 @@ mod tests {
             "expected at least one #[tauri::command] attribute"
         );
     }
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn doc_unlock(
+    state: State<'_, AppState>,
+    project_id: String,
+    rel_path: PathBuf,
+    passphrase: String,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.doc_unlock(project_id, rel_path, passphrase))
+        .await
+        .map_err(|_| "The encrypted document operation could not finish.".to_owned())
+        .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn doc_lock(
+    state: State<'_, AppState>,
+    project_id: String,
+    rel_path: PathBuf,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.doc_lock(project_id, rel_path))
+        .await
+        .map_err(|_| "The encrypted document operation could not finish.".to_owned())
+        .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn doc_lock_all(state: State<'_, AppState>) -> Result<(), String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.doc_lock_all())
+        .await
+        .map_err(|_| "The encrypted document operation could not finish.".to_owned())
+        .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn doc_create_encrypted(
+    state: State<'_, AppState>,
+    project_id: String,
+    rel_path: PathBuf,
+    text: String,
+    passphrase: String,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        state.doc_create_encrypted(project_id, rel_path, text, passphrase)
+    })
+    .await
+    .map_err(|_| "The encrypted document operation could not finish.".to_owned())
+    .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn doc_change_password(
+    state: State<'_, AppState>,
+    project_id: String,
+    rel_path: PathBuf,
+    base_hash: String,
+    passphrase: String,
+) -> Result<WrittenDocument, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        state.doc_change_password(project_id, rel_path, base_hash, passphrase)
+    })
+    .await
+    .map_err(|_| "The encrypted document operation could not finish.".to_owned())
+    .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn doc_export_decrypted(
+    state: State<'_, AppState>,
+    project_id: String,
+    rel_path: PathBuf,
+    destination: PathBuf,
+    base_hash: String,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        state.doc_export_decrypted(project_id, rel_path, destination, base_hash)
+    })
+    .await
+    .map_err(|_| "The encrypted document operation could not finish.".to_owned())
+    .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn finish_window_close(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    quit: bool,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    let worker = state.clone();
+    tauri::async_runtime::spawn_blocking(move || worker.doc_lock_all())
+        .await
+        .map_err(|_| "Could not lock encrypted notes.".to_owned())?
+        .map_err(to_command_error)?;
+    if quit {
+        state
+            .exit_confirmed
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+        app.exit(0);
+    } else if let Some(window) = app.get_webview_window("main") {
+        window.hide().map_err(|error| error.to_string())?;
+        crate::tray::apply_dock_visibility(&app);
+    }
+    Ok(())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn doc_encrypt_existing(
+    state: State<'_, AppState>,
+    project_id: String,
+    rel_path: PathBuf,
+    destination: PathBuf,
+    text: String,
+    base_hash: String,
+    traits: RestoreTraits,
+    passphrase: String,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        state.doc_encrypt_existing(
+            project_id,
+            rel_path,
+            destination,
+            text,
+            base_hash,
+            traits,
+            passphrase,
+        )
+    })
+    .await
+    .map_err(|_| "The encrypted document operation could not finish.".to_owned())
+    .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn doc_delete_original(
+    state: State<'_, AppState>,
+    project_id: String,
+    rel_path: PathBuf,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.doc_delete_original(project_id, rel_path))
+        .await
+        .map_err(|_| "The original note could not be deleted.".to_owned())
+        .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn doc_snapshot_encrypted(
+    state: State<'_, AppState>,
+    project_id: String,
+    rel_path: PathBuf,
+    text: String,
+    traits: RestoreTraits,
+) -> Result<(), String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        state.doc_snapshot_encrypted(project_id, rel_path, text, traits)
+    })
+    .await
+    .map_err(|_| "The encrypted document operation could not finish.".to_owned())
+    .and_then(|result| result.map_err(to_command_error))
 }

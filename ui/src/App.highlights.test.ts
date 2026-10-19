@@ -113,6 +113,7 @@ it('keeps edits made during Save and supports undo while remaining in Preview', 
     watch_set_expanded: () => {},
     doc_open: () => ({
       meta: {
+        security: 'plain',
         projectId: 'p',
         relPath: 'note.md',
         title: 'Note',

@@ -5,6 +5,32 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Protect individual notes with standard age passphrase encryption (`.md.age`):
+  create, unlock, edit, save, lock, convert existing Markdown, change passwords,
+  and explicitly export a decrypted copy. Saved files use ciphertext-only atomic
+  replacement and conflict checks; unchanged saves preserve the original bytes.
+- Save / Discard / Cancel when closing a dirty encrypted note. Discard and dirty
+  reload retain encrypted recovery copies; password changes retain the previous
+  ciphertext under its old password. Protected text is excluded from content
+  search and Mermaid caches. Cross-platform release validation is still pending.
+
+### Security
+
+- Update the Markdown sanitizer to ammonia 4.1.8, fixing RUSTSEC-2021-0157,
+  RUSTSEC-2021-0158, and RUSTSEC-2026-0373. Regression tests cover escaped CSS
+  URLs, mixed-case CSS URL functions, SVG animation tags, and safe marker colors.
+
+### Fixed
+
+- Encrypting an existing note keeps its complete filename and appends `.age`,
+  opens the protected copy in Preview, then offers Keep original / Delete
+  original. Deletion preserves an encrypted recovery copy and refuses changed
+  files. Closing the last tab clears its tree selection so one click reopens it
+  instead of starting Rename. Empty notes show an empty-note message; conversion
+  never silently falls back to creating an empty note.
+
 ## [0.8.26] - 2026-10-08
 
 ### Added

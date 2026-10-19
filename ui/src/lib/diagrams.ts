@@ -62,6 +62,7 @@ export async function renderMermaidFigure(
   themeId: string,
   style: CSSStyleDeclaration,
   onerror?: (message: string) => void,
+  privateDocument = false,
 ): Promise<void> {
   if (
     figure.dataset.rendered === 'svg' ||
@@ -78,8 +79,8 @@ export async function renderMermaidFigure(
 
   figure.dataset.rendered = 'pending'
   const key = cacheKey(sourceHash, themeId)
-  let cached = memory.get(key)
-  if (!cached) {
+  let cached = privateDocument ? undefined : memory.get(key)
+  if (!cached && !privateDocument) {
     try {
       cached = (await mermaidCacheGet(sourceHash, themeId)) ?? undefined
     } catch (cause) {
@@ -107,12 +108,14 @@ export async function renderMermaidFigure(
   const id = `mermaid-${sourceHash.slice(0, 12)}-${renderSeq}`
   try {
     const { svg } = await mermaid.render(id, source)
-    memory.set(key, svg)
-    try {
-      await mermaidCachePut(sourceHash, themeId, svg)
-    } catch (cause) {
-      figure.dataset.cacheError =
-        cause instanceof Error ? cause.message : String(cause)
+    if (!privateDocument) {
+      memory.set(key, svg)
+      try {
+        await mermaidCachePut(sourceHash, themeId, svg)
+      } catch (cause) {
+        figure.dataset.cacheError =
+          cause instanceof Error ? cause.message : String(cause)
+      }
     }
     showSvg(figure, svg)
   } catch (cause) {
@@ -167,6 +170,7 @@ export function observeMermaid(
   enabled: boolean,
   onerror?: (message: string) => void,
   scope: ParentNode = root,
+  privateDocument = false,
 ): () => void {
   const figures = [...scope.querySelectorAll<HTMLElement>('figure.mermaid')]
   if (figures.length === 0) {
@@ -190,7 +194,13 @@ export function observeMermaid(
     if (cancelled) {
       return
     }
-    void renderMermaidFigure(figure, themeId, style, onerror).catch((cause) => {
+    void renderMermaidFigure(
+      figure,
+      themeId,
+      style,
+      onerror,
+      privateDocument,
+    ).catch((cause) => {
       onerror?.(showDiagramError(figure, diagramSource(figure), cause))
     })
   }

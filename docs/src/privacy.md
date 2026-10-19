@@ -23,3 +23,7 @@ and do not send anything off-device.
 file inside the current project; otherwise it is ignored.
 
 Logs record actions and errors, not Markdown contents.
+
+[Password-protected notes](encryption.md) keep `.md.age` content encrypted on
+disk. Filenames remain visible. Unlocked text exists in memory, and explicit
+exports, clipboard copies, backups, swap and OS crash dumps need separate care.

@@ -5,9 +5,11 @@
 pub mod agents;
 pub mod config;
 pub mod content_search;
+pub mod crypto;
 pub mod dashboard;
 pub mod docio;
 pub mod edit;
+pub mod encrypted;
 pub mod error;
 pub mod fsops;
 pub mod log;

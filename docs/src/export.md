@@ -10,3 +10,7 @@ context menu currently says packaging will arrive later.
 
 Save PNG in the diagram modal is not document export — it saves one picture
 where you choose.
+
+For a password-protected note, use **Encrypted → Export decrypted .md** and
+accept the plaintext warning first. Direct document PDF export is disabled
+while the source is protected. See [Password-protected notes](encryption.md).

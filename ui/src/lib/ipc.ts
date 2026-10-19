@@ -277,6 +277,78 @@ export function docSave(
   })
 }
 
+/** Unlocks a protected note. The password is retained only by the Rust session. */
+export function docUnlock(
+  projectId: string,
+  relPath: string,
+  passphrase: string,
+): Promise<void> {
+  return invokeIpc('doc_unlock', {
+    project_id: projectId,
+    rel_path: relPath,
+    passphrase,
+  })
+}
+export function docLock(projectId: string, relPath: string): Promise<void> {
+  return invokeIpc('doc_lock', { project_id: projectId, rel_path: relPath })
+}
+export function docLockAll(): Promise<void> {
+  return invokeIpc('doc_lock_all')
+}
+export function docCreateEncrypted(
+  projectId: string,
+  relPath: string,
+  text: string,
+  passphrase: string,
+): Promise<void> {
+  return invokeIpc('doc_create_encrypted', {
+    project_id: projectId,
+    rel_path: relPath,
+    text,
+    passphrase,
+  })
+}
+/** Deletes the original of a verified conversion after explicit confirmation. */
+export function docDeleteOriginal(
+  projectId: string,
+  relPath: string,
+): Promise<void> {
+  return invokeIpc('doc_delete_original', {
+    project_id: projectId,
+    rel_path: relPath,
+  })
+}
+
+export function docChangePassword(
+  projectId: string,
+  relPath: string,
+  baseHash: string,
+  passphrase: string,
+): Promise<WrittenDocument> {
+  return invokeIpc('doc_change_password', {
+    project_id: projectId,
+    rel_path: relPath,
+    base_hash: baseHash,
+    passphrase,
+  })
+}
+export function docExportDecrypted(
+  projectId: string,
+  relPath: string,
+  destination: string,
+  baseHash: string,
+): Promise<void> {
+  return invokeIpc('doc_export_decrypted', {
+    project_id: projectId,
+    rel_path: relPath,
+    destination,
+    base_hash: baseHash,
+  })
+}
+export function finishWindowClose(quit: boolean): Promise<void> {
+  return invokeIpc('finish_window_close', { quit })
+}
+
 /** Registers dropped folders or opens a dropped Markdown file. */
 export function openDroppedPaths(paths: string[]): Promise<OpenDropResult> {
   return invokeIpc('open_dropped_paths', { paths })
@@ -295,7 +367,7 @@ export async function pickAndOpen(
         ? [
             {
               name: 'Markdown',
-              extensions: ['md', 'markdown', 'mdown', 'mdwn'],
+              extensions: ['md', 'markdown', 'mdown', 'mdwn', 'age'],
             },
           ]
         : undefined,
@@ -621,4 +693,37 @@ export type {
   RestoredSession,
   UpdateCheck,
   UpdateInstall,
+}
+
+export function docEncryptExisting(
+  projectId: string,
+  relPath: string,
+  destination: string,
+  text: string,
+  baseHash: string,
+  traits: RestoreTraits,
+  passphrase: string,
+): Promise<void> {
+  return invokeIpc('doc_encrypt_existing', {
+    project_id: projectId,
+    rel_path: relPath,
+    destination,
+    text,
+    base_hash: baseHash,
+    traits,
+    passphrase,
+  })
+}
+export function docSnapshotEncrypted(
+  projectId: string,
+  relPath: string,
+  text: string,
+  traits: RestoreTraits,
+): Promise<void> {
+  return invokeIpc('doc_snapshot_encrypted', {
+    project_id: projectId,
+    rel_path: relPath,
+    text,
+    traits,
+  })
 }

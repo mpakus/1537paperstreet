@@ -12,6 +12,7 @@ use ps_core::docio::{
     self, DocOpenResult, DocPreview, DocumentMeta, DocumentSource, DocumentStat, LoadedDocument,
     RestoreTraits, TocEntry, WrittenDocument,
 };
+use ps_core::encrypted::{self, DocumentSecurity, EncryptedDocuments};
 use ps_core::fsops::{self, ConflictStrategy, CopyOutcome, MoveOutcome, UntitledKind};
 use ps_core::log::FileLog;
 use ps_core::mermaid_cache::MermaidSvgCache;
@@ -30,6 +31,8 @@ use ps_core::{Error, Result};
 pub(crate) struct AppState {
     #[allow(dead_code)]
     paths: AppPaths,
+    encrypted: Arc<EncryptedDocuments>,
+    pub(crate) exit_confirmed: Arc<std::sync::atomic::AtomicBool>,
     config: Arc<Mutex<JsonStore<Config>>>,
     projects: Arc<Mutex<ProjectStore>>,
     search: Arc<Mutex<ProjectSearch>>,
@@ -63,6 +66,8 @@ impl AppState {
 
         Ok(Self {
             paths,
+            encrypted: Arc::new(EncryptedDocuments::default()),
+            exit_confirmed: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             config: Arc::new(Mutex::new(config)),
             projects: Arc::new(Mutex::new(projects)),
             search: Arc::new(Mutex::new(search)),
@@ -164,6 +169,7 @@ impl AppState {
     }
 
     pub(crate) fn projects_relocate(&self, id: String, path: PathBuf) -> Result<Project> {
+        self.encrypted.ensure_all_locked()?;
         let mut projects = self
             .projects
             .lock()
@@ -229,6 +235,8 @@ impl AppState {
     }
 
     pub(crate) fn projects_remove(&self, id: String) -> Result<()> {
+        self.encrypted
+            .ensure_locked(&self.project_root(&id)?, Path::new(""))?;
         let mut projects = self
             .projects
             .lock()
@@ -391,6 +399,8 @@ impl AppState {
         to: PathBuf,
     ) -> Result<TreeNode> {
         let root = self.project_root(&project_id)?;
+        self.encrypted.ensure_locked(&root, &from)?;
+        self.encrypted.ensure_locked(&root, &to)?;
         let absolute = fsops::rename(&root, &from, &to)?;
         tree::node_at(&root, &absolute)
     }
@@ -410,6 +420,9 @@ impl AppState {
                 reason: "the copy source does not have a file name",
             })?;
             let destination = to_dir.join(file_name);
+            if conflict == ConflictStrategy::Replace {
+                self.encrypted.ensure_locked(&root, &destination)?;
+            }
             let outcome = fsops::copy(
                 &root,
                 &rel_path,
@@ -462,6 +475,14 @@ impl AppState {
     {
         let from_root = self.project_root(&from_project_id)?;
         let to_root = self.project_root(&to_project_id)?;
+        if !copy {
+            for rel in &from {
+                self.encrypted.ensure_locked(&from_root, rel)?;
+            }
+        }
+        if conflict == ConflictStrategy::Replace {
+            self.encrypted.ensure_locked(&to_root, &to_dir)?;
+        }
         let from_canonical = from_root.canonicalize().map_err(|source| Error::Io {
             action: "open the source project",
             path: from_root.clone(),
@@ -520,6 +541,9 @@ impl AppState {
         conflict: ConflictStrategy,
     ) -> Result<Vec<TreeNode>> {
         let root = self.project_root(&project_id)?;
+        if conflict == ConflictStrategy::Replace {
+            self.encrypted.ensure_locked(&root, &to_dir)?;
+        }
         fsops::import_into(
             &root,
             &to_dir,
@@ -546,6 +570,12 @@ impl AppState {
         conflict: ConflictStrategy,
     ) -> Result<Vec<TreeNode>> {
         let root = self.project_root(&project_id)?;
+        for rel in &from {
+            self.encrypted.ensure_locked(&root, rel)?;
+        }
+        if conflict == ConflictStrategy::Replace {
+            self.encrypted.ensure_locked(&root, &to_dir)?;
+        }
         fsops::move_items(
             &root,
             &from,
@@ -575,6 +605,9 @@ impl AppState {
         D: FnOnce(&Path, &[PathBuf]) -> Result<()>,
     {
         let root = self.project_root(&project_id)?;
+        for rel in &rel_paths {
+            self.encrypted.ensure_locked(&root, rel)?;
+        }
         delete(&root, &rel_paths)
     }
 
@@ -652,6 +685,119 @@ impl AppState {
         crate::open_path::open_url(url)
     }
 
+    pub(crate) fn doc_unlock(
+        &self,
+        project_id: String,
+        rel_path: PathBuf,
+        passphrase: String,
+    ) -> Result<()> {
+        self.encrypted.unlock(
+            &self.project_root(&project_id)?,
+            &rel_path,
+            passphrase.into(),
+        )
+    }
+
+    pub(crate) fn doc_lock(&self, project_id: String, rel_path: PathBuf) -> Result<()> {
+        self.encrypted
+            .lock(&self.project_root(&project_id)?, &rel_path)
+    }
+
+    pub(crate) fn doc_lock_all(&self) -> Result<()> {
+        self.encrypted.lock_all()
+    }
+
+    pub(crate) fn doc_create_encrypted(
+        &self,
+        project_id: String,
+        rel_path: PathBuf,
+        text: String,
+        passphrase: String,
+    ) -> Result<()> {
+        self.encrypted.create(
+            &self.project_root(&project_id)?,
+            &rel_path,
+            &text,
+            passphrase.into(),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn doc_encrypt_existing(
+        &self,
+        project_id: String,
+        rel_path: PathBuf,
+        destination: PathBuf,
+        text: String,
+        base_hash: String,
+        traits: RestoreTraits,
+        passphrase: String,
+    ) -> Result<()> {
+        self.encrypted.encrypt_existing(
+            &self.project_root(&project_id)?,
+            &rel_path,
+            &destination,
+            &text,
+            &base_hash,
+            traits,
+            passphrase.into(),
+        )
+    }
+
+    pub(crate) fn doc_delete_original(&self, project_id: String, rel_path: PathBuf) -> Result<()> {
+        self.encrypted
+            .delete_original(&self.project_root(&project_id)?, &rel_path)
+    }
+
+    pub(crate) fn doc_snapshot_encrypted(
+        &self,
+        project_id: String,
+        rel_path: PathBuf,
+        text: String,
+        traits: RestoreTraits,
+    ) -> Result<()> {
+        self.encrypted.snapshot_before_discard(
+            &self.project_root(&project_id)?,
+            &rel_path,
+            &text,
+            traits,
+        )
+    }
+
+    pub(crate) fn doc_change_password(
+        &self,
+        project_id: String,
+        rel_path: PathBuf,
+        base_hash: String,
+        passphrase: String,
+    ) -> Result<WrittenDocument> {
+        let root = self.project_root(&project_id)?;
+        let loaded = self.encrypted.read(&root, &rel_path)?;
+        self.encrypted.save(
+            &root,
+            &rel_path,
+            &loaded.source.text,
+            &base_hash,
+            RestoreTraits::from_source(&loaded.source),
+            Some(passphrase.into()),
+        )
+    }
+
+    pub(crate) fn doc_export_decrypted(
+        &self,
+        project_id: String,
+        rel_path: PathBuf,
+        destination: PathBuf,
+        base_hash: String,
+    ) -> Result<()> {
+        self.encrypted.export(
+            &self.project_root(&project_id)?,
+            &rel_path,
+            &destination,
+            &base_hash,
+        )
+    }
+
     pub(crate) fn doc_source(
         &self,
         project_id: String,
@@ -662,7 +808,11 @@ impl AppState {
 
     pub(crate) fn doc_stat(&self, project_id: String, rel_path: PathBuf) -> Result<DocumentStat> {
         let root = self.project_root(&project_id)?;
-        docio::stat_doc(&root, &rel_path)
+        if encrypted::is_age_path(&rel_path) {
+            self.encrypted.stat(&root, &rel_path)
+        } else {
+            docio::stat_doc(&root, &rel_path)
+        }
     }
 
     pub(crate) fn doc_save(
@@ -674,7 +824,12 @@ impl AppState {
         traits: RestoreTraits,
     ) -> Result<WrittenDocument> {
         let root = self.project_root(&project_id)?;
-        docio::write_doc(&root, &rel_path, &text, &base_hash, traits)
+        if encrypted::is_age_path(&rel_path) {
+            self.encrypted
+                .save(&root, &rel_path, &text, &base_hash, traits, None)
+        } else {
+            docio::write_doc(&root, &rel_path, &text, &base_hash, traits)
+        }
     }
 
     pub(crate) fn doc_open(
@@ -683,7 +838,36 @@ impl AppState {
         rel_path: PathBuf,
     ) -> Result<PreparedDocument> {
         let root = self.project_root(&project_id)?;
-        let loaded = docio::read_doc(&root, &rel_path)?;
+        let security = if encrypted::is_age_path(&rel_path) {
+            self.encrypted.status(&root, &rel_path)?
+        } else {
+            DocumentSecurity::Plain
+        };
+        if security == DocumentSecurity::Locked {
+            let stat = self.encrypted.stat(&root, &rel_path)?;
+            return Ok(PreparedDocument {
+                result: DocOpenResult {
+                    meta: DocumentMeta {
+                        security,
+                        project_id,
+                        title: document_title(&rel_path, &[]),
+                        rel_path,
+                        hash: stat.hash,
+                        size: stat.size,
+                        writable: false,
+                        readonly_reason: Some(
+                            "Unlock this encrypted note to read or edit it.".into(),
+                        ),
+                        source_only: true,
+                        chunk_count: 0,
+                        toc: Vec::new(),
+                    },
+                    first_chunk: None,
+                },
+                remaining_chunks: Vec::new(),
+            });
+        }
+        let loaded = self.load_document(&project_id, &rel_path)?;
         let allow_raw_html = self.config_get().viewer.allow_raw_html;
 
         let (toc, mut chunks) = if projects::is_image_path(&rel_path) {
@@ -726,17 +910,30 @@ impl AppState {
             (toc, chunks)
         };
 
+        // Protected HTML is returned directly, never broadcast to other windows.
+        if security == DocumentSecurity::Unlocked && !chunks.is_empty() {
+            chunks = vec![chunks.concat()];
+        }
         let chunk_count = u32::try_from(chunks.len()).unwrap_or(u32::MAX);
         let first_chunk = if chunks.is_empty() {
             None
         } else {
             Some(chunks.remove(0))
         };
-        let title = document_title(&rel_path, &toc);
+        // Keep headings out of OS titles and saved UI state for protected notes.
+        let title = document_title(
+            &rel_path,
+            if security == DocumentSecurity::Plain {
+                &toc
+            } else {
+                &[]
+            },
+        );
 
         Ok(PreparedDocument {
             result: DocOpenResult {
                 meta: DocumentMeta {
+                    security,
                     project_id,
                     rel_path,
                     title,
@@ -788,7 +985,11 @@ impl AppState {
 
     fn load_document(&self, project_id: &str, rel_path: &Path) -> Result<LoadedDocument> {
         let root = self.project_root(project_id)?;
-        docio::read_doc(&root, rel_path)
+        if encrypted::is_age_path(rel_path) {
+            self.encrypted.read(&root, rel_path)
+        } else {
+            docio::read_doc(&root, rel_path)
+        }
     }
 
     pub(crate) fn project_root(&self, id: &str) -> Result<PathBuf> {
@@ -1722,6 +1923,118 @@ mod tests {
         assert_eq!(
             fs::read(beta_root.join("note 2.md")).expect("moved"),
             b"from alpha"
+        );
+    }
+
+    #[test]
+    fn conversion_opens_markdown_content_and_deletes_only_its_verified_original() {
+        let (temporary, state) = open_state();
+        let root = temporary.path().join("notes");
+        fs::create_dir(&root).unwrap();
+        let project = state.projects_add("Notes".into(), root.clone()).unwrap();
+        let source = PathBuf::from("Original.MARKDOWN");
+        let destination = PathBuf::from("Original.MARKDOWN.age");
+        fs::write(root.join(&source), "# Converted heading\n\nConverted body").unwrap();
+        let loaded = ps_core::docio::read_doc(&root, &source).unwrap();
+        state
+            .doc_encrypt_existing(
+                project.id.clone(),
+                source.clone(),
+                destination.clone(),
+                loaded.source.text.clone(),
+                loaded.hash,
+                RestoreTraits::from_source(&loaded.source),
+                "test-only passphrase".into(),
+            )
+            .unwrap();
+        let opened = state
+            .doc_open(project.id.clone(), destination.clone())
+            .unwrap();
+        assert!(
+            opened
+                .result
+                .first_chunk
+                .unwrap()
+                .contains("<p>Converted body</p>")
+        );
+        assert!(opened.remaining_chunks.is_empty());
+        assert!(root.join(&source).exists());
+        state
+            .doc_delete_original(project.id.clone(), destination.clone())
+            .unwrap();
+        assert!(!root.join(&source).exists());
+        state.doc_lock_all().unwrap();
+        state
+            .doc_unlock(
+                project.id.clone(),
+                destination.clone(),
+                "test-only passphrase".into(),
+            )
+            .unwrap();
+        let reopened = state.doc_open(project.id, destination).unwrap();
+        assert!(
+            reopened
+                .result
+                .first_chunk
+                .unwrap()
+                .contains("<p>Converted body</p>")
+        );
+    }
+
+    #[test]
+    fn encrypted_notes_require_unlock_and_never_stream_or_index_plaintext() {
+        let (temporary, state) = open_state();
+        let root = temporary.path().join("notes");
+        fs::create_dir(&root).unwrap();
+        let project = state.projects_add("Notes".into(), root.clone()).unwrap();
+        let rel = PathBuf::from("secret.md.age");
+        state
+            .doc_create_encrypted(
+                project.id.clone(),
+                rel.clone(),
+                "# Confidential title\n\nSecret body".into(),
+                "test-only passphrase".into(),
+            )
+            .unwrap();
+        let opened = state.doc_open(project.id.clone(), rel.clone()).unwrap();
+        assert_eq!(
+            opened.result.meta.security,
+            ps_core::encrypted::DocumentSecurity::Unlocked
+        );
+        assert!(!opened.result.meta.title.contains("Confidential"));
+        assert!(opened.result.first_chunk.unwrap().contains("Secret body"));
+        assert!(opened.remaining_chunks.is_empty());
+        let found = ps_core::content_search::search_documents(
+            &root,
+            Path::new(""),
+            "Secret body",
+            true,
+            100,
+        )
+        .unwrap();
+        assert!(found.hits.is_empty());
+        state.doc_lock_all().unwrap();
+        let locked = state.doc_open(project.id.clone(), rel.clone()).unwrap();
+        assert_eq!(
+            locked.result.meta.security,
+            ps_core::encrypted::DocumentSecurity::Locked
+        );
+        assert!(locked.result.first_chunk.is_none());
+        assert!(locked.result.meta.toc.is_empty());
+        assert!(state.doc_source(project.id.clone(), rel.clone()).is_err());
+        state
+            .doc_unlock(
+                project.id.clone(),
+                rel.clone(),
+                "test-only passphrase".into(),
+            )
+            .unwrap();
+        assert!(
+            state
+                .doc_source(project.id, rel)
+                .unwrap()
+                .text
+                .contains("Secret body")
         );
     }
 

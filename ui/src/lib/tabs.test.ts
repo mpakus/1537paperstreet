@@ -144,6 +144,7 @@ describe('tabs', () => {
       readonlyReason: null,
     }
     const meta: DocumentMeta = {
+      security: 'plain',
       projectId: 'p',
       relPath: 'draft.md',
       title: 'Draft',

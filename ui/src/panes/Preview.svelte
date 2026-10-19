@@ -19,6 +19,7 @@
 
   let {
     html,
+    privateDocument = false,
     sourcePosition = null,
     emptyMessage,
     toc = [],
@@ -49,6 +50,7 @@
     ondiagramchrome,
   }: {
     html: string
+    privateDocument?: boolean
     sourcePosition?: { line: number; lines: number } | null
     emptyMessage: string
     toc?: TocEntry[]
@@ -276,7 +278,14 @@
       const unwrap = enhanceCodeBlocks(node, (message) => {
         onerror?.(message)
       })
-      const stopMermaid = observeMermaid(root, theme, mermaid, onerror, node)
+      const stopMermaid = observeMermaid(
+        root,
+        theme,
+        mermaid,
+        onerror,
+        node,
+        privateDocument,
+      )
       const stopMath = observeMath(root, math, node)
       enhancements.set(node, {
         stopObservers() {

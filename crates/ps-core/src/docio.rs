@@ -107,6 +107,8 @@ pub struct DocumentSource {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentMeta {
+    /// Encryption lifecycle state; locked notes never include source or rendered HTML.
+    pub security: crate::encrypted::DocumentSecurity,
     /// Registered project that owns the file.
     pub project_id: String,
     /// NFC-normalized path relative to the project root.
@@ -217,6 +219,9 @@ pub fn read_doc(project_root: &Path, rel_path: &Path) -> Result<LoadedDocument> 
     }
 
     let bytes = fs::read(&path).map_err(|source| Error::io("read the document", &path, source))?;
+    if crate::encrypted::is_age_path(rel_path) || bytes.starts_with(b"age-encryption.org/") {
+        return Err(Error::DocumentLocked);
+    }
     let size = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
     let hash = blake3::hash(&bytes).to_hex().to_string();
     if is_image_path(rel_path) {
@@ -235,10 +240,23 @@ pub fn read_doc(project_root: &Path, rel_path: &Path) -> Result<LoadedDocument> 
             source_only: false,
         });
     }
-    let writable_on_disk = is_writable(&path);
+    Ok(decode_document_bytes(
+        &bytes,
+        is_writable(&path),
+        hash,
+        size,
+    ))
+}
+
+pub(crate) fn decode_document_bytes(
+    bytes: &[u8],
+    writable_on_disk: bool,
+    hash: String,
+    size: u64,
+) -> LoadedDocument {
     let bom = bytes.starts_with(UTF8_BOM);
-    let payload = if bom { &bytes[3..] } else { bytes.as_slice() };
-    let too_large = size > SOURCE_ONLY_BYTES;
+    let payload = if bom { &bytes[3..] } else { bytes };
+    let too_large = bytes.len() as u64 > SOURCE_ONLY_BYTES;
     let eol = detect_eol(payload);
     let trailing_newline = payload.ends_with(b"\n");
     let (encoding, text, reason) = match std::str::from_utf8(payload) {
@@ -265,7 +283,7 @@ pub fn read_doc(project_root: &Path, rel_path: &Path) -> Result<LoadedDocument> 
         ),
     };
 
-    Ok(LoadedDocument {
+    LoadedDocument {
         source: DocumentSource {
             eol,
             bom,
@@ -278,7 +296,7 @@ pub fn read_doc(project_root: &Path, rel_path: &Path) -> Result<LoadedDocument> 
         hash,
         size,
         source_only: encoding == DocumentEncoding::Binary || too_large,
-    })
+    }
 }
 
 /// On-disk identity of a document, without decoding its text.
@@ -354,6 +372,9 @@ pub fn write_doc(
     base_hash: &str,
     traits: RestoreTraits,
 ) -> Result<WrittenDocument> {
+    if crate::encrypted::is_age_path(rel_path) {
+        return Err(Error::DocumentLocked);
+    }
     if is_image_path(rel_path) {
         return Err(Error::ImageNotEditable);
     }
@@ -368,6 +389,9 @@ pub fn write_doc(
     }
 
     let disk = fs::read(&path).map_err(|source| Error::io("read the document", &path, source))?;
+    if disk.starts_with(b"age-encryption.org/") {
+        return Err(Error::DocumentLocked);
+    }
     let encoded = encode_document(text, traits);
     let size = u64::try_from(encoded.len()).unwrap_or(u64::MAX);
     let hash = blake3::hash(&encoded).to_hex().to_string();
@@ -404,7 +428,7 @@ fn decode_text(text: &str, eol: LineEnding) -> String {
     }
 }
 
-fn encode_document(text: &str, traits: RestoreTraits) -> Vec<u8> {
+pub(crate) fn encode_document(text: &str, traits: RestoreTraits) -> Vec<u8> {
     let mut normalized = String::from(text);
     if traits.trailing_newline && !normalized.ends_with('\n') {
         normalized.push('\n');

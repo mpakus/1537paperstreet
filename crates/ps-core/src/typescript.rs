@@ -34,6 +34,7 @@ fn ts_config() -> TsConfig {
 pub fn ipc_typescript() -> String {
     let ts = ts_config();
     let declarations = [
+        crate::encrypted::DocumentSecurity::decl(&ts),
         ViewMode::decl(&ts),
         Appearance::decl(&ts),
         Typography::decl(&ts),

@@ -7,7 +7,10 @@ export function fileBasename(relPath: string): string {
 
 /** Filename used to look up a CodeMirror grammar. */
 export function editorFileName(relPath: string): string {
-  const base = fileBasename(relPath)
+  const base = fileBasename(relPath).replace(
+    /\.(md|markdown|mdown|mdwn)\.age$/i,
+    '.$1',
+  )
   if (/\.rsx$/i.test(base)) {
     return base.replace(/rsx$/i, 'jsx')
   }

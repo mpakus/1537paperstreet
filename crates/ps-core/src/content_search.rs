@@ -232,6 +232,9 @@ fn looks_like_regex(query: &str) -> bool {
 }
 
 fn read_searchable_text(project_root: &Path, rel_path: &Path) -> Result<Option<String>> {
+    if crate::encrypted::is_age_path(rel_path) {
+        return Ok(None);
+    }
     let root = project_root
         .canonicalize()
         .map_err(|source| Error::io("open the project directory", project_root, source))?;
@@ -253,7 +256,7 @@ fn read_searchable_text(project_root: &Path, rel_path: &Path) -> Result<Option<S
     };
     let bytes =
         fs::read(&absolute).map_err(|source| Error::io("search a file", &absolute, source))?;
-    if bytes.contains(&0) {
+    if bytes.contains(&0) || bytes.starts_with(b"age-encryption.org/") {
         return Ok(None);
     }
     Ok(String::from_utf8(bytes).ok())

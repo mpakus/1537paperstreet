@@ -189,3 +189,4 @@ jobs:
           key: cargo-check-windows-${{ hashFiles('Cargo.lock') }}
       - run: npm ci
       - run: cargo check --workspace
+      - run: cargo test -p ps-core --test crypto --test encrypted

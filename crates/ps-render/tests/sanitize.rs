@@ -66,6 +66,38 @@ fn rejects_the_xss_corpus_by_default() {
 }
 
 #[test]
+fn rejects_css_advisory_payloads_and_preserves_safe_marker_colors() {
+    for style in [
+        r#"background:url("cid:\");position:fixed;background:url(\"cid:")"#,
+        r#"background-image:URL("https://example.invalid/tracking-pixel")"#,
+        r#"background-image:UrL("javascript:alert(1)")"#,
+    ] {
+        let html = render(&format!("<mark style='{style}'>visible text</mark>"));
+        assert!(html.contains("<mark>visible text</mark>"), "{html}");
+        assert!(!html.contains("style="), "{html}");
+    }
+
+    let html = render("=={#123456}safe highlight==");
+    assert!(html.contains("background-color:#123456"), "{html}");
+    assert!(html.contains("safe highlight</mark>"), "{html}");
+}
+
+#[test]
+fn rejects_all_svg_animation_advisory_payloads() {
+    for tag in ["animateMotion", "animateTransform", "animateColor"] {
+        let html = render(&format!(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\"><a><{tag} attributeName=\"href\" \
+             to=\"javascript:alert(1)\" from=\"javascript:alert(2)\" \
+             values=\"javascript:alert(3)\"></{tag}><text>Click</text></a></svg>"
+        ));
+        let normalized = html.to_ascii_lowercase();
+        assert!(!normalized.contains("<svg"), "{html}");
+        assert!(!normalized.contains("<animate"), "{html}");
+        assert!(!normalized.contains("javascript:"), "{html}");
+    }
+}
+
+#[test]
 fn raw_html_can_be_enabled_explicitly() {
     let html = render_with_options(
         "<mark data-reader=\"yes\">raw</mark>",

@@ -61,6 +61,12 @@ and wikis that already live next to your code.
 
 ## What you can do
 
+The unreleased development version also supports individual password-protected
+`.md.age` notes through **Protect**. It uses standard age files, keeps conversion
+originals, and offers explicit decrypted export. Read the [encryption guide](docs/src/encryption.md)
+and [validation status](docs/AGE_MARKDOWN_ENCRYPTION_VALIDATION.md) before relying
+on it for important documents.
+
 ### Turn folders into workspaces
 
 Keep several folders in the **Projects** list. Search filters by name and path.

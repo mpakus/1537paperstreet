@@ -67,6 +67,7 @@
 - Кэш Mermaid: ключ = blake3(`source_hash + "\0" + theme_id`); хеш — 64 hex-символа; `theme_id` — slug (ASCII-буквы, цифры, дефис). Не-SVG и файлы > 2 MB отклоняются.
 - Codex: spawn `codex app-server --stdio` (пресет Codex или `command` basename `codex` с args `["acp"]`). Это не `codex acp` (TUI). Диалект `AgentWire::CodexApp`. `login_path()` дополняет PATH (`~/.local/bin`, Homebrew и т.п.).
 - История промптов Assistant (`PromptHistory` / `agents/prompts.json`) — не P10 (история документов). IPC: `agent_prompt_history`, `agent_prompt_history_remove`, `agent_prompt_history_clear`. Удаление — явное действие пользователя, снимок `pre_*` не требуется.
+- T-218: `.md.age` обрабатывается только `crypto` / `encrypted`, никогда обычным plaintext writer. `SecretString` и `Zeroizing` живут только в Rust-сеансе; plaintext не попадает в content search, Mermaid cache, session restore или глобальные chunk events. Discard/dirty Reload создают `pre_discard`, смена пароля — `pre_password_change`, Delete original после конвертации — `pre_encrypt_delete` с проверкой хешей обоих файлов, только ciphertext. Это не P10. Lock/Close/project switch/window hide/quit очищают сеансы после Save/Discard/Cancel. ADR-013, `docs/AGE_MARKDOWN_ENCRYPTION_VALIDATION.md`; открытые платформенные и security-гейты не считать пройденными.
 
 ---
 
