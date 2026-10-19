@@ -190,3 +190,4 @@ jobs:
       - run: npm ci
       - run: cargo check --workspace
       - run: cargo test -p ps-core --test crypto --test encrypted
+      - run: cargo test -p ps-core --lib encrypted::tests

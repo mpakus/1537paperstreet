@@ -136,6 +136,54 @@ fn rejects_invalid_paths_and_encrypted_garbage() {
 }
 
 #[test]
+fn save_can_retry_after_another_handle_releases_its_exclusive_lock() {
+    let root = tempfile::tempdir().unwrap();
+    let rel = Path::new("locked.md.age");
+    let documents = EncryptedDocuments::default();
+    documents
+        .create(root.path(), rel, "Saved text", password())
+        .unwrap();
+    let loaded = documents.read(root.path(), rel).unwrap();
+    let traits = RestoreTraits::from_source(&loaded.source);
+    let ciphertext = fs::read(root.path().join(rel)).unwrap();
+    let other_writer = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(root.path().join(rel))
+        .unwrap();
+    other_writer.try_lock().unwrap();
+    assert!(
+        documents
+            .save(root.path(), rel, "Edited text", &loaded.hash, traits, None)
+            .is_err()
+    );
+    drop(other_writer);
+    assert_eq!(fs::read(root.path().join(rel)).unwrap(), ciphertext);
+
+    let unchanged = documents
+        .save(
+            root.path(),
+            rel,
+            &loaded.source.text,
+            &loaded.hash,
+            traits,
+            None,
+        )
+        .unwrap();
+    assert!(unchanged.skipped);
+    assert_eq!(fs::read(root.path().join(rel)).unwrap(), ciphertext);
+    documents
+        .save(root.path(), rel, "Edited text", &loaded.hash, traits, None)
+        .unwrap();
+    documents.lock_all().unwrap();
+    documents.unlock(root.path(), rel, password()).unwrap();
+    assert_eq!(
+        documents.read(root.path(), rel).unwrap().source.text,
+        "Edited text"
+    );
+}
+
+#[test]
 fn conversion_and_discard_recovery_keep_exact_text_without_overwriting_original() {
     let root = tempfile::tempdir().unwrap();
     let source = Path::new("source.md");
