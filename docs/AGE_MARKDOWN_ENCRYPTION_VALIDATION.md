@@ -146,8 +146,18 @@ repeated reads, atomic replacement while locked, changed paths with identical
 bytes, and recovery/write failures. Native desktop acceptance remains a separate
 release gate.
 
-Local validation: 363 Rust tests in 45 suites and 197 UI tests passed, along with
+Local validation: 364 Rust tests in 45 suites and 197 UI tests passed, along with
 Rust/UI formatting, Clippy, UI type checks, lint and Cargo deny.
+
+The first follow-up Windows run confirmed original deletion and no-op Save, then
+exposed access denied at edited Save's replacement: `tempfile::persist` calls
+`MoveFileExW`, which cannot replace the open destination. Replacement now uses
+Rust's `std::fs::rename` fallback to `FileRenameInfoEx`/POSIX semantics, keeping
+the destination lock held. The staged file's temporary attribute is cleared,
+its synced handle is closed, and a cleanup guard removes it if rename fails.
+A failure test verifies that a rejected rename preserves the saved bytes and
+removes the staged file. An inverted identity comparison makes the identical-byte
+replacement regression fail, confirming it detects a lost conflict guard.
 
 ## Independent format compatibility
 

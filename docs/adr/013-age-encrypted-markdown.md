@@ -46,6 +46,12 @@ Before each read, compare it with a fresh handle for the resolved path; an
 atomic replacement of that path is a conflict even if its bytes are unchanged.
 Keep the original lock alive through replacement or deletion. These rules also
 apply to the plaintext source while creating `pre_encrypt_delete` recovery.
+For replacement, clear the staged file's temporary attribute with `keep`, retain
+a cleanup guard, close the synced staged handle, then call `std::fs::rename`.
+Rust's Windows implementation can replace an open destination with
+`FileRenameInfoEx`/POSIX semantics; `tempfile::persist` uses only `MoveFileExW`
+and returns access denied while the destination remains open. A failed rename
+removes only the staged file. New destinations still use no-clobber persistence.
 An unrelated writer that ignores locks can still race the final
 check/rename, as with ordinary document saves. This is not a filesystem-wide
 compare-and-swap or protection against a hostile local process changing parent

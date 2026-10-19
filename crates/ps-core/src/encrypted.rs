@@ -663,9 +663,7 @@ fn persist_with<T>(
     }
     if let Some((expected, locked)) = expected {
         check_hash(rel, &read_locked_file(&path, locked)?, expected)?;
-        temporary
-            .persist(&path)
-            .map_err(|error| Error::io("replace the encrypted note", &path, error.error))?;
+        replace_existing(temporary, &path)?;
     } else {
         temporary.persist_noclobber(&path).map_err(|error| {
             Error::io(
@@ -684,6 +682,26 @@ fn persist_with<T>(
     Ok(result)
 }
 
+fn replace_existing(temporary: tempfile::NamedTempFile, path: &Path) -> Result<()> {
+    // tempfile::persist uses MoveFileExW, which cannot replace an open Windows
+    // destination. Rust's rename also supports FileRenameInfoEx/POSIX semantics,
+    // allowing us to retain the destination lock through atomic replacement.
+    let cleanup = tempfile::TempPath::try_from_path(temporary.path().to_path_buf())
+        .map_err(|source| Error::io("prepare the encrypted note for replacement", path, source))?;
+    // keep clears Windows' temporary attribute; cleanup still removes the staged
+    // file on any failure. The file has already been authenticated and synced.
+    let (staged_file, _) = temporary.keep().map_err(|error| {
+        Error::io(
+            "prepare the encrypted note for replacement",
+            path,
+            error.error,
+        )
+    })?;
+    drop(staged_file);
+    fs::rename(&cleanup, path)
+        .map_err(|source| Error::io("replace the encrypted note", path, source))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -691,7 +709,7 @@ mod tests {
     fn replace_file(path: &Path, bytes: &[u8]) {
         let mut replacement = tempfile::NamedTempFile::new_in(path.parent().unwrap()).unwrap();
         replacement.write_all(bytes).unwrap();
-        replacement.persist(path).unwrap();
+        fs::rename(replacement.path(), path).unwrap();
     }
 
     #[test]
@@ -743,6 +761,23 @@ mod tests {
             read_locked_file(&path, &locked),
             Err(Error::DocumentConflict { .. })
         ));
+    }
+
+    #[test]
+    fn failed_atomic_replacement_preserves_destination_and_cleans_staged_file() {
+        let root = tempfile::tempdir().unwrap();
+        let destination = root.path().join("occupied.md.age");
+        fs::create_dir(&destination).unwrap();
+        let saved = destination.join("saved.md.age");
+        fs::write(&saved, b"saved ciphertext").unwrap();
+        let mut staged = tempfile::NamedTempFile::new_in(root.path()).unwrap();
+        staged.write_all(b"new ciphertext").unwrap();
+        staged.as_file().sync_all().unwrap();
+        let staged_path = staged.path().to_path_buf();
+        assert!(replace_existing(staged, &destination).is_err());
+        assert!(!staged_path.exists());
+        assert_eq!(fs::read(saved).unwrap(), b"saved ciphertext");
+        assert_eq!(fs::read_dir(root.path()).unwrap().count(), 1);
     }
 
     #[test]
