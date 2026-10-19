@@ -5,6 +5,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-19
+
 ### Added
 
 - Protect individual notes with standard age passphrase encryption (`.md.age`):
@@ -631,7 +633,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.8.26...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/mpakus/1537paperstreet/compare/v0.8.26...v0.9.0
 [0.8.26]: https://github.com/mpakus/1537paperstreet/compare/v0.8.25...v0.8.26
 [0.8.25]: https://github.com/mpakus/1537paperstreet/compare/v0.8.24...v0.8.25
 [0.8.24]: https://github.com/mpakus/1537paperstreet/compare/v0.8.23...v0.8.24

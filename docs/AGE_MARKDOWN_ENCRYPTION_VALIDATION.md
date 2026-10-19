@@ -5,6 +5,21 @@ Date: 2026-10-18. Task: T-218, branch `task/T-218-age-markdown`, based on
 an independent cryptographic audit. T-218 remains `[~]` until release gates and
 its closing PR are complete.
 
+## Version 0.9.0 merge verification — 2026-10-19
+
+Rust, npm, Tauri and lockfile versions were synchronized to 0.9.0, with a dated
+changelog entry and matching comparison links. Locked, offline Cargo metadata
+and changelog extraction passed.
+
+The final version passed all 360 Rust tests (45 suites), 197 UI tests (55 files),
+Rust/UI formatting, Clippy, documentation with warnings denied, UI type checks,
+lint, the frontend build and the optimized workspace build. Cargo audit, Cargo
+deny and npm audit passed; the existing Rust dependency warnings remain open.
+A temporary inversion of the encrypted Mermaid-cache guard failed its regression
+test; restoring the original source made it pass. Native macOS, interoperability,
+coverage and performance evidence below comes from the earlier implementation
+checks. The open release gates at the end of this report still apply.
+
 ## Implemented
 
 - Standard binary age v1/scrypt, pinned age 0.12.1; complete authentication and
