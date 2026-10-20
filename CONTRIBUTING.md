@@ -20,6 +20,15 @@ Commit `ui/src/lib/generated/core.ts`. UI tests mock IPC through
 `ui/src/lib/ipc.mock.ts`. Filesystem tests use `tempfile` only — never the
 real `$HOME`.
 
+Dependency checks use `cargo deny --locked check --deny warnings` in CI.
+Yanked releases and unreviewed duplicate versions fail the check. Prefer a
+compatible dependency update; `deny.toml` lists exact-version exceptions only
+where upstream crates require incompatible release lines. Each exception names
+the dependency that still needs it. Remove it when upstream versions converge,
+and review the graph again when an excepted version changes. These exceptions
+apply only to duplicate detection; advisory, license, and source checks still run.
+See the [cargo-deny documentation](https://embarkstudios.github.io/cargo-deny/checks/bans/cfg.html#skip).
+
 History (P10) and ZIP export (P12) are out of scope unless someone explicitly
 asks. Do not add them “while you’re here.”
 

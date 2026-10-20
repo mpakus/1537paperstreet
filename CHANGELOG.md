@@ -7,12 +7,16 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Reject yanked Rust dependencies and unreviewed duplicate versions in CI.
+  Required upstream duplicates have documented, exact-version exceptions.
 - Put age encryption at the center of the README and website, with the Protect
   workflow, open-format compatibility, privacy boundaries, and Windows package
   status. Refresh highlights, Split editing, save behavior, and sanitizer copy.
 
 ### Fixed
 
+- Update the ULID generator's transitive `chacha20` dependency from the yanked
+  0.10.1 release to 0.10.2, which fixes its SSE2 backend on older x86 processors.
 - Windows encrypted-note saves and Delete original read through the handle that
   owns the file lock, avoiding a self-inflicted lock error. Conflict checks also
   verify file identity before replacement; recovery and no-op saves stay intact.

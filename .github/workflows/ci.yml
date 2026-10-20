@@ -128,7 +128,7 @@ jobs:
       - run: npm ci
       - run: cargo install cargo-deny --locked
       - run: cargo install cargo-audit --locked
-      - run: cargo deny check
+      - run: cargo deny --locked check --deny warnings
       - run: cargo audit
       - run: npm audit --audit-level=high
 
