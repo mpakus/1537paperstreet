@@ -54,7 +54,7 @@
       type="font/woff2"
       crossorigin
     />
-    <link rel="stylesheet" href="styles.css?v=20261020" />
+    <link rel="stylesheet" href="styles.css?v=20261020-downloads" />
     <script>
       document.documentElement.classList.add('js')
     </script>
@@ -87,11 +87,7 @@
           <a class="section-link" href="#editing">Editing</a>
           <a class="section-link" href="#features">Features</a>
           <a class="section-link" href="#themes">Themes</a>
-          <a
-            class="button"
-            href="https://github.com/mpakus/1537paperstreet/releases/latest"
-            >Download</a
-          >
+          <a class="button" href="#download">Download</a>
         </nav>
       </div>
     </header>
@@ -110,11 +106,7 @@
           vault, no account, no cloud library.
         </p>
         <div class="actions rise rise-4">
-          <a
-            class="button"
-            href="https://github.com/mpakus/1537paperstreet/releases/latest"
-            >Download</a
-          >
+          <a class="button" href="#download">Download</a>
           <a class="quiet" href="#encryption">Explore age encryption</a>
         </div>
         <p class="fine rise rise-4">
@@ -552,17 +544,62 @@
         aria-labelledby="download-title"
       >
         <h2 id="download-title">Free, on macOS, Linux, and Windows.</h2>
+        <!-- release:info -->
+        <p class="release-version">
+          Version 0.9.0 · Released
+          <time datetime="2026-10-19">October 19, 2026</time>
+        </p>
+        <!-- /release:info -->
         <p>
-          macOS 12 or newer, Apple Silicon and Intel. A Linux .deb for x86_64,
-          and a Windows installer. The macOS build is signed and notarized. PDF
-          export, and installing an update from inside the app, are on macOS.
+          Choose your operating system to download the installer directly. No
+          account required.
+        </p>
+        <ul class="downloads" aria-label="Installers by operating system">
+          <li>
+            <h3>macOS</h3>
+            <p>Apple Silicon &amp; Intel<br />macOS 12 or newer</p>
+            <!-- release:macos -->
+            <a
+              class="button"
+              href="https://github.com/mpakus/1537paperstreet/releases/download/v0.9.0/1537paperstreet_0.9.0_universal.dmg"
+              download
+              >Download for macOS</a
+            >
+            <p class="fine">DMG · 19.7 MB</p>
+            <!-- /release:macos -->
+          </li>
+          <li>
+            <h3>Linux</h3>
+            <p>Debian &amp; Ubuntu · x86_64<br />WebKitGTK 4.1</p>
+            <!-- release:linux -->
+            <a
+              class="button"
+              href="https://github.com/mpakus/1537paperstreet/releases/download/v0.9.0/1537paperstreet_0.9.0_amd64.deb"
+              download
+              >Download for Linux</a
+            >
+            <p class="fine">DEB · 9.0 MB</p>
+            <!-- /release:linux -->
+          </li>
+          <li>
+            <h3>Windows</h3>
+            <p>64-bit (x64)<br />NSIS installer · WebView2</p>
+            <!-- release:windows -->
+            <a
+              class="button"
+              href="https://github.com/mpakus/1537paperstreet/releases/download/v0.9.0/1537paperstreet_0.9.0_x64-setup.exe"
+              download
+              >Download for Windows</a
+            >
+            <p class="fine">EXE · 6.8 MB</p>
+            <!-- /release:windows -->
+          </li>
+        </ul>
+        <p class="fine">
+          The macOS app is signed and notarized. PDF export and installing
+          updates from inside the app are available on macOS.
         </p>
         <div class="actions">
-          <a
-            class="button"
-            href="https://github.com/mpakus/1537paperstreet/releases/latest"
-            >Download</a
-          >
           <a
             class="quiet"
             href="https://github.com/mpakus/1537paperstreet/blob/main/README.md"

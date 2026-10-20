@@ -7,6 +7,9 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Download macOS, Linux, and Windows installers directly from the website,
+  with the published version, release date, package format, and download size.
+  Pages refreshes these details after a successful release workflow.
 - Reject yanked Rust dependencies and unreviewed duplicate versions in CI.
   Required upstream duplicates have documented, exact-version exceptions.
 - Put age encryption at the center of the README and website, with the Protect

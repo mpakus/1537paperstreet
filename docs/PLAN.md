@@ -898,6 +898,7 @@ strip = "symbols"
   запасной путь, если zip нет. `tauri-plugin-updater` с Ed25519 (T-155) ещё
   впереди. Плюс Homebrew cask.
 - **CI:** GitHub Actions. `macos-14` гоняет fmt, clippy, тесты и universal-сборку. `ubuntu-24.04` гоняет тесты и собирает `.deb`. `windows-latest` проверяет компиляцию и собирает NSIS. По тегу публикуется GitHub Release.
+- **Сайт (T-219):** Pages при деплое и после успешного Release обновляет статический HTML из latest stable GitHub Release: версия, дата, размеры и прямые ссылки на DMG/DEB/EXE. Неполный набор assets блокирует деплой; браузер не обращается к API, загрузка не открывает страницу релиза.
 - **Linux:** `.deb` для x86_64 (WebKitGTK 4.1). Окно с обычной рамкой. PDF и установка обновления поверх запущенного приложения остаются на macOS; Check for Updates открывает страницу релиза.
 - **Windows:** NSIS-установщик x64 (WebView2). Подпись Authenticode не входит в этот релиз. Домашний каталог — `HOME` или `USERPROFILE`, данные в `~/.1537paperstreet`.
 - **Секреты:** сертификат Apple, пароли, ключ обновлений — только в GitHub Secrets. Linux и Windows публикуются без подписи.

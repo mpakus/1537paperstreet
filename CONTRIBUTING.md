@@ -32,6 +32,16 @@ See the [cargo-deny documentation](https://embarkstudios.github.io/cargo-deny/ch
 History (P10) and ZIP export (P12) are out of scope unless someone explicitly
 asks. Do not add them “while you’re here.”
 
+Website downloads are static HTML, so they work without JavaScript or a browser
+request to the GitHub API. Pages reads the latest stable release at deployment
+and after a successful `Release` workflow, then runs `scripts/site-release.py`.
+It requires uploaded, nonempty DMG, DEB, and EXE assets for the same version;
+an incomplete release fails the deployment and leaves the previous site live.
+Preserve the `release:*` comment markers when editing the download section.
+To refresh the checked-in links locally, save the release API response to JSON
+and run `python3 scripts/site-release.py release.json site/index.html`, followed
+by Prettier. Run `python3 scripts/test-site-release.py` to check the renderer.
+
 Release: tag `vX.Y.Z` (same version as `package.json`) runs
 `.github/workflows/release.yml`. That publishes a universal `.app` and DMG
 from `macos-14`, a `.deb` from `ubuntu-24.04`, and an NSIS installer from
