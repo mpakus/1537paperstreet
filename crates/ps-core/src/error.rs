@@ -6,6 +6,12 @@ use std::path::PathBuf;
 /// The error type shared by `ps-core` modules.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    /// The disposable relationship database could not be read or updated.
+    #[error("Couldn't update the graph cache: {detail}. Try Rebuild cache.")]
+    GraphCache {
+        /// Database diagnostic, without document contents.
+        detail: String,
+    },
     /// The document is not a supported binary age file.
     #[error("This is not a valid binary age file. ASCII-armored files are not supported.")]
     NotAgeFile,

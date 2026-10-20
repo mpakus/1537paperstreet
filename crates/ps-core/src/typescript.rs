@@ -17,6 +17,7 @@ use crate::docio::{
 };
 use crate::edit::{HighlightRange, HighlightSource};
 use crate::fsops::{ConflictStrategy, UntitledKind};
+use crate::graph::{GraphEdge, GraphNode, GraphQuery, GraphSnapshot};
 use crate::projects::{OpenDropResult, Project, ProjectsListQuery, ProjectsListResult};
 use crate::themes::{ThemeAppearance, ThemeInfo};
 use crate::tree::{TreeNode, TreeNodeKind};
@@ -34,6 +35,10 @@ fn ts_config() -> TsConfig {
 pub fn ipc_typescript() -> String {
     let ts = ts_config();
     let declarations = [
+        GraphQuery::decl(&ts),
+        GraphNode::decl(&ts),
+        GraphEdge::decl(&ts),
+        GraphSnapshot::decl(&ts),
         crate::encrypted::DocumentSecurity::decl(&ts),
         ViewMode::decl(&ts),
         Appearance::decl(&ts),

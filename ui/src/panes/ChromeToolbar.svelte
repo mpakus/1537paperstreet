@@ -118,6 +118,12 @@
     >
     <button
       type="button"
+      title="Document graph"
+      aria-pressed={page === 'graph'}
+      onclick={() => oncommand('view-graph')}>Graph</button
+    >
+    <button
+      type="button"
       title="Board"
       aria-pressed={page === 'dashboard'}
       onclick={() => oncommand('view-dashboard')}>Board</button

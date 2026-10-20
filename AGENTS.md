@@ -154,6 +154,9 @@
 
 ## 10. Карта кода
 
+- T-220 Graph: `ps-core::graph` — ограниченный индекс и redb-кэш в `cache/graph/`, `ps-render::project_graph` — существующие правила Markdown/wiki. `Graph.svelte` / `GraphCanvas.svelte` загружаются лениво; canvas делает только презентацию (проекция, pan/zoom, hit testing, подсветка), без парсинга/фильтрации документов. `.age` никогда не индексировать; исходники не сохранять в БД. После изменения правил ссылок поднять версию cache filename. ADR-014.
+
+
 - `ps-core`: `config`, `agents`, `dashboard`, `projects`, `fsops`, `tree`, `watch`, `docio`, `log`, `themes`, `mermaid_cache`, `ui_state`, `search`, `store`, `paths`, `updates`
 - `ps-app`: тонкие IPC-команды, overlay-окно, нативное меню, `asset://`, `WatchHub`, `save_user_file`, ACP-хост (включая Codex app-server)
 - `ui`: панели Svelte 5 (`Projects`, `Tree`, `Preview`, `Settings`, `QuickOpen`, `QuickSwitch`, `ContentSearch`, `FindBar`, `Conflict`, `About`, `Assistant`, `Dashboard`, `ChromeToolbar`). Живое превью Split — `ui/src/lib/preview-patch.ts`. Строка исходника для оглавления — `ui/src/lib/toc.ts`.

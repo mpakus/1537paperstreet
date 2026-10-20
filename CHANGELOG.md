@@ -5,6 +5,21 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Explore saved Markdown and wiki links in the new Graph workspace: a local
+  constellation with theme-colored stars, directional connections, pan/zoom,
+  search, immediate neighborhoods, and opening notes from the map. A rebuildable
+  embedded database reuses parsed links across launches. Encrypted notes are
+  excluded; no document bodies are stored in the graph cache.
+
+### Security
+
+- Update Vite to 8.2.4 across the development and test tooling, fixing the
+  editor-launch advisories GHSA-698v-4r3x-3vcv, GHSA-r825-w8mm-5pxw, and
+  GHSA-587h-7wmj-h5pm. The workspace override keeps every consumer on the
+  patched version.
+
 ### Changed
 
 - Download macOS, Linux, and Windows installers directly from the website,

@@ -706,7 +706,9 @@
       ? 'Assistant'
       : workspacePage === 'dashboard'
         ? 'Dashboard'
-        : windowTitle(active?.path, openMeta?.relPath),
+        : workspacePage === 'graph'
+          ? 'Graph'
+          : windowTitle(active?.path, openMeta?.relPath),
   )
 
   $effect(() => {
@@ -838,6 +840,11 @@
     } catch (cause) {
       assistantError = errorMessage(cause)
     }
+  }
+
+  function openGraph() {
+    workspaceTabs = openWorkspaceTab(workspaceTabs, 'graph')
+    workspacePage = 'graph'
   }
 
   async function openDashboard() {
@@ -1291,6 +1298,10 @@
       }
       if (id === 'view-dashboard') {
         await openDashboard()
+        return
+      }
+      if (id === 'view-graph') {
+        openGraph()
         return
       }
       if (id === 'app-about' || id === 'file-about') {
@@ -2486,7 +2497,7 @@
           await activateProject(saved, null, { skipFile: true })
           workspaceTabs = restored.workspace_tabs.filter(
             (tab): tab is WorkspaceTab =>
-              tab === 'assistant' || tab === 'dashboard',
+              tab === 'assistant' || tab === 'dashboard' || tab === 'graph',
           )
           for (const tab of tabsToReopen(
             restored.tabs,
@@ -2514,6 +2525,11 @@
             workspaceTabs.includes('dashboard')
           ) {
             workspacePage = 'dashboard'
+          } else if (
+            restored.page === 'graph' &&
+            workspaceTabs.includes('graph')
+          ) {
+            workspacePage = 'graph'
           }
         } else if (active && active.available !== false) {
           await activateProject(active)
@@ -2981,6 +2997,10 @@
         page={workspacePage}
         activeRelPath={openMeta?.relPath ?? null}
         onpage={(page) => {
+          if (page === 'graph') {
+            openGraph()
+            return
+          }
           if (page === 'assistant') {
             void openAssistant().catch((cause) => {
               showError(errorMessage(cause))
@@ -3099,6 +3119,23 @@
             })
           }}
         />
+      {:else if workspacePage === 'graph'}
+        {#await import('./panes/Graph.svelte')}
+          <p class="hint">Opening graph…</p>
+        {:then module}
+          <module.default
+            projectId={active?.id ?? null}
+            projectName={active?.name ?? ''}
+            {watchSeq}
+            onopen={(path) => {
+              void openDocument(path, false, 'pin').catch((cause) =>
+                showError(errorMessage(cause)),
+              )
+            }}
+          />
+        {:catch cause}
+          <p class="hint">{errorMessage(cause)}</p>
+        {/await}
       {:else if workspacePage === 'dashboard'}
         <Dashboard
           snapshot={dashboardSnapshot}

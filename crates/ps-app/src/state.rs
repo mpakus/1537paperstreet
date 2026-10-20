@@ -31,6 +31,7 @@ use ps_core::{Error, Result};
 pub(crate) struct AppState {
     #[allow(dead_code)]
     paths: AppPaths,
+    graph_lock: Arc<Mutex<()>>,
     encrypted: Arc<EncryptedDocuments>,
     pub(crate) exit_confirmed: Arc<std::sync::atomic::AtomicBool>,
     config: Arc<Mutex<JsonStore<Config>>>,
@@ -65,6 +66,7 @@ impl AppState {
         let prompt_history = open_prompt_history(paths.agent_prompts_file())?;
 
         Ok(Self {
+            graph_lock: Arc::new(Mutex::new(())),
             paths,
             encrypted: Arc::new(EncryptedDocuments::default()),
             exit_confirmed: Arc::new(std::sync::atomic::AtomicBool::new(false)),
@@ -82,6 +84,19 @@ impl AppState {
     /// Appends a warning that does not include document text.
     pub(crate) fn log_warn(&self, message: &str) {
         let _ = self.log.warn(message);
+    }
+
+    pub(crate) fn graph_get(
+        &self,
+        project_id: &str,
+        query: &ps_core::graph::GraphQuery,
+    ) -> Result<ps_core::graph::GraphSnapshot> {
+        let root = self.project_root(project_id)?;
+        let _guard = self
+            .graph_lock
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        ps_render::project_graph(&self.paths.cache().join("graph"), &root, query)
     }
 
     pub(crate) fn config_get(&self) -> Config {

@@ -184,7 +184,7 @@ fn asset_relative_path(src: &str, project_scope: &str) -> Option<String> {
     percent_decode(path)
 }
 
-fn percent_decode(input: &str) -> Option<String> {
+pub(crate) fn percent_decode(input: &str) -> Option<String> {
     let mut bytes = Vec::with_capacity(input.len());
     let chars: Vec<char> = input.chars().collect();
     let mut index = 0;
