@@ -3942,6 +3942,7 @@ dependencies = [
  "notify",
  "nucleo",
  "proptest",
+ "redb",
  "regex",
  "same-file",
  "serde",
@@ -3966,6 +3967,7 @@ dependencies = [
  "insta",
  "ps-core",
  "pulldown-cmark",
+ "serde_json",
  "syntect",
  "tempfile",
  "thiserror 2.0.20",
@@ -4141,6 +4143,15 @@ checksum = "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
+]
+
+[[package]]
+name = "redb"
+version = "4.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39178e0a867f9e3eaa6292a4ab1dd3613f2519c5b564341e1e7b29b270736cc4"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

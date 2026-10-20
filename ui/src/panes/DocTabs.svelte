@@ -31,7 +31,12 @@
 
 <div class="tabs" role="tablist" aria-label="Workspace">
   {#each workspaceTabs as workspaceTab (workspaceTab)}
-    {@const title = workspaceTab === 'dashboard' ? 'Dashboard' : 'Assistant'}
+    {@const title =
+      workspaceTab === 'dashboard'
+        ? 'Dashboard'
+        : workspaceTab === 'graph'
+          ? 'Graph'
+          : 'Assistant'}
     <div class="tab" class:selected={page === workspaceTab}>
       <button
         type="button"

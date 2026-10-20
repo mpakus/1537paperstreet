@@ -90,7 +90,7 @@ where
         }
     }
 
-    fn asset_url(&self, destination: &str) -> Result<Option<String>, ()> {
+    pub(crate) fn asset_url(&self, destination: &str) -> Result<Option<String>, ()> {
         if destination.starts_with('#') || has_scheme(destination) {
             return Ok(None);
         }
@@ -124,7 +124,7 @@ where
         )))
     }
 
-    fn wiki_url(&self, destination: &str) -> Result<Option<String>, ()> {
+    pub(crate) fn wiki_url(&self, destination: &str) -> Result<Option<String>, ()> {
         if destination.starts_with('#') || has_scheme(destination) {
             return Ok(Some(destination.to_owned()));
         }

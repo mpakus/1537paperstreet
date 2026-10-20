@@ -5,6 +5,14 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Explore saved Markdown and wiki links in the new Graph workspace: a local
+  constellation with theme-colored stars, directional connections, pan/zoom,
+  search, immediate neighborhoods, and opening notes from the map. A rebuildable
+  embedded database reuses parsed links across launches. Encrypted notes are
+  excluded; no document bodies are stored in the graph cache.
+
 ### Changed
 
 - Download macOS, Linux, and Windows installers directly from the website,

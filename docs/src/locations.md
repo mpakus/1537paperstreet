@@ -10,6 +10,7 @@ App data lives in `~/.1537paperstreet/`, not next to your notes.
 | `ui-state.json` | Expanded folders, pane widths, and the last session: open folder, document tabs and each tab’s Preview / Edit / Split mode, Dashboard, and Assistant |
 | `themes/` | Your JSON themes |
 | `cache/mermaid/` | Cached diagram SVG |
+| `cache/graph/` | Rebuildable document relationship databases: paths, hashes and links; no document bodies or encrypted-note contents |
 | `logs/app.log` | Rotating log; no document text |
 
 If the app misbehaves: quit, rename `config.json` to `config.json.bak`, and

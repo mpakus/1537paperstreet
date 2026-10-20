@@ -88,9 +88,9 @@ pub struct OpenSession {
     /// Document that was focused, when one was.
     #[ts(type = "string | null")]
     pub active_rel_path: Option<PathBuf>,
-    /// Open Dashboard and Assistant tabs, in strip order.
+    /// Open Graph, Dashboard and Assistant tabs, in strip order.
     pub workspace_tabs: Vec<String>,
-    /// Tab that was showing: `document`, `assistant`, or `dashboard`.
+    /// Tab that was showing: `document`, `assistant`, `dashboard`, or `graph`.
     pub page: String,
     /// `preview`, `editor`, or `split`. Empty keeps the configured default.
     pub view_mode: String,
@@ -106,7 +106,7 @@ pub struct RestoredSession {
     /// Document to focus. Empty when no saved document remains.
     #[ts(type = "string | null")]
     pub active_rel_path: Option<PathBuf>,
-    /// Dashboard and Assistant tabs to show again.
+    /// Graph, Dashboard and Assistant tabs to show again.
     pub workspace_tabs: Vec<String>,
     /// Tab to show after the documents are open.
     pub page: String,
@@ -381,12 +381,12 @@ fn normalize_active(active: Option<PathBuf>, tabs: &[SessionTab]) -> Result<Opti
 
 fn normalize_workspace(tabs: Vec<String>, page: &str) -> Vec<String> {
     let mut incoming = tabs;
-    if page == "assistant" || page == "dashboard" {
+    if page == "assistant" || page == "dashboard" || page == "graph" {
         incoming.push(page.to_owned());
     }
     let mut out = Vec::new();
     for tab in incoming {
-        if (tab == "assistant" || tab == "dashboard") && !out.contains(&tab) {
+        if (tab == "assistant" || tab == "dashboard" || tab == "graph") && !out.contains(&tab) {
             out.push(tab);
         }
     }
@@ -394,7 +394,9 @@ fn normalize_workspace(tabs: Vec<String>, page: &str) -> Vec<String> {
 }
 
 fn normalize_page(page: &str, workspace: &[String]) -> String {
-    if (page == "assistant" || page == "dashboard") && workspace.iter().any(|tab| tab == page) {
+    if (page == "assistant" || page == "dashboard" || page == "graph")
+        && workspace.iter().any(|tab| tab == page)
+    {
         page.to_owned()
     } else {
         "document".into()

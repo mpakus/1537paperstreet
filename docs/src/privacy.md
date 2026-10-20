@@ -6,6 +6,11 @@ analytics, and no CDN for themes, fonts, Mermaid, or KaTeX.
 The Dashboard tab shows local counts only (projects, files, agents, session).
 Those numbers stay on this computer.
 
+The [Graph](graph.md) tab caches plaintext-note paths, hashes and link
+destinations in a local embedded database. It does not store document bodies,
+index encrypted notes, or make network requests. Rebuild cache discards the
+project's graph database; older metadata may remain in database pages until then.
+
 The only outgoing request from the **app** is an optional update check (at
 launch if enabled, from the button, or File → Check for Updates…). It talks
 to GitHub Releases. On macOS it may download the universal zip and install

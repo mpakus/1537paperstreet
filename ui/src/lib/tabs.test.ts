@@ -90,6 +90,10 @@ describe('tabs', () => {
   })
 
   it('closes the active workspace or document tab', () => {
+    expect(closeActiveTarget('graph', 'notes.md')).toEqual({
+      kind: 'workspace',
+      page: 'graph',
+    })
     expect(closeActiveTarget('assistant', 'notes.md')).toEqual({
       kind: 'workspace',
       page: 'assistant',

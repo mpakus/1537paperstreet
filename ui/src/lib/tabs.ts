@@ -2,7 +2,7 @@ import type { DocumentMeta, DocumentSource, ViewMode } from './generated/core'
 import { followRenamedPath } from './tree'
 
 /** Workspace page shown in the main tab strip. */
-export type WorkspacePage = 'document' | 'assistant' | 'dashboard'
+export type WorkspacePage = 'document' | 'assistant' | 'dashboard' | 'graph'
 
 /** Optional non-document tab in the workspace strip. */
 export type WorkspaceTab = Exclude<WorkspacePage, 'document'>
@@ -189,7 +189,7 @@ export function closeActiveTarget(
   page: WorkspacePage,
   openRelPath: string | null,
 ): CloseActiveTarget {
-  if (page === 'assistant' || page === 'dashboard') {
+  if (page !== 'document') {
     return { kind: 'workspace', page }
   }
   if (openRelPath) {

@@ -1,4 +1,6 @@
 import type {
+  GraphQuery,
+  GraphSnapshot,
   Config,
   ConflictStrategy,
   DocOpenResult,
@@ -726,4 +728,12 @@ export function docSnapshotEncrypted(
     text,
     traits,
   })
+}
+
+/** Builds or queries the current project's local relationship cache. */
+export function graphGet(
+  projectId: string,
+  query: GraphQuery,
+): Promise<GraphSnapshot> {
+  return invokeIpc('graph_get', { project_id: projectId, query })
 }

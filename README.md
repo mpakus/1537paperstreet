@@ -52,6 +52,11 @@ packages; see the [unreleased changes](CHANGELOG.md#unreleased).
 
 ## More from the latest updates
 
+- **Explore your document constellation (unreleased).** The Graph workspace
+  maps Markdown and wiki links with glowing stars, directional connections,
+  searchable notes, and focused neighborhoods. A local database caches
+  relationships across launches; your Markdown stays in its original files.
+  Encrypted notes are excluded. [Graph guide](docs/src/graph.md).
 - **Highlights that stay with the text.** Select a passage in Preview or Split,
   pick a preset or custom color, then recolor or remove it later. Highlights
   live in the Markdown file and use normal Save and undo.
@@ -70,7 +75,7 @@ without changing where they live or how they are stored.
 
 - **Protect the notes you choose.** Password-protected `.md.age` files live
   beside ordinary Markdown. Unlock, read, and edit them in the same window.
-- **Open any folder.** There is no migration, database, or proprietary vault.
+- **Open any folder.** There is no migration or proprietary vault.
   Add an existing folder and keep using the same files with Git, your file
   manager, and every other tool you trust.
 - **Read more than basic Markdown.** GitHub Flavored Markdown, syntax-highlighted

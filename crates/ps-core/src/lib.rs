@@ -12,6 +12,7 @@ pub mod edit;
 pub mod encrypted;
 pub mod error;
 pub mod fsops;
+pub mod graph;
 pub mod log;
 pub mod mermaid_cache;
 pub mod paths;

@@ -768,6 +768,19 @@ pub(crate) async fn dashboard_get(
         .map_err(|error| error.to_string())
 }
 
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn graph_get(
+    state: State<'_, AppState>,
+    project_id: String,
+    query: ps_core::graph::GraphQuery,
+) -> Result<ps_core::graph::GraphSnapshot, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.graph_get(&project_id, &query))
+        .await
+        .map_err(|error| error.to_string())?
+        .map_err(to_command_error)
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

@@ -48,6 +48,12 @@ body text so the preview stays readable.
 The Markdown source editor uses [CodeMirror 6](https://codemirror.net/) (MIT),
 loaded with a dynamic import the first time Edit or Split is opened.
 
+## Local graph database
+
+[redb](https://github.com/cberner/redb) 4.4.0 (MIT OR Apache-2.0) provides the
+transactional, rebuildable document-link cache. Graph rendering uses the app's
+own canvas implementation and theme tokens, without an additional UI library.
+
 ## Icons
 
 The file tree uses original inline SVG (folder, Markdown document, generic
