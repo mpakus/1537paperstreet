@@ -7,12 +7,14 @@ task branch; it does not claim that Graph is in the published 0.9.0 packages.
 
 - `cargo fmt --all --check`: passed.
 - `cargo clippy --workspace --all-targets -- -D warnings`: passed.
-- `cargo test --workspace`: 371 passed; one opt-in timing test ignored.
-  Follow-up large-neighborhood regression: the expanded graph suite has seven
-  passing tests and one opt-in timing test.
+- `cargo test --workspace`: 372 passed; one opt-in timing test ignored,
+  including the large-neighborhood focus regression.
 - `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`: passed.
 - `npm run check`, `npm run lint`, `npm run format:check`, `npm run build`: passed.
 - `npm run test`: 202 passed across 57 files.
+- `npm audit --audit-level=high`: zero vulnerabilities after the approved
+  Vite 8.2.4 security patch. A workspace override deduplicates development and
+  test consumers onto the patched version; other package versions are unchanged.
 - `cargo deny --locked check --deny warnings`: advisories, bans, licenses and
   sources passed. redb adds no additional runtime dependency beyond libc
   already present in the workspace.
@@ -23,8 +25,9 @@ Graph integration tests cover Markdown/reference/wiki links, aliases, fragments,
 percent-encoded paths, local wiki precedence, external/code/image/HTML exclusion,
 persistent cache reuse, edits, additions, deletions, isolated notes, neighborhood
 queries, project separation, path escapes, Unix symlinks, bounded results,
-unsupported files, preservation of the focus in large neighborhoods, and explicit recovery from a corrupt database. Tests use only
-temporary folders. Windows CI now also runs this graph suite.
+unsupported files, preservation of the focus in large neighborhoods, and explicit
+recovery from a corrupt database. Tests use only temporary folders. Windows CI
+now also runs this graph suite.
 
 Mutation check: temporarily removing encrypted-note exclusion made the privacy
 test fail (four indexed files instead of three). The mutation was restored
