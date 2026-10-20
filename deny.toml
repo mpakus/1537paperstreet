@@ -24,6 +24,7 @@ confidence-threshold = 0.8
 ignore = true
 
 [advisories]
+yanked = "deny"
 ignore = [
   { id = "RUSTSEC-2026-0374", reason = "Build-time i18n-config 0.4.8 required by age 0.12.1 uses basic-toml; no fixed upstream release is available and this advisory describes unmaintained status, not a vulnerability" },
   { id = "RUSTSEC-2025-0141", reason = "Required by syntect default-syntaxes; unmaintained advisory has no safe upgrade and reports no vulnerability" },
@@ -35,8 +36,40 @@ ignore = [
 ]
 
 [bans]
-multiple-versions = "warn"
+multiple-versions = "deny"
 wildcards = "deny"
+# Upstream requirements use incompatible release lines. Exempt only the reviewed
+# older versions; new duplicates still fail. Remove entries as upstreams converge.
+# These exceptions do not skip advisory, license or source checks.
+skip = [
+  { name = "base64", version = "=0.21.7", reason = "swift-rs requires 0.21; age and Tauri codegen require 0.22" },
+  { name = "bitflags", version = "=1.3.2", reason = "png 0.17 requires 1.x; png 0.18 and the native UI require 2.x" },
+  { name = "block-buffer", version = "=0.10.4", reason = "digest 0.10 requires 0.10; digest 0.11 requires 0.12" },
+  { name = "chacha20", version = "=0.9.1", reason = "age uses chacha20poly1305 requiring 0.9; ulid uses rand requiring 0.10" },
+  { name = "const-oid", version = "=0.9.6", reason = "der requires 0.9; digest 0.11 requires 0.10" },
+  { name = "cpufeatures", version = "=0.2.17", reason = "age crypto dependencies require 0.2; blake3 and newer RustCrypto crates require 0.3" },
+  { name = "crypto-common", version = "=0.1.7", reason = "age AEAD and digest 0.10 require 0.1; digest 0.11 requires 0.2" },
+  { name = "cssparser", version = "=0.36.0", reason = "Tauri dom_query and selectors require 0.36; patched ammonia requires 0.37" },
+  { name = "digest", version = "=0.10.7", reason = "age and sha2 0.10 require 0.10; rust-embed uses sha2 0.11 requiring 0.11" },
+  { name = "getrandom", version = "=0.2.17", reason = "age uses rand_core 0.6 requiring 0.2; ulid and uuid require 0.4" },
+  { name = "getrandom", version = "=0.3.4", reason = "Tauri requires 0.3; ulid and uuid require 0.4" },
+  { name = "hashbrown", version = "=0.12.3", reason = "indexmap 1 requires 0.12; indexmap 2 requires 0.17" },
+  { name = "html5ever", version = "=0.38.0", reason = "Tauri dom_query requires 0.38; patched ammonia requires 0.39" },
+  { name = "hybrid-array", version = "=0.2.3", reason = "age ml-kem requires 0.2; digest 0.11 dependencies require 0.4" },
+  { name = "indexmap", version = "=1.9.3", reason = "Tauri schemars indexmap1 feature requires 1.x; plist requires 2.x" },
+  { name = "markup5ever", version = "=0.38.0", reason = "Tauri html5ever requires 0.38; ammonia html5ever requires 0.39" },
+  { name = "png", version = "=0.17.16", reason = "Tauri codegen and ico require 0.17; image and native menus require 0.18" },
+  { name = "rand", version = "=0.8.8", reason = "age and age-core require 0.8; ulid requires 0.10" },
+  { name = "rand_core", version = "=0.6.4", reason = "age crypto dependencies require 0.6; rand 0.10 requires 0.10" },
+  { name = "sha2", version = "=0.10.9", reason = "age and Tauri codegen require 0.10; rust-embed-utils requires 0.11" },
+  { name = "syn", version = "=2.0.119", reason = "Tauri, age and ts-rs macros require 2.x; serde and thiserror 2 macros require 3.x" },
+  { name = "thiserror", version = "=1.0.69", reason = "age translation tooling and Tauri json-patch require 1.x; the workspace uses 2.x" },
+  { name = "thiserror-impl", version = "=1.0.69", reason = "thiserror 1 and 2 require their own exact matching procedural-macro versions" },
+  { name = "toml", version = "=0.5.11", reason = "age translation tooling uses find-crate requiring 0.5; Tauri uses newer TOML APIs" },
+  { name = "toml", version = "=0.9.12", reason = "Tauri build uses cargo_toml requiring 0.9; embed-resource and tauri-winres require 1.x" },
+  { name = "toml_datetime", version = "=0.7.5", reason = "toml 0.9 requires 0.7; toml 1 requires 1.x" },
+  { name = "winnow", version = "=0.7.15", reason = "toml 0.9 requires 0.7; toml 1 and toml_parser require 1.x" },
+]
 
 [sources]
 unknown-registry = "deny"
