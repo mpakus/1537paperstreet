@@ -1,18 +1,66 @@
 # 1537paperstreet
 
-**Your Markdown. Your folders. A quieter way to work.**
+**Your Markdown. Your folders. Now with age encryption.**
 
 1537paperstreet turns ordinary folders of Markdown into a focused workspace
 on macOS, Linux, and Windows. Browse a project, read beautifully rendered
-documents, edit the source, preview diagrams and math, export a PDF, or work
-with a local AI agent — without importing files into a vault or signing in to
-a service.
+documents, edit the source, and protect individual notes with a password using
+standard age encryption. Highlight a passage, preview diagrams and math, export
+a PDF on macOS, or work with a local AI agent — all in the same workspace,
+without importing files into a vault or signing in to a service.
 
 Made in Austin ✩ Texas · [aomega.co](https://aomega.co)
 
-[1537paperstreet.com](https://1537paperstreet.com) · [Download the latest release](https://github.com/mpakus/1537paperstreet/releases/latest)
+[1537paperstreet.org](https://1537paperstreet.org) · [Download the latest release](https://github.com/mpakus/1537paperstreet/releases/latest)
 
 ![Preview of a Markdown document with Projects, file tree, table of contents, and rendered headings](docs/screen-preview.png)
+
+## Your notes, protected with age
+
+**New in 0.9.0:** keep a journal, project notes, or an unfinished draft under a
+password, right beside your other files. Choose **Protect → New encrypted note**
+or **Protect → Encrypt this note**. Standard age passphrase encryption protects
+the saved contents of each note, without a separate vault or account.
+
+- **The same filename, with `.age` added.** `notes.md` becomes `notes.md.age`;
+  `Readme.MARKDOWN` becomes `Readme.MARKDOWN.age`. The protected copy opens in
+  Preview, then you choose **Keep original** or **Delete original**. Keeping it
+  leaves the source unchanged; deleting it first preserves an encrypted recovery
+  copy of the original.
+- **Unlock and keep working.** Read, edit, use Split, highlight passages, tick
+  tasks, and save. Lock the note when you are done. Unsaved changes get a
+  **Save / Discard / Cancel** choice before the session closes.
+- **Keep control of your files.** Saves are atomic, detect external changes,
+  and preserve identical ciphertext when nothing changed. Password changes
+  and discarded edits retain encrypted recovery copies.
+- **Use an open format.** Standard binary age files work with the independent
+  `age` and `rage` command-line tools in passphrase mode. Change a password or
+  explicitly export a decrypted Markdown copy when you need one.
+- **Keep protected text out of app storage.** Encrypted contents are excluded
+  from content search, Mermaid caches, and session restore. Passwords are not
+  saved by the app; filename search still works.
+
+Keep your password safe: there is no password reset. Filenames remain visible,
+and unlocked text exists in memory. Deleting an original is not secure erasure.
+See the [encryption guide](docs/src/encryption.md) for backups, supported formats,
+and privacy boundaries, and the [validation record](docs/AGE_MARKDOWN_ENCRYPTION_VALIDATION.md)
+for remaining native-platform and independent-review checks.
+
+**Windows release note:** the encrypted-save and original-deletion fix is on
+`main` and has passed Windows CI. It is not included in the published 0.9.0
+packages; see the [unreleased changes](CHANGELOG.md#unreleased).
+
+## More from the latest updates
+
+- **Highlights that stay with the text.** Select a passage in Preview or Split,
+  pick a preset or custom color, then recolor or remove it later. Highlights
+  live in the Markdown file and use normal Save and undo.
+- **Smoother Split editing.** The preview updates in place while you type,
+  keeps the edited text visible, and leaves unchanged diagrams in place.
+  Choose a contents heading to move both the page and source to the same spot.
+- **Careful saves and safer rendering.** Edits made during a save stay in your
+  buffer, each document has its own undo history, and 0.9.0 includes the patched
+  Markdown sanitizer. [Read the changelog](CHANGELOG.md).
 
 ## Plain-text knowledge, with a real workspace around it
 
@@ -20,6 +68,8 @@ Your notes, specifications, READMEs, and wikis already belong beside your
 projects. 1537paperstreet makes those files comfortable to navigate and read
 without changing where they live or how they are stored.
 
+- **Protect the notes you choose.** Password-protected `.md.age` files live
+  beside ordinary Markdown. Unlock, read, and edit them in the same window.
 - **Open any folder.** There is no migration, database, or proprietary vault.
   Add an existing folder and keep using the same files with Git, your file
   manager, and every other tool you trust.
@@ -60,12 +110,6 @@ and wikis that already live next to your code.
   in Settings are local CLIs; they may use the network under their own terms.
 
 ## What you can do
-
-The unreleased development version also supports individual password-protected
-`.md.age` notes through **Protect**. It uses standard age files, keeps conversion
-originals, and offers explicit decrypted export. Read the [encryption guide](docs/src/encryption.md)
-and [validation status](docs/AGE_MARKDOWN_ENCRYPTION_VALIDATION.md) before relying
-on it for important documents.
 
 ### Turn folders into workspaces
 
@@ -157,9 +201,9 @@ Top-right of the preview — **Full size**: reading fills the window under the
 title bar. Click again or Escape to return. The contents button sits beside it.
 
 Each document tab remembers Preview, Edit, or Split.
-The last folder, those tabs, Dashboard, and Assistant come back the next time
-the app starts. A missing file is skipped, and a note is added to Message
-history.
+The last folder, ordinary document tabs, Dashboard, and Assistant come back the
+next time the app starts. Encrypted tabs and their decrypted contents are not
+restored. A missing file is skipped, and a note is added to Message history.
 
 In Preview and Split, the bar has A− / A+ (reading size) and − / % / +
 (session zoom, 50–200 %). ⌘+ / ⌘− / ⌘0 change chrome type size.
@@ -239,7 +283,8 @@ prompts. It does not send telemetry.
 ### Share finished documents
 
 **Export** / File → Export PDF… / ⌘⌥E saves the open document as PDF: native
-Save dialog, then a snapshot of the preview (theme, diagrams, images).
+Save dialog, then a snapshot of the preview (theme, diagrams, images). Protected
+notes require an explicit decrypted Markdown export before PDF export.
 
 Click a Mermaid diagram to open its window: drag the title, resize from the
 edges, zoom up to 3200%, pan, Copy SVG, Save PNG. Size, zoom, and position are

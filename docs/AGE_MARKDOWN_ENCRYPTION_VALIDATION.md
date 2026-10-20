@@ -20,6 +20,18 @@ test; restoring the original source made it pass. Native macOS, interoperability
 coverage and performance evidence below comes from the earlier implementation
 checks. The open release gates at the end of this report still apply.
 
+## Dependency maintenance exception — 2026-10-20
+
+The new exception in `deny.toml` applies only to RUSTSEC-2026-0374, which marks
+`basic-toml` 0.1.10 as unmaintained and describes no vulnerability. It is pulled in by
+`i18n-config` 0.4.8 through the translation procedural macros used to build
+age 0.12.1. No published replacement for `i18n-config` removes this dependency
+yet. Remove the exception when the upstream release is available and adopted.
+Existing exceptions are unchanged; advisory, license, source and dependency
+checks remain enabled. After this change, local `cargo deny check`, `cargo audit`
+and `npm audit --audit-level=high` passed. Cargo audit still reports the maintenance
+advisory alongside the existing dependency warnings; npm reports zero vulnerabilities.
+
 ## Implemented
 
 - Standard binary age v1/scrypt, pinned age 0.12.1; complete authentication and

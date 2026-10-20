@@ -5,6 +5,12 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Put age encryption at the center of the README and website, with the Protect
+  workflow, open-format compatibility, privacy boundaries, and Windows package
+  status. Refresh highlights, Split editing, save behavior, and sanitizer copy.
+
 ### Fixed
 
 - Windows encrypted-note saves and Delete original read through the handle that
