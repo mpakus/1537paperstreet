@@ -546,6 +546,34 @@ kbd {
   margin-top: 1.75rem;
 }
 
+.close .release-version {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.downloads {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+  padding: 1.75rem 0;
+  border-block: 1px solid var(--line);
+  list-style: none;
+}
+
+.downloads .button {
+  margin-top: 1.25rem;
+}
+
+.downloads p {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+
+.downloads .fine {
+  font-size: 0.9rem;
+}
+
 .site-footer {
   border-top: 1px solid var(--line);
   padding-block: 1.5rem 2rem;
@@ -674,6 +702,10 @@ kbd {
   }
 
   .local {
+    grid-template-columns: 1fr;
+  }
+
+  .downloads {
     grid-template-columns: 1fr;
   }
 
