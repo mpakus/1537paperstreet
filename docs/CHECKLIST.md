@@ -241,6 +241,7 @@
   - MVP реализован; локально 360 Rust / 197 UI tests, coverage gates и release build прошли, age/rage совместимость проверена в обе стороны. Ammonia обновлён до 4.1.8, `cargo audit` и `cargo deny check` прошли; оставшиеся dependency warnings задокументированы. Открытые гейты: native Windows/Linux и security review. Подробности: `AGE_MARKDOWN_ENCRYPTION_VALIDATION.md`. Закрывать только отдельным PR после гейтов.
   - По уточнению пользователя: полное имя + `.age`, защищённое Preview после конвертации, Keep/Delete original с `pre_encrypt_delete` и защитой от изменений файлов. Исправлено повторное открытие одним кликом после закрытия последней вкладки; native macOS smoke на временных данных прошёл.
   - Исправление Windows CI: хеши читаются через handle, владеющий блокировкой; перед чтением проверяется идентичность файла по пути. Блокировка удерживается до atomic replace/delete, Windows job дополнен encryption unit tests. Native desktop и независимый security review остаются отдельными гейтами.
+  - README и GitHub Pages обновлены по запросу пользователя: акцент на age, Protect/Keep/Delete, совместимость и privacy; исправление Windows на main отделено от опубликованных пакетов 0.9.0.
 
 ## P10 — История и откат
 

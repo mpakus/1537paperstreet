@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>1537paperstreet — Your Markdown. Your folders.</title>
+    <title>1537paperstreet — Markdown with age encryption</title>
     <meta
       name="description"
-      content="A free, open-source Markdown reading room for macOS, Linux, and Windows. Open any folder. No vault, no account, no cloud library."
+      content="Read, edit, and protect Markdown notes with age encryption. Local folders, persistent highlights, live Split preview. Free for macOS, Linux, and Windows."
     />
     <link rel="canonical" href="https://1537paperstreet.org/" />
     <meta name="theme-color" content="#fbfaf7" />
@@ -16,11 +16,11 @@
     <meta property="og:site_name" content="1537paperstreet" />
     <meta
       property="og:title"
-      content="1537paperstreet — Your Markdown. Your folders."
+      content="1537paperstreet — Markdown with age encryption"
     />
     <meta
       property="og:description"
-      content="A free, open-source Markdown reading room for macOS, Linux, and Windows. Open any folder. No vault, no account, no cloud library."
+      content="Read, edit, and protect Markdown notes with age encryption. Local folders, persistent highlights, live Split preview. Free for macOS, Linux, and Windows."
     />
     <meta property="og:url" content="https://1537paperstreet.org/" />
     <meta
@@ -30,11 +30,11 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="1537paperstreet — Your Markdown. Your folders."
+      content="1537paperstreet — Markdown with age encryption"
     />
     <meta
       name="twitter:description"
-      content="A free, open-source Markdown reading room for macOS, Linux, and Windows. Open any folder. No vault, no account, no cloud library."
+      content="Read, edit, and protect Markdown notes with age encryption. Local folders, persistent highlights, live Split preview. Free for macOS, Linux, and Windows."
     />
     <meta
       name="twitter:image"
@@ -54,7 +54,7 @@
       type="font/woff2"
       crossorigin
     />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20261020" />
     <script>
       document.documentElement.classList.add('js')
     </script>
@@ -71,7 +71,7 @@
           "priceCurrency": "USD"
         },
         "url": "https://1537paperstreet.org/",
-        "description": "A free, open-source Markdown reading room for macOS, Linux, and Windows. Open any folder. No vault, no account, no cloud library."
+        "description": "Read, edit, and protect Markdown notes with age encryption. Local folders, persistent highlights, live Split preview. Free for macOS, Linux, and Windows."
       }
     </script>
   </head>
@@ -83,6 +83,7 @@
           <img src="logo.png" alt="1537paperstreet" width="833" height="128" />
         </a>
         <nav class="nav" aria-label="Page">
+          <a class="section-link" href="#encryption">Encryption</a>
           <a class="section-link" href="#editing">Editing</a>
           <a class="section-link" href="#features">Features</a>
           <a class="section-link" href="#themes">Themes</a>
@@ -104,8 +105,9 @@
           Your <span class="mark">folders.</span>
         </h1>
         <p class="lede rise rise-3">
-          A quieter way to work with the files you already have. Read, edit, and
-          export from ordinary folders. No vault, no account, no cloud library.
+          Read, edit, and protect the notes you choose with age encryption.
+          Password-protected Markdown, right beside your ordinary files. No
+          vault, no account, no cloud library.
         </p>
         <div class="actions rise rise-4">
           <a
@@ -113,12 +115,10 @@
             href="https://github.com/mpakus/1537paperstreet/releases/latest"
             >Download</a
           >
-          <a class="quiet" href="https://github.com/mpakus/1537paperstreet"
-            >View the source</a
-          >
+          <a class="quiet" href="#encryption">Explore age encryption</a>
         </div>
         <p class="fine rise rise-4">
-          macOS 12 or newer · Linux .deb · Windows installer
+          New in 0.9.0: password-protected notes · macOS, Linux, and Windows
         </p>
         <figure class="shot stage rise rise-4">
           <img
@@ -149,10 +149,10 @@
             </p>
           </div>
           <div>
-            <p class="fact-title">Diagrams and math</p>
+            <p class="fact-title">age encryption</p>
             <p>
-              Mermaid and KaTeX render locally, with the rest of GitHub Flavored
-              Markdown.
+              Protect individual notes with a password. Keep standard
+              <code>.md.age</code> files in the folders you already use.
             </p>
           </div>
           <div>
@@ -175,21 +175,98 @@
       </div>
 
       <section
+        class="block wrap reveal encryption"
+        id="encryption"
+        aria-labelledby="encryption-title"
+      >
+        <p class="index">01 · New in 0.9.0</p>
+        <div class="prose">
+          <h2 id="encryption-title">Your notes, protected with age.</h2>
+          <p>
+            A journal, project notes, or a draft you want to keep private.
+            Protect the saved contents with a password, then read and edit in
+            the same workspace. Each note is a standard age file you own.
+          </p>
+        </div>
+        <p class="file-example">
+          <code>notes.md</code>
+          <span aria-label="becomes">→</span>
+          <code>notes.md.age</code>
+        </p>
+        <ul class="catalog">
+          <li>
+            <h3>Create or convert</h3>
+            <p>
+              Choose Protect to start an encrypted note or encrypt existing
+              Markdown. The complete filename gets an .age suffix. The protected
+              copy opens in Preview; you choose Keep original or Delete
+              original. Deleting first saves an encrypted recovery copy.
+            </p>
+          </li>
+          <li>
+            <h3>Unlock, edit, lock</h3>
+            <p>
+              Use Preview, Edit, Split, highlights, and task checkboxes after
+              unlocking. Save encrypts your changes. Lock when you are done;
+              unsaved edits get a Save / Discard / Cancel choice. Discarded
+              edits are kept in an encrypted recovery copy.
+            </p>
+          </li>
+          <li>
+            <h3>Keep your options open</h3>
+            <p>
+              Change a password or deliberately export a decrypted Markdown
+              copy. Standard binary age files work with the age and rage
+              command-line tools in passphrase mode. Your notes stay portable.
+            </p>
+          </li>
+        </ul>
+        <div class="prose">
+          <p>
+            Protected text stays out of content search, Mermaid caches, and
+            session restore. The app does not save your password. Filenames
+            remain visible, and unlocked text exists in memory. Keep your
+            password safe: there is no password reset. Deleting an original is
+            not secure erasure.
+          </p>
+        </div>
+        <div class="actions">
+          <a
+            class="quiet"
+            href="https://github.com/mpakus/1537paperstreet/blob/main/docs/src/encryption.md"
+            >Read the encryption guide</a
+          >
+          <a
+            href="https://github.com/mpakus/1537paperstreet/blob/main/docs/AGE_MARKDOWN_ENCRYPTION_VALIDATION.md"
+            >Validation and privacy limits</a
+          >
+        </div>
+        <p class="fine release-note">
+          Windows: the encrypted-save and original-deletion fix has passed CI on
+          main and awaits the next packaged release.
+          <a
+            href="https://github.com/mpakus/1537paperstreet/blob/main/CHANGELOG.md#unreleased"
+            >See unreleased changes</a
+          >.
+        </p>
+      </section>
+
+      <section
         class="block wrap reveal"
         id="editing"
         aria-labelledby="edit-title"
       >
-        <p class="index">01</p>
+        <p class="index">02</p>
         <div class="prose">
           <h2 id="edit-title">Write beside the page</h2>
           <p>
             Preview, Edit, and Split share one window. The source stays readable
             — headings, links, and fenced code — while the page beside it
-            updates as you type and keeps the edited text visible. Choosing a
-            heading in the contents list scrolls the page and the source
-            together and focuses the cursor at the start of its source line.
-            Formatting lives in the toolbar, and in the shortcuts you already
-            use.
+            updates in place as you type. Unchanged diagrams stay put, and the
+            edited text stays visible. Choosing a heading in the contents list
+            scrolls the page and the source together and focuses the cursor at
+            the start of its source line. Formatting lives in the toolbar, and
+            in the shortcuts you already use.
           </p>
         </div>
         <figure class="shot">
@@ -212,15 +289,24 @@
         id="features"
         aria-labelledby="features-title"
       >
-        <p class="index">02</p>
+        <p class="index">03</p>
         <div class="prose">
           <h2 id="features-title">The room, as it works now</h2>
           <p>
-            Folders, reading, and writing, with search, tasks, images, and a
-            contents panel you can put away.
+            More from the latest updates: highlights that travel with your
+            notes, smoother Split editing, and careful saves. All alongside
+            search, tasks, diagrams, and a contents panel you can put away.
           </p>
         </div>
         <ul class="catalog">
+          <li>
+            <h3>Highlights that stay</h3>
+            <p>
+              Select a passage in Preview or Split. Pick a preset or custom
+              color, then recolor or remove it later. Highlights live in the
+              Markdown file and use normal Save and undo.
+            </p>
+          </li>
           <li>
             <h3>Reading</h3>
             <p>
@@ -247,11 +333,11 @@
             </p>
           </li>
           <li>
-            <h3>Unsaved files</h3>
+            <h3>Saves that keep up</h3>
             <p>
-              A red dot at the top-left of a file icon means the editor has
-              changes. Saving removes the dot. Renaming the file keeps that
-              text.
+              A red dot marks unsaved changes. Edits made during a save stay in
+              your buffer, and each document has its own undo history. Atomic
+              saves check for external changes before replacing a file.
             </p>
           </li>
           <li>
@@ -259,9 +345,10 @@
             <p>
               Quick open jumps to a name. Search in files takes plain text or a
               regular expression, and a plain query also finds a close path.
-              Each tab remembers Preview, Edit, or Split and comes back at the
-              next launch. A single click is a temporary tab; a double-click
-              pins it.
+              Ordinary tabs return at the next launch with their view mode.
+              Encrypted text is excluded from content search and session
+              restore. A single click opens a temporary tab; double-click pins
+              it.
             </p>
           </li>
           <li>
@@ -285,8 +372,9 @@
             <h3>Diagrams and PDF</h3>
             <p>
               Click a Mermaid drawing to move, resize, and zoom it. The window
-              remembers its size and place. KaTeX stays on the page. Export PDF
-              is on macOS.
+              remembers its size and place. KaTeX stays on the page. PDF export
+              is on macOS; protected notes require a deliberate decrypted
+              Markdown export first.
             </p>
           </li>
         </ul>
@@ -298,7 +386,7 @@
         aria-labelledby="theme-title"
       >
         <div class="wrap">
-          <p class="index">03</p>
+          <p class="index">04</p>
           <div class="prose">
             <h2 id="theme-title">Twelve rooms for the same text</h2>
             <p>
@@ -413,8 +501,8 @@
       <section class="block wrap reveal" aria-labelledby="local-title">
         <div class="local">
           <div class="prose">
-            <p class="index">04</p>
-            <h2 id="local-title">The folder never leaves</h2>
+            <p class="index">05</p>
+            <h2 id="local-title">A workspace on your computer</h2>
           </div>
           <ul class="points">
             <li>
@@ -429,6 +517,14 @@
               <p>
                 Open a folder, or drop one on the window. The same files stay
                 available to Git, your file manager, and any other editor.
+              </p>
+            </li>
+            <li>
+              <h3>Safer Markdown rendering</h3>
+              <p>
+                Version 0.9.0 includes the patched Markdown sanitizer, with
+                regression checks for unsafe HTML and CSS while preserving
+                supported highlights.
               </p>
             </li>
             <li>

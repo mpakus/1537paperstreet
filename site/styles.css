@@ -395,6 +395,33 @@ p {
   font-size: 0.86em;
 }
 
+.file-example {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 1.75rem 0 0;
+  color: var(--accent);
+}
+
+.file-example code {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+}
+
+.encryption .catalog {
+  margin-bottom: 2rem;
+}
+
+.release-note {
+  max-width: var(--measure);
+}
+
 .keys {
   display: flex;
   flex-wrap: wrap;
@@ -675,7 +702,8 @@ kbd {
   }
 
   .logo img {
-    height: 30px;
+    width: min(12.2rem, 52vw);
+    height: auto;
   }
 }
 
