@@ -198,6 +198,28 @@ fn graph_is_bounded_and_reports_unsupported_files() {
 }
 
 #[test]
+fn a_large_neighborhood_always_keeps_its_focus_note_visible() {
+    let root = tempfile::tempdir().unwrap();
+    let cache = tempfile::tempdir().unwrap();
+    for i in 0..601 {
+        fs::write(root.path().join(format!("note-{i:04}.md")), "[[zz-hub]]").unwrap();
+    }
+    fs::write(root.path().join("zz-hub.md"), "").unwrap();
+    let graph = project_graph(
+        cache.path(),
+        root.path(),
+        &GraphQuery {
+            focus: Some("zz-hub.md".into()),
+            ..GraphQuery::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(graph.nodes.len(), 600);
+    assert!(graph.nodes.iter().any(|node| node.path == "zz-hub.md"));
+    assert_eq!(graph.edges.len(), 599);
+}
+
+#[test]
 #[ignore = "manual release-mode performance measurement"]
 fn graph_cold_and_warm_timings() {
     let root = tempfile::tempdir().unwrap();

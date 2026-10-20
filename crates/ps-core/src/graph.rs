@@ -272,7 +272,12 @@ pub fn snapshot(
         })
         .unwrap_or_default();
     let search = query.search.trim().to_lowercase();
-    for (path, (incoming, outgoing)) in counts {
+    // Reserve the focus node's place before the display cap applies to neighbors.
+    let focus = query
+        .focus
+        .as_deref()
+        .and_then(|path| counts.remove_entry(path));
+    for (path, (incoming, outgoing)) in focus.into_iter().chain(counts) {
         if !path.to_lowercase().contains(&search)
             || (query.hide_isolated && incoming + outgoing == 0)
             || (query.focus.is_some() && !neighborhood.contains(path))
