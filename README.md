@@ -48,12 +48,12 @@ for remaining native-platform and independent-review checks.
 
 **Windows release note:** the encrypted-save and original-deletion fix is on
 `main` and has passed Windows CI. It is not included in the published 0.9.0
-packages; see the [unreleased changes](CHANGELOG.md#unreleased).
+packages; see the [0.10.0 changes](CHANGELOG.md#0100---2026-10-20).
 
 ## More from the latest updates
 
-- **Explore your document constellation (unreleased).** The Graph workspace
-  maps Markdown and wiki links with glowing stars, directional connections,
+- **Explore your document constellation (0.10.0; release pending).** The Graph
+  workspace maps Markdown and wiki links with glowing stars, directional connections,
   searchable notes, and focused neighborhoods. A local database caches
   relationships across launches; your Markdown stays in its original files.
   Encrypted notes are excluded. [Graph guide](docs/src/graph.md).

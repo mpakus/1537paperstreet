@@ -8,7 +8,7 @@ first. Password-protected notes were introduced in 0.9.0.
 
 **Windows 0.9.0:** encrypted Save and Delete original encounter file-lock errors.
 The fix is on `main` and passes Windows CI, but is not in the published 0.9.0
-packages. See the [unreleased changelog](https://github.com/mpakus/1537paperstreet/blob/main/CHANGELOG.md#unreleased).
+packages. See the [0.10.0 changelog](https://github.com/mpakus/1537paperstreet/blob/main/CHANGELOG.md#0100---2026-10-20).
 
 Open a `.md.age` file and choose **Unlock note**. Only a completely authenticated,
 valid UTF-8 document opens. Incorrect passwords and damaged files leave the
