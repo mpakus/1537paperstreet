@@ -27,10 +27,21 @@ fails, the new empty file may remain; existing documents are never replaced.
 Existing metadata is edited through the ordinary editor to preserve unknown keys,
 comments, BOM and line endings. Merely scanning a file never rewrites it.
 
-The direct dependency `serde_yaml_ng = 0.10.0` reads real YAML mappings and tag
-sequences instead of extending the renderer's display-only line splitter. Its
-crate archive and transitive YAML parser are each below 500 KB. See the
-[Serde YAML API](https://docs.rs/serde_yaml_ng/0.10.0/serde_yaml_ng/).
+The direct dependency `serde-saphyr = 2.0.0` reads real YAML mappings and tag
+sequences instead of extending the renderer's display-only line splitter. Only
+`serialize` and `deserialize` features are enabled; file inclusion and property
+expansion are disabled. Its 720,173-byte crate archive exceeds the repository's
+approximately 500 KB threshold; the user approved this replacement. The original
+parser pulled in unmaintained `unsafe-libyaml` and failed the dependency audit.
+The replacement passes the existing policy without another exception. See the
+[serde-saphyr API](https://docs.rs/serde-saphyr/2.0.0/serde_saphyr/).
+
+Parsing is bounded independently of input bytes: 32 nesting levels, 8,192 parser
+events, 4,096 nodes, 64 anchors/aliases/merge keys, 256 KB of scalar or retained
+anchor text, and 8,192 retained anchor events. Alias replay has its own 8,192-event,
+16-level and 64-expansions-per-anchor limits. Only one YAML document is accepted.
+Invalid or over-complex metadata produces a generic notice without echoing source
+text, and the note remains accessible by filename. Parsing never rewrites it.
 
 ## Semantics and limits
 

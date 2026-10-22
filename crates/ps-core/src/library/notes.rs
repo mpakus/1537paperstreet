@@ -106,7 +106,7 @@ pub fn create_note(root: &Path, input: &NoteInput) -> Result<()> {
             .collect(),
         source: input.source.trim().into(),
     };
-    let yaml = serde_yaml_ng::to_string(&metadata)
+    let yaml = serde_saphyr::to_string(&metadata)
         .map_err(|_| invalid("Could not prepare note properties."))?;
     let headings = match input.note_type.as_str() {
         "spec" => &[
@@ -169,7 +169,30 @@ fn metadata(text: &str) -> Result<Metadata> {
     let mut yaml = String::new();
     for line in lines {
         if matches!(line.trim_end(), "---" | "...") {
-            return serde_yaml_ng::from_str(&yaml).map_err(|_| {
+            // Metadata is untrusted, including unknown fields skipped by Serde.
+            // Bound parser work as well as the source bytes checked below.
+            let options = serde_saphyr::options! {
+                alias_limits: serde_saphyr::alias_limits! {
+                    max_total_replayed_events: 8192,
+                    max_replay_stack_depth: 16,
+                    max_alias_expansions_per_anchor: 64,
+                },
+                budget: serde_saphyr::budget! {
+                    flow_nesting_limit: 32,
+                    max_depth: 32,
+                    max_events: 8192,
+                    max_nodes: 4096,
+                    max_aliases: 64,
+                    max_anchors: 64,
+                    max_recorded_anchor_events: 8192,
+                    max_recorded_anchor_bytes: 256 * 1024,
+                    max_total_scalar_bytes: 256 * 1024,
+                    max_merge_keys: 64,
+                    max_documents: 1,
+                    max_inclusion_depth: 0,
+                },
+            };
+            return serde_saphyr::from_str_with_options(&yaml, options).map_err(|_| {
                 invalid("Front matter could not be read. Use text fields and a list of tags.")
             });
         }

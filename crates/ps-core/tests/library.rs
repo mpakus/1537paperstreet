@@ -16,6 +16,22 @@ fn creates_portable_notes_without_overwriting_and_preserves_round_trip() {
     library::create_note(dir.path(), &input).unwrap();
     let bytes = fs::read(dir.path().join("paper.md")).unwrap();
     assert!(String::from_utf8_lossy(&bytes).contains("## Findings"));
+    let projects = [library::LibraryProject {
+        id: "p".into(),
+        name: "Research".into(),
+        root: dir.path().into(),
+    }];
+    let view = library::scan(
+        &projects,
+        &Default::default(),
+        &Default::default(),
+        |_| vec![],
+    )
+    .unwrap();
+    assert!(view.notices.is_empty());
+    assert_eq!(view.notes[0].title, input.title);
+    assert_eq!(view.notes[0].tags, ["agents", "research"]);
+    assert_eq!(view.notes[0].source, input.source);
     assert!(library::create_note(dir.path(), &input).is_err());
     let doc = ps_core::docio::read_doc(dir.path(), "paper.md".as_ref()).unwrap();
     ps_core::docio::write_doc(
@@ -233,6 +249,112 @@ fn malformed_front_matter_is_reported_without_rewriting_the_note() {
     assert!(!result.notices.is_empty());
     assert_eq!(
         fs::read_to_string(dir.path().join("broken.md")).unwrap(),
+        text
+    );
+}
+
+#[test]
+fn front_matter_complexity_limits_preserve_notes_and_hide_parser_details() {
+    let dir = tempfile::tempdir().unwrap();
+    let cases = [
+        format!(
+            "custom: {}private-value{}\n",
+            "[".repeat(40),
+            "]".repeat(40)
+        ),
+        format!("title: &a private-value\ntags: [{}]\n", "*a,".repeat(65)),
+        (0..65)
+            .map(|i| format!("custom{i}: &a{i} private-value\n"))
+            .collect(),
+        format!("custom: [{}]\n", "private-value,".repeat(4200)),
+    ];
+    let projects = [library::LibraryProject {
+        id: "p".into(),
+        name: "Research".into(),
+        root: dir.path().into(),
+    }];
+    for yaml in cases {
+        let text = format!("---\n{yaml}---\n# Keep this\n");
+        assert!(text.len() < 64 * 1024);
+        fs::write(dir.path().join("bounded.md"), &text).unwrap();
+        let view = library::scan(
+            &projects,
+            &Default::default(),
+            &Default::default(),
+            |_| vec![],
+        )
+        .unwrap();
+        assert_eq!(view.notes.len(), 1);
+        assert_eq!(view.notes[0].title, "bounded");
+        assert_eq!(view.notices.len(), 1, "Over-complex metadata was accepted");
+        assert!(view.notices[0].contains("Front matter could not be read"));
+        assert!(!view.notices[0].contains("private-value"));
+        assert_eq!(
+            fs::read_to_string(dir.path().join("bounded.md")).unwrap(),
+            text
+        );
+    }
+}
+
+#[test]
+fn front_matter_keeps_benign_aliases_and_literal_property_text() {
+    let dir = tempfile::tempdir().unwrap();
+    let text = "---\ntitle: &topic Agent research\ntags: [*topic]\nsource: '${LIBRARY_TEST_VALUE}'\ncustom: { nested: [1, 2] }\n---\n# Note\n";
+    fs::write(dir.path().join("note.md"), text).unwrap();
+    let projects = [library::LibraryProject {
+        id: "p".into(),
+        name: "Research".into(),
+        root: dir.path().into(),
+    }];
+    let view = library::scan(
+        &projects,
+        &Default::default(),
+        &Default::default(),
+        |_| vec![],
+    )
+    .unwrap();
+    assert!(view.notices.is_empty());
+    assert_eq!(view.notes[0].title, "Agent research");
+    assert_eq!(view.notes[0].tags, ["Agent research"]);
+    assert_eq!(view.notes[0].source, "${LIBRARY_TEST_VALUE}");
+    assert_eq!(
+        fs::read_to_string(dir.path().join("note.md")).unwrap(),
+        text
+    );
+}
+
+#[test]
+fn front_matter_never_resolves_include_tags() {
+    let dir = tempfile::tempdir().unwrap();
+    let outside = tempfile::tempdir().unwrap();
+    let included = outside.path().join("private.yaml");
+    fs::write(&included, "private-included-value").unwrap();
+    let text = format!(
+        "---\ntitle: !include '{}'\n---\n# Note\n",
+        included.display()
+    );
+    fs::write(dir.path().join("note.md"), &text).unwrap();
+    let projects = [library::LibraryProject {
+        id: "p".into(),
+        name: "Research".into(),
+        root: dir.path().into(),
+    }];
+    let view = library::scan(
+        &projects,
+        &Default::default(),
+        &Default::default(),
+        |_| vec![],
+    )
+    .unwrap();
+    assert_eq!(view.notes.len(), 1);
+    assert!(!view.notes[0].title.contains("private-included-value"));
+    assert!(
+        view.notices
+            .iter()
+            .all(|notice| !notice.contains("private-included-value"))
+    );
+    assert_eq!(
+        fs::read_to_string(dir.path().join("note.md")).unwrap(),
         text
     );
 }

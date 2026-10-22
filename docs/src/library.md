@@ -29,6 +29,8 @@ source: https://example.org/reference
 Edit these properties in the ordinary Markdown editor. Reading a note does not
 rewrite its front matter or remove unknown properties. Invalid front matter
 produces a notice; the note remains accessible using its filename.
+Front matter is limited to 64 KB, with limits on nesting and YAML aliases.
+File inclusion and variable expansion are disabled.
 
 Filter by title/path/project, type, status, topic or freshness. **All registered
 projects** includes other project folders. Select a result to inspect its
