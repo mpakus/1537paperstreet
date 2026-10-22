@@ -5,6 +5,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-22
+
 ### Added
 
 - Library workspace with portable YAML note templates for specifications,
@@ -683,7 +685,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/mpakus/1537paperstreet/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/mpakus/1537paperstreet/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/mpakus/1537paperstreet/compare/v0.8.26...v0.9.0
 [0.8.26]: https://github.com/mpakus/1537paperstreet/compare/v0.8.25...v0.8.26
