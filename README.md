@@ -52,7 +52,7 @@ packages; see the [0.10.0 changes](CHANGELOG.md#0100---2026-10-20).
 
 ## More from the latest updates
 
-- **Build a reusable research and agent library (unreleased).** Create typed
+- **Build a reusable research and agent library (0.11.0; release pending).** Create typed
   Markdown notes, keep ordered collections across projects, track changes since
   review, and assemble context packs from selected heading sections. Preview and
   copy a pack or stage it in the Assistant without sending it. Plaintext sources
