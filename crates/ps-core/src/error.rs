@@ -6,6 +6,12 @@ use std::path::PathBuf;
 /// The error type shared by `ps-core` modules.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    /// A library selection or note could not be processed safely.
+    #[error("{message}")]
+    Library {
+        /// User-facing explanation, without document text.
+        message: String,
+    },
     /// The disposable relationship database could not be read or updated.
     #[error("Couldn't update the graph cache: {detail}. Try Rebuild cache.")]
     GraphCache {

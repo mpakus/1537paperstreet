@@ -20,6 +20,7 @@ notify = "8.2.0"
 blake3 = "1.8.6"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
+serde_yaml_ng = "=0.10.0"
 thiserror = "2.0.20"
 time = { version = "0.3.55", features = ["formatting"] }
 trash = { version = "5.2.6", default-features = false, features = ["coinit_apartmentthreaded"] }

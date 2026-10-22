@@ -781,6 +781,56 @@ pub(crate) async fn graph_get(
         .map_err(to_command_error)
 }
 
+#[tauri::command]
+pub(crate) async fn library_get(
+    state: State<'_, AppState>,
+    query: ps_core::library::LibraryQuery,
+) -> Result<ps_core::library::LibrarySnapshot, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.library_get(query))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub(crate) async fn library_update(
+    state: State<'_, AppState>,
+    revision: String,
+    change: ps_core::library::LibraryMutation,
+) -> Result<String, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.library_update(revision, change))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub(crate) async fn library_preview(
+    state: State<'_, AppState>,
+    sources: Vec<ps_core::library::LibrarySource>,
+) -> Result<ps_core::library::PackPreview, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.library_preview(sources))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn library_note_create(
+    state: State<'_, AppState>,
+    project_id: String,
+    input: ps_core::library::NoteInput,
+) -> Result<String, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.library_note_create(project_id, input))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

@@ -27,12 +27,13 @@ use commands::{
     doc_export_decrypted, doc_highlight, doc_highlight_source, doc_lock, doc_lock_all, doc_open,
     doc_preview, doc_save, doc_snapshot_encrypted, doc_source, doc_stat, doc_unlock, export_pdf,
     files_search, finish_window_close, fs_copy, fs_create_file, fs_create_untitled, fs_import,
-    fs_mkdir, fs_move, fs_rename, fs_transfer, fs_trash, graph_get, mermaid_cache_get,
-    mermaid_cache_put, open_dropped_paths, open_external, open_url, projects_add, projects_list,
-    projects_relocate, projects_remove, projects_rename, reveal_in_finder, save_user_file,
-    session_restore, session_set, text_format, themes_css, themes_list, tree_expanded_get,
-    tree_expanded_set, tree_read_dir, updates_check, updates_install, updates_relaunch,
-    watch_set_expanded, watch_start, watch_stop,
+    fs_mkdir, fs_move, fs_rename, fs_transfer, fs_trash, graph_get, library_get,
+    library_note_create, library_preview, library_update, mermaid_cache_get, mermaid_cache_put,
+    open_dropped_paths, open_external, open_url, projects_add, projects_list, projects_relocate,
+    projects_remove, projects_rename, reveal_in_finder, save_user_file, session_restore,
+    session_set, text_format, themes_css, themes_list, tree_expanded_get, tree_expanded_set,
+    tree_read_dir, updates_check, updates_install, updates_relaunch, watch_set_expanded,
+    watch_start, watch_stop,
 };
 use fs_watch::WatchHub;
 use state::AppState;
@@ -141,6 +142,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             agent_permission_reply,
             dashboard_get,
             graph_get,
+            library_get,
+            library_update,
+            library_preview,
+            library_note_create,
         ])
         .build(tauri::generate_context!())?
         .run(|app, event| {
