@@ -36,7 +36,9 @@
         ? 'Dashboard'
         : workspaceTab === 'graph'
           ? 'Graph'
-          : 'Assistant'}
+          : workspaceTab === 'library'
+            ? 'Library'
+            : 'Assistant'}
     <div class="tab" class:selected={page === workspaceTab}>
       <button
         type="button"

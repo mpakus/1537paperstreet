@@ -1,4 +1,10 @@
 import type {
+  LibraryQuery,
+  LibrarySnapshot,
+  LibraryMutation,
+  LibrarySource,
+  PackPreview,
+  NoteInput,
   GraphQuery,
   GraphSnapshot,
   Config,
@@ -39,6 +45,32 @@ import type {
   UpdateCheck,
   UpdateInstall,
 } from './generated/core'
+
+/** Loads saved note metadata and collections from registered project roots. */
+export function libraryGet(query: LibraryQuery): Promise<LibrarySnapshot> {
+  return invokeIpc('library_get', { query })
+}
+
+/** Saves a selection or review only if the supplied library revision is current. */
+export function libraryUpdate(
+  revision: string,
+  change: LibraryMutation,
+): Promise<string> {
+  return invokeIpc('library_update', { revision, change })
+}
+
+/** Assembles a complete context preview from saved plaintext files. */
+export function libraryPreview(sources: LibrarySource[]): Promise<PackPreview> {
+  return invokeIpc('library_preview', { sources })
+}
+
+/** Creates a new structured note without replacing an existing file. */
+export function libraryNoteCreate(
+  projectId: string,
+  input: NoteInput,
+): Promise<string> {
+  return invokeIpc('library_note_create', { project_id: projectId, input })
+}
 
 type InvokeFn = (
   cmd: string,

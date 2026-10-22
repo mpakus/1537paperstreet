@@ -11,6 +11,12 @@ destinations in a local embedded database. It does not store document bodies,
 index encrypted notes, or make network requests. Rebuild cache discards the
 project's graph database; older metadata may remain in database pages until then.
 
+The [Library](library.md) reads saved plaintext Markdown locally. Its metadata
+file stores selection names, paths and hashes, not document bodies. Copying a pack
+uses the clipboard; Use in Assistant stages it without sending. If you then send
+it, the external agent receives the source text and local Assistant History may
+store that prompt. Encrypted notes are excluded.
+
 The only outgoing request from the **app** is an optional update check (at
 launch if enabled, from the button, or File → Check for Updates…). It talks
 to GitHub Releases. On macOS it may download the universal zip and install
@@ -20,7 +26,7 @@ documents.
 If you add an External Agent in Settings, that **local CLI** may use the
 network under its own terms. The app does not send your notes to a model API
 and does not install agents from a registry. Assistant History stores only
-prompts you typed, on this computer; × and Clear History delete that file’s entries
+prompts you send, including any Library context, on this computer; × and Clear History delete that file’s entries
 and do not send anything off-device.
 
 `asset://` serves files only from registered project roots. `javascript:` and

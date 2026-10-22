@@ -44,6 +44,8 @@ pub struct LibraryQuery {
     pub note_type: String,
     /// Exact status filter, empty for all.
     pub status: String,
+    /// Review state: unreviewed, reviewed or changed; empty for all.
+    pub freshness: String,
     /// Exact topic filter, empty for all.
     pub tag: String,
 }
@@ -154,6 +156,47 @@ impl Default for LibraryData {
 
 impl crate::store::VersionedDocument for LibraryData {
     const SCHEMA_VERSION: u32 = 1;
+
+    fn validate(&self) -> crate::Result<()> {
+        if self.sets.len() > 100 || self.reviews.len() > 10_000 || self.revision.len() > 100 {
+            return Err(super::invalid(
+                "Library metadata exceeds its supported limits. Restore a backup.",
+            ));
+        }
+        let mut ids = std::collections::HashSet::new();
+        for set in &self.sets {
+            if set.id.is_empty()
+                || set.id.len() > 100
+                || !ids.insert(&set.id)
+                || set.name.trim().is_empty()
+                || set.name.len() > 200
+                || set.sources.len() > 100
+            {
+                return Err(super::invalid(
+                    "A saved selection has invalid metadata. Restore a backup.",
+                ));
+            }
+        }
+        for source in self
+            .reviews
+            .iter()
+            .chain(self.sets.iter().flat_map(|set| &set.sources))
+        {
+            if source.project_id.is_empty()
+                || source.project_id.len() > 100
+                || source.path.is_empty()
+                || source.path.len() > 4096
+                || source.section.as_ref().is_some_and(|id| id.len() > 4096)
+                || source.hash.len() != 64
+                || !source.hash.bytes().all(|byte| byte.is_ascii_hexdigit())
+            {
+                return Err(super::invalid(
+                    "A saved source has invalid metadata. Restore a backup.",
+                ));
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Library results without document bodies.

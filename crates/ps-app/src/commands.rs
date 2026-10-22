@@ -781,7 +781,7 @@ pub(crate) async fn graph_get(
         .map_err(to_command_error)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub(crate) async fn library_get(
     state: State<'_, AppState>,
     query: ps_core::library::LibraryQuery,
@@ -793,7 +793,7 @@ pub(crate) async fn library_get(
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub(crate) async fn library_update(
     state: State<'_, AppState>,
     revision: String,
@@ -806,7 +806,7 @@ pub(crate) async fn library_update(
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub(crate) async fn library_preview(
     state: State<'_, AppState>,
     sources: Vec<ps_core::library::LibrarySource>,

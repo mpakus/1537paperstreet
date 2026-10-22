@@ -5,6 +5,20 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Library workspace with portable YAML note templates for specifications,
+  decisions, papers, literature reviews, investigations, experiments and more.
+  Filter saved notes across registered projects with a virtualized document list.
+- Named, ordered collections and context packs containing whole documents or
+  heading sections. Preview source text and hashes, copy complete packs, or append
+  them to the Assistant composer without starting or sending an agent request.
+- Explicit review baselines and changed/unreviewed filters. Changed pack sources
+  remain visible; missing files or headings block incomplete context. Copy and
+  handoff recheck the preview. Atomic local metadata saves reject stale revisions.
+- Library tab restoration and protection of unsaved selections when closing its
+  tab. Encrypted notes and symlinks are excluded; Library makes no network request.
+
 ## [0.10.0] - 2026-10-20
 
 ### Added

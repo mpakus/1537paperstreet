@@ -45,6 +45,10 @@ noteType: string,
  */
 status: string, 
 /**
+ * Review state: unreviewed, reviewed or changed; empty for all.
+ */
+freshness: string, 
+/**
  * Exact topic filter, empty for all.
  */
 tag: string, };
@@ -1205,11 +1209,11 @@ tabs: Array<SessionTab>,
  */
 active_rel_path: string | null, 
 /**
- * Open Graph, Dashboard and Assistant tabs, in strip order.
+ * Open Library, Graph, Dashboard and Assistant tabs, in strip order.
  */
 workspace_tabs: Array<string>, 
 /**
- * Tab that was showing: `document`, `assistant`, `dashboard`, or `graph`.
+ * Tab that was showing: `document`, `assistant`, `dashboard`, `graph`, or `library`.
  */
 page: string, 
 /**
@@ -1231,7 +1235,7 @@ tabs: Array<SessionTab>,
  */
 active_rel_path: string | null, 
 /**
- * Graph, Dashboard and Assistant tabs to show again.
+ * Library, Graph, Dashboard and Assistant tabs to show again.
  */
 workspace_tabs: Array<string>, 
 /**

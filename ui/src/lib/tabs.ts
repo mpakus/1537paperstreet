@@ -2,7 +2,8 @@ import type { DocumentMeta, DocumentSource, ViewMode } from './generated/core'
 import { followRenamedPath } from './tree'
 
 /** Workspace page shown in the main tab strip. */
-export type WorkspacePage = 'document' | 'assistant' | 'dashboard' | 'graph'
+export type WorkspacePage =
+  'document' | 'assistant' | 'dashboard' | 'graph' | 'library'
 
 /** Optional non-document tab in the workspace strip. */
 export type WorkspaceTab = Exclude<WorkspacePage, 'document'>

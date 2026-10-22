@@ -1335,6 +1335,72 @@ mod tests {
     }
 
     #[test]
+    fn library_reopens_saved_sources_and_excludes_missing_projects() {
+        use ps_core::library::{LibraryMutation, LibrarySource, NoteInput, SavedSet, SavedSetKind};
+        let (temporary, state) = open_state();
+        let root = temporary.path().join("notes");
+        fs::create_dir(&root).unwrap();
+        let project = state.projects_add("Notes".into(), root.clone()).unwrap();
+        state
+            .library_note_create(
+                project.id.clone(),
+                NoteInput {
+                    path: "study.md".into(),
+                    title: "Study".into(),
+                    note_type: "paper".into(),
+                    status: "unread".into(),
+                    tags: "agents".into(),
+                    source: "doi:example".into(),
+                },
+            )
+            .unwrap();
+        let snapshot = state.library_get(Default::default()).unwrap();
+        assert_eq!(snapshot.notes.len(), 1);
+        assert!(
+            snapshot.notes[0]
+                .sections
+                .iter()
+                .any(|section| section.id == "findings")
+        );
+        let source = LibrarySource {
+            project_id: project.id,
+            path: "study.md".into(),
+            section: Some("findings".into()),
+            hash: snapshot.notes[0].hash.clone(),
+        };
+        state
+            .library_update(
+                snapshot.revision,
+                LibraryMutation::Save {
+                    set: SavedSet {
+                        id: String::new(),
+                        name: "Study pack".into(),
+                        kind: SavedSetKind::Pack,
+                        sources: vec![source],
+                    },
+                },
+            )
+            .unwrap();
+        drop(state);
+        let state = AppState::open(AppPaths::from_root(temporary.path())).unwrap();
+        let snapshot = state.library_get(Default::default()).unwrap();
+        let pack = state
+            .library_preview(snapshot.sets[0].sources.clone())
+            .unwrap();
+        assert!(pack.complete);
+        assert!(pack.text.contains("## Findings"));
+        assert!(!pack.text.contains("## Methods"));
+        let mut missing = snapshot.sets[0].sources.clone();
+        missing[0].project_id = "unregistered".into();
+        assert!(!state.library_preview(missing).unwrap().complete);
+        assert!(
+            !fs::read_to_string(temporary.path().join("library.json"))
+                .unwrap()
+                .contains("## Findings")
+        );
+    }
+
+    #[test]
     fn opens_default_stores_under_the_application_root() {
         let (temporary, state) = open_state();
 

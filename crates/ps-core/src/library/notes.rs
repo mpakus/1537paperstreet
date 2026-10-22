@@ -151,7 +151,7 @@ pub fn create_note(root: &Path, input: &NoteInput) -> Result<()> {
         root,
         Path::new(&input.path),
         &text,
-        &blake3::hash(b"").to_hex().to_string(),
+        blake3::hash(b"").to_hex().as_ref(),
         docio::RestoreTraits {
             eol: docio::LineEnding::Lf,
             bom: false,
@@ -237,9 +237,16 @@ pub fn scan(
                 }
                 let relative = folder.join(entry.file_name());
                 let path = relative.to_string_lossy().replace('\\', "/");
-                let absolute = fsops::resolve(&project.root, &relative)?;
-                let meta = fs::symlink_metadata(&absolute)
-                    .map_err(|e| crate::Error::io("inspect a library entry", &absolute, e))?;
+                let meta = match fsops::resolve(&project.root, &relative).and_then(|absolute| {
+                    fs::symlink_metadata(&absolute)
+                        .map_err(|e| crate::Error::io("inspect a library entry", &absolute, e))
+                }) {
+                    Ok(meta) => meta,
+                    Err(error) => {
+                        notice(&mut result, format!("{path}: {error}"));
+                        continue;
+                    }
+                };
                 if meta.file_type().is_symlink() {
                     continue;
                 }
@@ -307,6 +314,9 @@ pub fn scan(
                                 "changed"
                             }
                         });
+                        if !matches_filter(freshness, &query.freshness) {
+                            continue;
+                        }
                         result.notes.push(LibraryNote {
                             project_id: project.id.clone(),
                             project_name: project.name.clone(),
@@ -327,6 +337,9 @@ pub fn scan(
         }
     }
     if capped {
+        if result.notices.len() == 40 {
+            result.notices.pop();
+        }
         notice(&mut result, "Partial results: Library scans up to 5,000 notes, 100,000 entries, 64 MB and 64 folder levels. Narrow the project scope.".into());
     }
     result.notes.sort_by_cached_key(|note| {

@@ -52,6 +52,12 @@ packages; see the [0.10.0 changes](CHANGELOG.md#0100---2026-10-20).
 
 ## More from the latest updates
 
+- **Build a reusable research and agent library (unreleased).** Create typed
+  Markdown notes, keep ordered collections across projects, track changes since
+  review, and assemble context packs from selected heading sections. Preview and
+  copy a pack or stage it in the Assistant without sending it. Plaintext sources
+  stay in their folders. [Library guide](docs/src/library.md).
+
 - **Explore your document constellation (0.10.0; release pending).** The Graph
   workspace maps Markdown and wiki links with glowing stars, directional connections,
   searchable notes, and focused neighborhoods. A local database caches
@@ -206,7 +212,7 @@ Top-right of the preview — **Full size**: reading fills the window under the
 title bar. Click again or Escape to return. The contents button sits beside it.
 
 Each document tab remembers Preview, Edit, or Split.
-The last folder, ordinary document tabs, Dashboard, and Assistant come back the
+The last folder, ordinary document tabs, Library, Graph, Dashboard, and Assistant come back the
 next time the app starts. Encrypted tabs and their decrypted contents are not
 restored. A missing file is skipped, and a note is added to Message history.
 

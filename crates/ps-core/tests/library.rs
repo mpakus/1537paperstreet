@@ -102,6 +102,20 @@ fn saved_collections_persist_and_reviews_detect_changes_with_conflict_protection
     };
     let data = library::mutate(&path, "", LibraryMutation::Save { set }, &projects).unwrap();
     assert_eq!(data.sets.len(), 1);
+    let mut duplicate = data.sets[0].clone();
+    duplicate.id.clear();
+    assert!(
+        library::mutate(
+            &path,
+            &data.revision,
+            LibraryMutation::Save { set: duplicate },
+            &projects
+        )
+        .is_err()
+    );
+    let reopened = ps_core::store::JsonStore::<library::LibraryData>::open(&path).unwrap();
+    assert_eq!(reopened.value().sets[0].sources, data.sets[0].sources);
+
     assert!(!fs::read_to_string(&path).unwrap().contains("Original"));
     assert!(
         library::mutate(
@@ -128,6 +142,16 @@ fn saved_collections_persist_and_reviews_detect_changes_with_conflict_protection
     fs::write(root.join("spec.md"), "# Spec\nModified\n").unwrap();
     let view = library::scan(&projects, &Default::default(), &data, |_| vec![]).unwrap();
     assert_eq!(view.notes[0].freshness, "changed");
+    let reviewed = LibraryQuery {
+        freshness: "reviewed".into(),
+        ..Default::default()
+    };
+    assert!(
+        library::scan(&projects, &reviewed, &data, |_| vec![])
+            .unwrap()
+            .notes
+            .is_empty()
+    );
     assert!(
         library::mutate(
             &path,
@@ -162,6 +186,55 @@ fn failed_metadata_save_keeps_previous_data_and_sources() {
     };
     assert!(library::mutate(&path, "", mutation, &[]).is_err());
     assert!(!path.exists());
+}
+
+#[test]
+fn metadata_limits_reject_invalid_data_without_replacing_it() {
+    use ps_core::store::{JsonStore, VersionedDocument};
+    let data = library::LibraryData {
+        sets: vec![
+            library::SavedSet {
+                id: "selection".into(),
+                name: "Oversized".into(),
+                kind: library::SavedSetKind::Pack,
+                sources: vec![],
+            };
+            101
+        ],
+        ..Default::default()
+    };
+    assert!(data.validate().is_err());
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("library.json");
+    let bytes = serde_json::to_vec(&data).unwrap();
+    fs::write(&path, &bytes).unwrap();
+    assert!(JsonStore::<library::LibraryData>::open(&path).is_err());
+    assert_eq!(fs::read(path).unwrap(), bytes);
+}
+
+#[test]
+fn malformed_front_matter_is_reported_without_rewriting_the_note() {
+    let dir = tempfile::tempdir().unwrap();
+    let text = "---\ntags: [broken\n---\n# Keep this\n";
+    fs::write(dir.path().join("broken.md"), text).unwrap();
+    let projects = [library::LibraryProject {
+        id: "p".into(),
+        name: "p".into(),
+        root: dir.path().into(),
+    }];
+    let result = library::scan(
+        &projects,
+        &Default::default(),
+        &Default::default(),
+        |_| vec![],
+    )
+    .unwrap();
+    assert_eq!(result.notes[0].title, "broken");
+    assert!(!result.notices.is_empty());
+    assert_eq!(
+        fs::read_to_string(dir.path().join("broken.md")).unwrap(),
+        text
+    );
 }
 
 #[cfg(unix)]

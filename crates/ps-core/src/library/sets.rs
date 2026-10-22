@@ -32,6 +32,13 @@ pub fn mutate(
                     "Give the selection a name up to 200 characters and at most 100 sources.",
                 ));
             }
+            if data.sets.iter().any(|existing| {
+                existing.id != set.id && existing.kind == set.kind && existing.name == set.name
+            }) {
+                return Err(invalid(
+                    "A selection with this name already exists. Choose another name.",
+                ));
+            }
             let mut seen = HashSet::new();
             for source in &set.sources {
                 if !seen.insert((&source.project_id, &source.path, &source.section)) {
@@ -125,6 +132,11 @@ pub fn preview(
     let mut read_bytes = 0usize;
     for source in sources {
         let loaded = (|| {
+            if read_bytes > 16 * 1024 * 1024 {
+                return Err(invalid(
+                    "The selected source files exceed the 16 MB reading budget.",
+                ));
+            }
             let project = project(projects, &source.project_id)?;
             let (text, hash) = notes::read(&project.root, &source.path)?;
             read_bytes += text.len();
@@ -160,7 +172,7 @@ pub fn preview(
             let fence = "`".repeat(
                 excerpt
                     .lines()
-                    .map(|line| line.chars().take_while(|c| *c == '`').count())
+                    .map(|line| line.trim_start().chars().take_while(|c| *c == '`').count())
                     .max()
                     .unwrap_or(0)
                     .max(2)
