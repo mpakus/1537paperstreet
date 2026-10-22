@@ -32,6 +32,7 @@ pub(crate) struct AppState {
     #[allow(dead_code)]
     paths: AppPaths,
     graph_lock: Arc<Mutex<()>>,
+    library_lock: Arc<Mutex<()>>,
     encrypted: Arc<EncryptedDocuments>,
     pub(crate) exit_confirmed: Arc<std::sync::atomic::AtomicBool>,
     config: Arc<Mutex<JsonStore<Config>>>,
@@ -67,6 +68,7 @@ impl AppState {
 
         Ok(Self {
             graph_lock: Arc::new(Mutex::new(())),
+            library_lock: Arc::new(Mutex::new(())),
             paths,
             encrypted: Arc::new(EncryptedDocuments::default()),
             exit_confirmed: Arc::new(std::sync::atomic::AtomicBool::new(false)),
@@ -105,6 +107,77 @@ impl AppState {
             .unwrap_or_else(|error| error.into_inner())
             .value()
             .clone()
+    }
+
+    fn library_projects(&self) -> Vec<ps_core::library::LibraryProject> {
+        self.projects
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .list()
+            .iter()
+            .map(|project| ps_core::library::LibraryProject {
+                id: project.id.clone(),
+                name: project.name.clone(),
+                root: project.path.clone(),
+            })
+            .collect()
+    }
+
+    pub(crate) fn library_get(
+        &self,
+        query: ps_core::library::LibraryQuery,
+    ) -> Result<ps_core::library::LibrarySnapshot> {
+        let _guard = self.library_lock.lock().unwrap_or_else(|e| e.into_inner());
+        let mut store = JsonStore::<ps_core::library::LibraryData>::open(
+            self.paths.root().join("library.json"),
+        )?;
+        let mut snapshot = ps_core::library::scan(
+            &self.library_projects(),
+            &query,
+            store.value(),
+            ps_render::library_sections,
+        )?;
+        if let Some(ps_core::store::StoreWarning::CorruptFileMoved { preserved_at }) =
+            store.take_warning()
+        {
+            snapshot.notices.push(format!("Damaged Library metadata was preserved at {}. Collections and reviews started empty.", preserved_at.display()));
+        }
+        Ok(snapshot)
+    }
+
+    pub(crate) fn library_update(
+        &self,
+        revision: String,
+        change: ps_core::library::LibraryMutation,
+    ) -> Result<String> {
+        let _guard = self.library_lock.lock().unwrap_or_else(|e| e.into_inner());
+        ps_core::library::mutate(
+            &self.paths.root().join("library.json"),
+            &revision,
+            change,
+            &self.library_projects(),
+        )
+        .map(|data| data.revision)
+    }
+
+    pub(crate) fn library_preview(
+        &self,
+        sources: Vec<ps_core::library::LibrarySource>,
+    ) -> Result<ps_core::library::PackPreview> {
+        ps_core::library::preview(
+            &self.library_projects(),
+            &sources,
+            ps_render::library_sections,
+        )
+    }
+
+    pub(crate) fn library_note_create(
+        &self,
+        project_id: String,
+        input: ps_core::library::NoteInput,
+    ) -> Result<String> {
+        ps_core::library::create_note(&self.project_root(&project_id)?, &input)?;
+        Ok(input.path)
     }
 
     pub(crate) fn config_set(&self, config: Config) -> Result<()> {
@@ -1259,6 +1332,72 @@ mod tests {
         let state = AppState::open(AppPaths::from_root(temporary.path()))
             .expect("application state should open");
         (temporary, state)
+    }
+
+    #[test]
+    fn library_reopens_saved_sources_and_excludes_missing_projects() {
+        use ps_core::library::{LibraryMutation, LibrarySource, NoteInput, SavedSet, SavedSetKind};
+        let (temporary, state) = open_state();
+        let root = temporary.path().join("notes");
+        fs::create_dir(&root).unwrap();
+        let project = state.projects_add("Notes".into(), root.clone()).unwrap();
+        state
+            .library_note_create(
+                project.id.clone(),
+                NoteInput {
+                    path: "study.md".into(),
+                    title: "Study".into(),
+                    note_type: "paper".into(),
+                    status: "unread".into(),
+                    tags: "agents".into(),
+                    source: "doi:example".into(),
+                },
+            )
+            .unwrap();
+        let snapshot = state.library_get(Default::default()).unwrap();
+        assert_eq!(snapshot.notes.len(), 1);
+        assert!(
+            snapshot.notes[0]
+                .sections
+                .iter()
+                .any(|section| section.id == "findings")
+        );
+        let source = LibrarySource {
+            project_id: project.id,
+            path: "study.md".into(),
+            section: Some("findings".into()),
+            hash: snapshot.notes[0].hash.clone(),
+        };
+        state
+            .library_update(
+                snapshot.revision,
+                LibraryMutation::Save {
+                    set: SavedSet {
+                        id: String::new(),
+                        name: "Study pack".into(),
+                        kind: SavedSetKind::Pack,
+                        sources: vec![source],
+                    },
+                },
+            )
+            .unwrap();
+        drop(state);
+        let state = AppState::open(AppPaths::from_root(temporary.path())).unwrap();
+        let snapshot = state.library_get(Default::default()).unwrap();
+        let pack = state
+            .library_preview(snapshot.sets[0].sources.clone())
+            .unwrap();
+        assert!(pack.complete);
+        assert!(pack.text.contains("## Findings"));
+        assert!(!pack.text.contains("## Methods"));
+        let mut missing = snapshot.sets[0].sources.clone();
+        missing[0].project_id = "unregistered".into();
+        assert!(!state.library_preview(missing).unwrap().complete);
+        assert!(
+            !fs::read_to_string(temporary.path().join("library.json"))
+                .unwrap()
+                .contains("## Findings")
+        );
     }
 
     #[test]

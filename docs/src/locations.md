@@ -6,8 +6,9 @@ App data lives in `~/.1537paperstreet/`, not next to your notes.
 | --- | --- |
 | `config.json` | Theme, font, preview colors, Dock, Mermaid/KaTeX flags, window geometry, external agents |
 | `agents/prompts.json` | Recent Assistant **user** prompts (not replies). Assistant History can remove one entry or clear the file. |
+| `library.json` | Saved collections, context-pack references and review hashes; no document bodies |
 | `projects.json` | Project list (name and path), not file contents |
-| `ui-state.json` | Expanded folders, pane widths, and the last session: open folder, document tabs and each tab’s Preview / Edit / Split mode, Dashboard, and Assistant |
+| `ui-state.json` | Expanded folders, pane widths, and the last session: open folder, document tabs and each tab’s Preview / Edit / Split mode, Library, Graph, Dashboard, and Assistant |
 | `themes/` | Your JSON themes |
 | `cache/mermaid/` | Cached diagram SVG |
 | `cache/graph/` | Rebuildable document relationship databases: paths, hashes and links; no document bodies or encrypted-note contents |

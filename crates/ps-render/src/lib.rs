@@ -10,6 +10,7 @@ mod gfm;
 mod graph;
 mod highlight;
 mod images;
+mod library;
 mod links;
 mod markers;
 mod mermaid;
@@ -24,6 +25,7 @@ pub use chunks::html_chunks;
 pub use graph::project_graph;
 pub use highlight::render_source;
 pub use images::render_image;
+pub use library::library_sections;
 pub use markers::{apply_highlight, highlight_source};
 pub use pipeline::{
     RenderOptions, RenderedDocument, render, render_document, render_document_with_options,

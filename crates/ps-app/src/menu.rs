@@ -194,6 +194,11 @@ const VIEW_ASSISTANT: MenuCommand = MenuCommand {
     title: "Assistant",
     accelerator: Some("CmdOrCtrl+Alt+A"),
 };
+const VIEW_LIBRARY: MenuCommand = MenuCommand {
+    id: "view-library",
+    title: "Library",
+    accelerator: None,
+};
 const VIEW_GRAPH: MenuCommand = MenuCommand {
     id: "view-graph",
     title: "Document Graph",
@@ -454,6 +459,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let assistant = item(app, VIEW_ASSISTANT)?;
     let dashboard = item(app, VIEW_DASHBOARD)?;
     let graph = item(app, VIEW_GRAPH)?;
+    let library = item(app, VIEW_LIBRARY)?;
     let view_menu = Submenu::with_items(
         app,
         "View",
@@ -473,6 +479,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &assistant,
             &dashboard,
             &graph,
+            &library,
         ],
     )?;
 

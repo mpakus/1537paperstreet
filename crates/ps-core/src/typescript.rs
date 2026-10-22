@@ -35,6 +35,17 @@ fn ts_config() -> TsConfig {
 pub fn ipc_typescript() -> String {
     let ts = ts_config();
     let declarations = [
+        crate::library::NoteInput::decl(&ts),
+        crate::library::LibraryQuery::decl(&ts),
+        crate::library::NoteSection::decl(&ts),
+        crate::library::LibraryNote::decl(&ts),
+        crate::library::LibrarySource::decl(&ts),
+        crate::library::SavedSetKind::decl(&ts),
+        crate::library::SavedSet::decl(&ts),
+        crate::library::LibrarySnapshot::decl(&ts),
+        crate::library::LibraryMutation::decl(&ts),
+        crate::library::SourceStatus::decl(&ts),
+        crate::library::PackPreview::decl(&ts),
         GraphQuery::decl(&ts),
         GraphNode::decl(&ts),
         GraphEdge::decl(&ts),

@@ -227,6 +227,7 @@
   let settingsOpen = $state(false)
   let settingsFocusAgents = $state(false)
   let aboutOpen = $state(false)
+  let libraryPane: { requestClose: () => boolean } | undefined = $state()
   let workspacePage = $state<WorkspacePage>('document')
   let workspaceTabs = $state<WorkspaceTab[]>([])
   let dashboardSnapshot = $state<DashboardSnapshot | null>(null)
@@ -708,7 +709,9 @@
         ? 'Dashboard'
         : workspacePage === 'graph'
           ? 'Graph'
-          : windowTitle(active?.path, openMeta?.relPath),
+          : workspacePage === 'library'
+            ? 'Library'
+            : windowTitle(active?.path, openMeta?.relPath),
   )
 
   $effect(() => {
@@ -840,6 +843,37 @@
     } catch (cause) {
       assistantError = errorMessage(cause)
     }
+  }
+
+  function openLibrary() {
+    workspaceTabs = openWorkspaceTab(workspaceTabs, 'library')
+    workspacePage = 'library'
+  }
+
+  async function openLibraryNote(projectId: string, path: string) {
+    if (secureOperations || closePrompt)
+      throw new Error('Finish the current document operation first.')
+    if (active?.id !== projectId) {
+      if (dirtyRelPaths.length)
+        throw new Error(
+          'Save your open document edits before opening a note from another project.',
+        )
+      const project = projects.find((item) => item.id === projectId)
+      if (!project)
+        throw new Error(
+          'This project is no longer available. Open it from Projects and refresh Library.',
+        )
+      await activateProject(project, path)
+    } else await openDocument(path, false, 'pin')
+  }
+
+  async function useLibraryContext(text: string) {
+    if (secureOperations || closePrompt)
+      throw new Error('Finish the current document operation first.')
+    assistantComposer = assistantComposer
+      ? `${assistantComposer}\n\n${text}`
+      : text
+    await openAssistant()
   }
 
   function openGraph() {
@@ -1298,6 +1332,10 @@
       }
       if (id === 'view-dashboard') {
         await openDashboard()
+        return
+      }
+      if (id === 'view-library') {
+        openLibrary()
         return
       }
       if (id === 'view-graph') {
@@ -2351,6 +2389,14 @@
   }
 
   function closeWorkspacePage(page: WorkspaceTab) {
+    if (page === 'library' && libraryPane && !libraryPane.requestClose()) {
+      workspacePage = 'library'
+      return
+    }
+    finishCloseWorkspacePage(page)
+  }
+
+  function finishCloseWorkspacePage(page: WorkspaceTab) {
     workspaceTabs = closeWorkspaceTab(workspaceTabs, page)
     if (workspacePage === page) {
       workspacePage = workspaceTabs.at(-1) ?? 'document'
@@ -2497,7 +2543,10 @@
           await activateProject(saved, null, { skipFile: true })
           workspaceTabs = restored.workspace_tabs.filter(
             (tab): tab is WorkspaceTab =>
-              tab === 'assistant' || tab === 'dashboard' || tab === 'graph',
+              tab === 'assistant' ||
+              tab === 'dashboard' ||
+              tab === 'graph' ||
+              tab === 'library',
           )
           for (const tab of tabsToReopen(
             restored.tabs,
@@ -2530,6 +2579,11 @@
             workspaceTabs.includes('graph')
           ) {
             workspacePage = 'graph'
+          } else if (
+            restored.page === 'library' &&
+            workspaceTabs.includes('library')
+          ) {
+            workspacePage = 'library'
           }
         } else if (active && active.available !== false) {
           await activateProject(active)
@@ -2997,6 +3051,10 @@
         page={workspacePage}
         activeRelPath={openMeta?.relPath ?? null}
         onpage={(page) => {
+          if (page === 'library') {
+            openLibrary()
+            return
+          }
           if (page === 'graph') {
             openGraph()
             return
@@ -3026,6 +3084,24 @@
         }}
         onclose={closeTab}
       />
+      {#if workspaceTabs.includes('library')}
+        <div class="library-page" hidden={workspacePage !== 'library'}>
+          {#await import('./panes/Library.svelte')}
+            <p class="hint">Opening Library…</p>
+          {:then module}
+            <module.default
+              bind:this={libraryPane}
+              projectId={active?.id ?? null}
+              projectName={active?.name ?? ''}
+              active={workspacePage === 'library'}
+              {watchSeq}
+              onopen={openLibraryNote}
+              oncontext={useLibraryContext}
+              onclose={() => finishCloseWorkspacePage('library')}
+            />
+          {:catch cause}<p class="hint">{errorMessage(cause)}</p>{/await}
+        </div>
+      {/if}
       {#if workspacePage === 'assistant'}
         <Assistant
           servers={appConfig?.agents.servers ?? []}
@@ -3150,7 +3226,7 @@
             void openSettings({ agents: true })
           }}
         />
-      {:else}
+      {:else if workspacePage !== 'library'}
         <div
           class="workspace"
           class:split={viewMode === 'split'}
@@ -3655,6 +3731,15 @@
   .hint {
     font-weight: 400;
     color: var(--fg-muted);
+  }
+
+  .library-page {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .library-page[hidden] {
+    display: none;
   }
 
   main {

@@ -154,6 +154,8 @@
 
 ## 10. Карта кода
 
+- T-222 Library: `ps-core::library` — шаблоны, YAML-метаданные, ограниченное чтение, фильтры, hash review и сборка context packs. `ps-render::library_sections` использует существующие heading IDs. `Library.svelte` загружается лениво; заметки виртуализированы. `library.json` содержит только ссылки/базисы, запись через `JsonStore` с revision и mutex; исходники через `fsops::resolve` / `docio`. `.age` и symlink исключены. Use in Assistant дописывает composer без запуска/отправки агента. ADR-015. Это не P10, автосохранение или ZIP-экспорт.
+
 - T-220 Graph: `ps-core::graph` — ограниченный индекс и redb-кэш в `cache/graph/`, `ps-render::project_graph` — существующие правила Markdown/wiki. `Graph.svelte` / `GraphCanvas.svelte` загружаются лениво; canvas делает только презентацию (проекция, pan/zoom, hit testing, подсветка), без парсинга/фильтрации документов. `.age` никогда не индексировать; исходники не сохранять в БД. После изменения правил ссылок поднять версию cache filename. ADR-014.
 
 

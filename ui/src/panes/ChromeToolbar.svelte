@@ -118,6 +118,12 @@
     >
     <button
       type="button"
+      title="Library"
+      aria-pressed={page === 'library'}
+      onclick={() => oncommand('view-library')}>Library</button
+    >
+    <button
+      type="button"
       title="Document graph"
       aria-pressed={page === 'graph'}
       onclick={() => oncommand('view-graph')}>Graph</button
@@ -201,6 +207,8 @@
     height: 100%;
     flex: 1;
     min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
     padding: 0;
     pointer-events: none;
   }
