@@ -6,7 +6,7 @@ Status: Accepted for T-218, explicitly requested through
 ## Decision
 
 `ps-core::crypto` owns standard binary age v1 encryption and authenticated,
-strict UTF-8 decryption. `age = "=0.12.1"` manages all keys, salts, nonces and
+strict UTF-8 decryption. `age = "=0.11.5"` manages all keys, salts, nonces and
 scrypt calibration. No custom format, vault, schema change, keychain entry,
 network call, armor, or public-key mode is added.
 
@@ -16,6 +16,13 @@ existing test dependency `tempfile` becomes a runtime dependency for portable
 private temporary files and replacement without unlinking the destination.
 `age::secrecy::SecretString` owns session passwords. Default age CLI/SSH/plugin
 features are disabled. The exact dependency graph is recorded in Cargo.lock.
+
+T-226 (2026-10-29) pins the 0.11.5 maintenance release instead of 0.12.1 to
+remove the latter's unconditional P-256/HPKE dependency on affected
+`crypto-bigint` (RUSTSEC-2026-0387). The supported binary v1/scrypt format and
+document writer are unchanged. Compatibility in both directions and the
+build-time maintenance exception are recorded in
+[the dependency validation report](../SECURITY_DEPENDENCIES_2026-10.md).
 
 The Windows lock fix promotes the existing transitive `same-file` 1.0.6 to a
 direct dependency for portable file-identity checks on live handles. This adds

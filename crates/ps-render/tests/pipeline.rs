@@ -63,3 +63,13 @@ fn minimized_fuzz_regression_for_lone_carriage_return() {
 
     assert!(!html.is_empty());
 }
+
+#[test]
+fn empty_wikilink_labels_do_not_multiply_following_content() {
+    // RUSTSEC-2026-0414: keep the reproducer small even on the vulnerable parser.
+    let markdown = format!("{}unique-tail", "[[a|]] ".repeat(10));
+    let html = render(&markdown);
+
+    assert_eq!(html.matches("unique-tail").count(), 1);
+    assert!(html.len() < markdown.len() * 40);
+}
