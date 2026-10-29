@@ -215,11 +215,21 @@ impl TagIndex {
             .map(|(_, count, _)| *count)
             .max()
             .unwrap_or(1);
-        let mut tags: Vec<_> = counts
+        let mut counts: Vec<_> = counts.into_iter().collect();
+        counts.sort_by(|(a, (_, a_count, _)), (b, (_, b_count, _))| {
+            b_count.cmp(a_count).then(a.cmp(b))
+        });
+        let total_tags = counts.len() as u32;
+        let offset = query.tag_offset.min(total_tags.saturating_sub(1) / 80 * 80);
+        // Format only the visible page, rather than allocating labels for up to
+        // 100,000 related tags on every filter or pagination change.
+        let tags = counts
             .into_iter()
+            .skip(offset as usize)
+            .take(80)
             .map(|(key, (label, documents, projects))| CloudTag {
                 key: key.into(),
-                label: if label.chars().all(char::is_numeric)
+                label: if label.chars().all(|c| c.is_numeric() || c == '/')
                     || label
                         .chars()
                         .any(|c| !c.is_alphanumeric() && !matches!(c, '_' | '-' | '/'))
@@ -237,11 +247,8 @@ impl TagIndex {
                 },
             })
             .collect();
-        tags.sort_by(|a, b| b.documents.cmp(&a.documents).then(a.key.cmp(&b.key)));
-        let total_tags = tags.len() as u32;
-        let offset = query.tag_offset.min(total_tags.saturating_sub(1) / 80 * 80);
         Ok(TagSnapshot {
-            tags: tags.into_iter().skip(offset as usize).take(80).collect(),
+            tags,
             total_tags,
             tag_offset: offset,
             projects: matching

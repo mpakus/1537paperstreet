@@ -26,7 +26,13 @@
     refresh = $state(0),
     sourceRevision = $state(0)
   let generation = 0,
-    loadedRevision = -1
+    loadedRevision = -1,
+    inFlight = false
+  let queued: {
+    query: TagQuery
+    revision: number
+    generation: number
+  } | null = null
   const query = $derived<TagQuery>({
     tags: selected.map((t) => t.key),
     projectId: folder?.id ?? '',
@@ -51,25 +57,40 @@
       error = ''
     })
     const timer = setTimeout(() => {
-      void tagsGet(next, loadedRevision !== revision)
-        .then((value) => {
-          if (current !== generation) return
-          snapshot = value
-          loadedRevision = revision
-          loading = false
-        })
-        .catch((cause) => {
-          if (current !== generation) return
-          error = errorMessage(cause)
-          loading = false
-          snapshot = null
-        })
+      queued = { query: next, revision, generation: current }
+      void loadQueued()
     }, 180)
     return () => {
       clearTimeout(timer)
+      queued = null
       generation++
     }
   })
+  async function loadQueued() {
+    if (inFlight || !queued) return
+    const request = queued
+    queued = null
+    inFlight = true
+    try {
+      const value = await tagsGet(
+        request.query,
+        loadedRevision !== request.revision,
+      )
+      // Even a superseded filter response has refreshed this source revision.
+      loadedRevision = request.revision
+      if (request.generation !== generation) return
+      snapshot = value
+      loading = false
+    } catch (cause) {
+      if (request.generation !== generation) return
+      error = errorMessage(cause)
+      loading = false
+      snapshot = null
+    } finally {
+      inFlight = false
+      void loadQueued()
+    }
+  }
   function toggle(key: string, label: string) {
     selected = selected.some((t) => t.key === key)
       ? selected.filter((t) => t.key !== key)

@@ -12,10 +12,11 @@ all project folders registered in 1537paperstreet. The files stay in their folde
 | `#project alpha#` | A tag containing spaces |
 | `#project alpha/design notes#` | Nested tags with spaces |
 | `#!#` / `#2021#` | Punctuation or numeric tag, enclosed in hashes |
+| `#2026/06#` | Numeric/date hierarchy, enclosed in hashes |
 | `\#literal` | Escaped text, excluded from the cloud |
 
 This follows [Bear's tag syntax](https://bear.app/faq/how-to-use-tags-in-bear/).
-Tags can appear in paragraphs and headings. Code, Markdown links/images, math,
+Tags can appear in paragraphs, headings and emphasis (`_#research_`). Code, Markdown links/images, math,
 HTML blocks and YAML text are excluded from inline extraction. Existing YAML
 `tags: [research, agents]` lists are included as metadata. Matching ignores case.
 One document counts once for each tag, even if it repeats the tag or has several
@@ -35,6 +36,7 @@ children under the same parent.
   notes omitted by an all-project scan limit.
 - Edit tags in the existing editor and **Save**. Returning to Tags Cloud refreshes
   saved content. **Refresh** also picks up external changes in other folders.
+  Opening the already active note preserves its unsaved editor text.
 
 Larger labels indicate more matching documents. The cloud shows 80 tags per
 page; the document list is virtualized. Counts always describe the current

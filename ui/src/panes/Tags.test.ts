@@ -16,7 +16,7 @@ const snapshot: TagSnapshot = {
   ],
 }
 let target: HTMLDivElement
-let component: ReturnType<typeof mount>
+let component: ReturnType<typeof mount> | undefined
 async function settle() {
   await vi.advanceTimersByTimeAsync(200)
   flushSync()
@@ -26,6 +26,23 @@ function button(label: string) {
     (b) => b.textContent?.trim() === label,
   )!
 }
+function searchFor(text: string) {
+  const input = target.querySelector<HTMLInputElement>(
+    '[aria-label="Find tags or notes"]',
+  )!
+  input.value = text
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  flushSync()
+}
+function deferred() {
+  let resolve!: (value: TagSnapshot) => void
+  let reject!: (cause: unknown) => void
+  const promise = new Promise<TagSnapshot>((done, fail) => {
+    resolve = done
+    reject = fail
+  })
+  return { promise, resolve, reject }
+}
 beforeEach(() => {
   vi.useFakeTimers()
   target = document.createElement('div')
@@ -33,6 +50,7 @@ beforeEach(() => {
 })
 afterEach(async () => {
   if (component) await unmount(component)
+  component = undefined
   target.remove()
   resetIpc()
   vi.useRealTimers()
@@ -136,6 +154,101 @@ describe('Tags Cloud', () => {
     resolve(snapshot)
     await settle()
     expect(target.querySelectorAll('[role="option"]')).toHaveLength(0)
+  })
+  it('coalesces filter changes behind one scan and queries only the latest filter', async () => {
+    const scan = deferred()
+    const get = vi
+      .fn()
+      .mockReturnValueOnce(scan.promise)
+      .mockResolvedValue({
+        ...snapshot,
+        notes: [],
+      })
+    mockIpc({ tags_get: get })
+    component = mount(Tags, { target, props: { onopen: vi.fn() } })
+    await settle()
+    searchFor('first')
+    await settle()
+    searchFor('latest')
+    await settle()
+    expect(get).toHaveBeenCalledTimes(1)
+
+    scan.resolve(snapshot)
+    await settle()
+    expect(get).toHaveBeenCalledTimes(2)
+    expect(get.mock.lastCall?.[0]).toMatchObject({
+      refresh: false,
+      query: { search: 'latest' },
+    })
+    expect(target.querySelectorAll('[role="option"]')).toHaveLength(0)
+  })
+  it('coalesces refreshes during a scan into one new rebuild', async () => {
+    const scan = deferred()
+    const get = vi
+      .fn()
+      .mockReturnValueOnce(scan.promise)
+      .mockResolvedValue({
+        ...snapshot,
+        notes: [],
+      })
+    mockIpc({ tags_get: get })
+    component = mount(Tags, { target, props: { onopen: vi.fn() } })
+    await settle()
+    button('Refresh').click()
+    await settle()
+    button('Refresh').click()
+    searchFor('latest')
+    await settle()
+    expect(get).toHaveBeenCalledTimes(1)
+
+    scan.resolve(snapshot)
+    await settle()
+    expect(get).toHaveBeenCalledTimes(2)
+    expect(get.mock.lastCall?.[0]).toMatchObject({
+      refresh: true,
+      query: { search: 'latest' },
+    })
+    expect(target.querySelectorAll('[role="option"]')).toHaveLength(0)
+  })
+  it('retries a failed stale scan for the latest filter without showing its error', async () => {
+    const scan = deferred()
+    const get = vi
+      .fn()
+      .mockReturnValueOnce(scan.promise)
+      .mockResolvedValue(snapshot)
+    mockIpc({ tags_get: get })
+    component = mount(Tags, { target, props: { onopen: vi.fn() } })
+    await settle()
+    searchFor('latest')
+    await settle()
+    expect(get).toHaveBeenCalledTimes(1)
+
+    scan.reject('Old scan failed')
+    await settle()
+    expect(get.mock.lastCall?.[0]).toMatchObject({
+      refresh: true,
+      query: { search: 'latest' },
+    })
+    expect(target.textContent).not.toContain('Old scan failed')
+    expect(target.querySelectorAll('[role="option"]')).toHaveLength(1)
+  })
+  it('drops queued work when the pane is closed during a scan', async () => {
+    const scan = deferred()
+    const get = vi
+      .fn()
+      .mockReturnValueOnce(scan.promise)
+      .mockResolvedValue(snapshot)
+    mockIpc({ tags_get: get })
+    component = mount(Tags, { target, props: { onopen: vi.fn() } })
+    await settle()
+    searchFor('latest')
+    await settle()
+    await unmount(component)
+    component = undefined
+    scan.resolve(snapshot)
+    await settle()
+    expect(get).toHaveBeenCalledTimes(1)
+    expect(target.textContent).toBe('')
   })
   it('reaches virtualized results with End and opens them with Enter', async () => {
     const open = vi.fn()
