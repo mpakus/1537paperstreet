@@ -5,6 +5,18 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- Updated the Markdown parser to fix exponential output from repeated wiki links
+  with empty labels (RUSTSEC-2026-0414). The document graph rebuilds its link cache
+  using the corrected parser.
+- Removed the affected `crypto-bigint` dependency (RUSTSEC-2026-0387) by pinning
+  age 0.11.5 for the existing passphrase-only format. Existing encrypted notes
+  remain compatible; their format and save protections are unchanged.
+- Updated Mermaid's DOMPurify sanitizer to 3.4.17 and test tooling to Happy DOM
+  21.0.4 and Vitest 4.1.12, resolving the critical, high and moderate npm audit
+  findings. Two low-severity build-configuration findings have no upstream fix.
+
 ## [0.11.0] - 2026-10-22
 
 ### Added
