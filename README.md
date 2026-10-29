@@ -46,13 +46,13 @@ See the [encryption guide](docs/src/encryption.md) for backups, supported format
 and privacy boundaries, and the [validation record](docs/AGE_MARKDOWN_ENCRYPTION_VALIDATION.md)
 for remaining native-platform and independent-review checks.
 
-**Windows release note:** the encrypted-save and original-deletion fix is on
-`main` and has passed Windows CI. It is not included in the published 0.9.0
-packages; see the [0.10.0 changes](CHANGELOG.md#0100---2026-10-20).
+**Windows release note:** upgrade from 0.9.0 to the current release for the
+encrypted-save and original-deletion fixes; see the
+[0.10.0 changes](CHANGELOG.md#0100---2026-10-20).
 
 ## More from the latest updates
 
-- **Build a reusable research and agent library (0.11.0; release pending).** Create typed
+- **Build a reusable research and agent library (0.11.0).** Create typed
   Markdown notes, keep ordered collections across projects, track changes since
   review, and assemble context packs from selected heading sections. Preview and
   copy a pack or stage it in the Assistant without sending it. Plaintext sources
@@ -62,7 +62,7 @@ packages; see the [0.10.0 changes](CHANGELOG.md#0100---2026-10-20).
   `#multiple words#` across registered projects. Focus on related tags and open
   matching documents in their original folder. [Tags guide](docs/src/tags.md).
 
-- **Explore your document constellation (0.10.0; release pending).** The Graph
+- **Explore your document constellation (0.10.0).** The Graph
   workspace maps Markdown and wiki links with glowing stars, directional connections,
   searchable notes, and focused neighborhoods. A local database caches
   relationships across launches; your Markdown stays in its original files.
