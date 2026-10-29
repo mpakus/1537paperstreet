@@ -292,16 +292,6 @@
             onchange={persist}
           />
         </label>
-        <label>
-          Measure (ch)
-          <input
-            type="number"
-            min="40"
-            max="120"
-            bind:value={draft.typography.measure_ch}
-            onchange={persist}
-          />
-        </label>
       </div>
     </section>
 
@@ -338,6 +328,44 @@
             }}
           />
         </label>
+        <div class="line-width">
+          <div class="line-width-controls">
+            <label for="preview-line-width">
+              Line width (characters)
+              <input
+                id="preview-line-width"
+                type="number"
+                min="40"
+                max="120"
+                step="1"
+                aria-describedby="line-width-hint"
+                bind:value={draft.typography.measure_ch}
+                onchange={persist}
+              />
+            </label>
+            <div
+              class="width-presets"
+              role="group"
+              aria-label="Line width presets"
+            >
+              {#each [80, 100, 120] as width (width)}
+                <button
+                  type="button"
+                  aria-label={`${width} characters per line`}
+                  aria-pressed={draft.typography.measure_ch === width}
+                  onclick={() => {
+                    draft.typography.measure_ch = width
+                    persist()
+                  }}>{width}</button
+                >
+              {/each}
+            </div>
+          </div>
+          <p class="hint" id="line-width-hint">
+            Choose a preset or enter 40–120. Actual line length varies with the
+            font and available pane width.
+          </p>
+        </div>
       </div>
       <label class="check">
         <input
@@ -692,6 +720,44 @@
     gap: var(--space-1);
     color: var(--fg);
     font-size: 0.875rem;
+  }
+
+  .line-width {
+    grid-column: 1 / -1;
+  }
+
+  .line-width-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-3);
+  }
+
+  .line-width-controls input {
+    width: 8rem;
+  }
+
+  .width-presets {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .width-presets button {
+    min-height: 32px;
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elev);
+    color: var(--fg);
+  }
+
+  .width-presets button[aria-pressed='true'] {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .line-width .hint {
+    margin-top: var(--space-2);
   }
 
   label.check {

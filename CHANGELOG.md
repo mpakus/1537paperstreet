@@ -5,6 +5,12 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Settings → Preview & Split now exposes line width with 80, 100 and 120
+  character presets and a custom 40–120 value. Changes save immediately and
+  apply to both reading modes; narrow panes still wrap to fit.
+
 ## [0.12.1] - 2026-10-29
 
 ### Fixed

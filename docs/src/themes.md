@@ -16,6 +16,11 @@ Preview and Split can override reading font, size, text color, and background
 (`preview_font`, `preview_font_size: 0`, `preview_bg`, `preview_fg`) mean
 “use the theme.”
 
+In **Settings → Preview & Split → Line width (characters)**, choose **80**,
+**100** or **120**, or enter any value from 40 to 120. Changes save immediately
+and apply to Preview and the preview pane in Split. The default is 72. Line
+length is approximate: it depends on the font, and narrower panes wrap sooner.
+
 A custom theme is JSON in `~/.1537paperstreet/themes/`. Required fields:
 `id`, `name`, `appearance` (`light` or `dark`), and a `tokens` object with
 kebab-case keys (`bg`, `fg`, `accent`, `hl-kw`, …). An incomplete or broken
