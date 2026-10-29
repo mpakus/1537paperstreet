@@ -5,6 +5,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-10-29
+
 ### Changed
 
 - Settings → Preview & Split now exposes line width with 80, 100 and 120
@@ -730,7 +732,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/mpakus/1537paperstreet/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/mpakus/1537paperstreet/compare/v0.11.0...v0.12.1
 [0.12.0]: https://github.com/mpakus/1537paperstreet/compare/v0.11.0...c7263ebf03f6b24edb4f64dbd4682fe6e898b650
 [0.11.0]: https://github.com/mpakus/1537paperstreet/compare/v0.10.0...v0.11.0
