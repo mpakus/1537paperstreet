@@ -44,6 +44,25 @@ fn library_workspace_round_trips_without_document_content() {
 }
 
 #[test]
+fn tags_workspace_round_trips_without_document_content() {
+    let mut state = UiState::default();
+    state
+        .set_session(OpenSession {
+            project_id: "project".into(),
+            tabs: vec![],
+            active_rel_path: None,
+            workspace_tabs: vec!["tags".into(), "tags".into()],
+            page: "tags".into(),
+            view_mode: "preview".into(),
+        })
+        .unwrap();
+    let session = state.session.unwrap();
+    assert_eq!(session.workspace_tabs, vec!["tags"]);
+    assert_eq!(session.page, "tags");
+    assert!(session.tabs.is_empty());
+}
+
+#[test]
 fn expanded_directories_round_trip_and_reject_escapes() {
     let temp = tempfile::tempdir().expect("temporary directory");
     let path = temp.path().join("ui-state.json");

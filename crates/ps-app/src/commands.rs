@@ -56,6 +56,11 @@ pub(crate) fn projects_list(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+pub(crate) fn projects_get(state: State<'_, AppState>, id: String) -> Result<Project, String> {
+    state.projects_get(id).map_err(to_command_error)
+}
+
+#[tauri::command(rename_all = "snake_case")]
 pub(crate) async fn projects_add(
     state: State<'_, AppState>,
     name: String,
@@ -1025,4 +1030,18 @@ pub(crate) async fn doc_snapshot_encrypted(
     .await
     .map_err(|_| "The encrypted document operation could not finish.".to_owned())
     .and_then(|result| result.map_err(to_command_error))
+}
+
+/// Queries tags across all registered project folders on a blocking worker.
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn tags_get(
+    state: tauri::State<'_, AppState>,
+    query: ps_core::tags::TagQuery,
+    refresh: bool,
+) -> Result<ps_core::tags::TagSnapshot, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.tags_get(query, refresh))
+        .await
+        .map_err(|error| error.to_string())?
+        .map_err(|error| error.to_string())
 }

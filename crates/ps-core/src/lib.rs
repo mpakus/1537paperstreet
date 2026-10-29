@@ -20,6 +20,7 @@ pub mod paths;
 pub mod projects;
 pub mod search;
 pub mod store;
+pub mod tags;
 pub mod themes;
 pub mod tree;
 pub mod typescript;

@@ -33,6 +33,7 @@ pub(crate) struct AppState {
     paths: AppPaths,
     graph_lock: Arc<Mutex<()>>,
     library_lock: Arc<Mutex<()>>,
+    tags: Arc<Mutex<ps_core::tags::TagIndex>>,
     encrypted: Arc<EncryptedDocuments>,
     pub(crate) exit_confirmed: Arc<std::sync::atomic::AtomicBool>,
     config: Arc<Mutex<JsonStore<Config>>>,
@@ -69,6 +70,7 @@ impl AppState {
         Ok(Self {
             graph_lock: Arc::new(Mutex::new(())),
             library_lock: Arc::new(Mutex::new(())),
+            tags: Arc::new(Mutex::new(ps_core::tags::TagIndex::default())),
             paths,
             encrypted: Arc::new(EncryptedDocuments::default()),
             exit_confirmed: Arc::new(std::sync::atomic::AtomicBool::new(false)),
@@ -121,6 +123,19 @@ impl AppState {
                 root: project.path.clone(),
             })
             .collect()
+    }
+
+    pub(crate) fn tags_get(
+        &self,
+        query: ps_core::tags::TagQuery,
+        refresh: bool,
+    ) -> Result<ps_core::tags::TagSnapshot> {
+        self.tags.lock().unwrap_or_else(|e| e.into_inner()).query(
+            &self.library_projects(),
+            &query,
+            refresh,
+            ps_render::inline_tags,
+        )
     }
 
     pub(crate) fn library_get(
@@ -269,6 +284,14 @@ impl AppState {
             .upsert(project.clone());
         projects.flush()?;
         Ok(project)
+    }
+
+    pub(crate) fn projects_get(&self, id: String) -> Result<Project> {
+        self.projects
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(&id)
+            .cloned()
     }
 
     pub(crate) fn projects_add(&self, name: String, path: PathBuf) -> Result<Project> {
@@ -1326,6 +1349,34 @@ mod tests {
     use ps_core::projects::ProjectsListQuery;
 
     use super::AppState;
+
+    #[test]
+    fn tags_project_lookup_reaches_beyond_the_first_registry_page() {
+        let (temporary, state) = open_state();
+        let mut last = None;
+        for n in 0..205 {
+            let root = temporary.path().join(format!("folder-{n}"));
+            fs::create_dir(&root).unwrap();
+            last = Some(state.projects_add(format!("Folder {n:03}"), root).unwrap());
+        }
+        let project = last.unwrap();
+        assert_eq!(
+            state.projects_get(project.id.clone()).unwrap().path,
+            project.path
+        );
+        assert!(state.projects_get("missing".into()).is_err());
+        fs::write(project.path.join("note.md"), "#connected").unwrap();
+        let view = state
+            .tags_get(
+                ps_core::tags::TagQuery {
+                    project_id: project.id.clone(),
+                    ..Default::default()
+                },
+                true,
+            )
+            .unwrap();
+        assert_eq!(view.notes[0].project_id, project.id);
+    }
 
     fn open_state() -> (tempfile::TempDir, AppState) {
         let temporary = tempfile::tempdir().expect("temporary directory");

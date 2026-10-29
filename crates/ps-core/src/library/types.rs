@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 /// A registered project supplied by the application, never by an IPC path.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LibraryProject {
     /// Registry identity.
     pub id: String,

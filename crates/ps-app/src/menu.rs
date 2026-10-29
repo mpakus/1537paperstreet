@@ -199,6 +199,11 @@ const VIEW_LIBRARY: MenuCommand = MenuCommand {
     title: "Library",
     accelerator: None,
 };
+const VIEW_TAGS: MenuCommand = MenuCommand {
+    id: "view-tags",
+    title: "Tags Cloud",
+    accelerator: None,
+};
 const VIEW_GRAPH: MenuCommand = MenuCommand {
     id: "view-graph",
     title: "Document Graph",
@@ -460,6 +465,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let dashboard = item(app, VIEW_DASHBOARD)?;
     let graph = item(app, VIEW_GRAPH)?;
     let library = item(app, VIEW_LIBRARY)?;
+    let tags = item(app, VIEW_TAGS)?;
     let view_menu = Submenu::with_items(
         app,
         "View",
@@ -480,6 +486,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
             &dashboard,
             &graph,
             &library,
+            &tags,
         ],
     )?;
 

@@ -16,6 +16,7 @@ mod markers;
 mod mermaid;
 mod pipeline;
 mod sanitize;
+mod tags;
 mod toc;
 mod wiki;
 
@@ -31,4 +32,5 @@ pub use pipeline::{
     RenderOptions, RenderedDocument, render, render_document, render_document_with_options,
     render_project, render_project_with_options, render_with_options,
 };
+pub use tags::inline_tags;
 pub use toc::TocItem;

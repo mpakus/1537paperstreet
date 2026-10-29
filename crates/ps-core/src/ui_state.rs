@@ -88,9 +88,9 @@ pub struct OpenSession {
     /// Document that was focused, when one was.
     #[ts(type = "string | null")]
     pub active_rel_path: Option<PathBuf>,
-    /// Open Library, Graph, Dashboard and Assistant tabs, in strip order.
+    /// Open Tags Cloud, Library, Graph, Dashboard and Assistant tabs, in strip order.
     pub workspace_tabs: Vec<String>,
-    /// Tab that was showing: `document`, `assistant`, `dashboard`, `graph`, or `library`.
+    /// Tab that was showing: `document`, `assistant`, `dashboard`, `graph`, `library`, or `tags`.
     pub page: String,
     /// `preview`, `editor`, or `split`. Empty keeps the configured default.
     pub view_mode: String,
@@ -106,7 +106,7 @@ pub struct RestoredSession {
     /// Document to focus. Empty when no saved document remains.
     #[ts(type = "string | null")]
     pub active_rel_path: Option<PathBuf>,
-    /// Library, Graph, Dashboard and Assistant tabs to show again.
+    /// Tags Cloud, Library, Graph, Dashboard and Assistant tabs to show again.
     pub workspace_tabs: Vec<String>,
     /// Tab to show after the documents are open.
     pub page: String,
@@ -381,13 +381,18 @@ fn normalize_active(active: Option<PathBuf>, tabs: &[SessionTab]) -> Result<Opti
 
 fn normalize_workspace(tabs: Vec<String>, page: &str) -> Vec<String> {
     let mut incoming = tabs;
-    if page == "assistant" || page == "dashboard" || page == "graph" || page == "library" {
+    if matches!(
+        page,
+        "assistant" | "dashboard" | "graph" | "library" | "tags"
+    ) {
         incoming.push(page.to_owned());
     }
     let mut out = Vec::new();
     for tab in incoming {
-        if (tab == "assistant" || tab == "dashboard" || tab == "graph" || tab == "library")
-            && !out.contains(&tab)
+        if matches!(
+            tab.as_str(),
+            "assistant" | "dashboard" | "graph" | "library" | "tags"
+        ) && !out.contains(&tab)
         {
             out.push(tab);
         }
@@ -396,8 +401,10 @@ fn normalize_workspace(tabs: Vec<String>, page: &str) -> Vec<String> {
 }
 
 fn normalize_page(page: &str, workspace: &[String]) -> String {
-    if (page == "assistant" || page == "dashboard" || page == "graph" || page == "library")
-        && workspace.iter().any(|tab| tab == page)
+    if (matches!(
+        page,
+        "assistant" | "dashboard" | "graph" | "library" | "tags"
+    )) && workspace.iter().any(|tab| tab == page)
     {
         page.to_owned()
     } else {
