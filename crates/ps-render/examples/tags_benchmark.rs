@@ -95,5 +95,46 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &serde_json::json!({"all": all, "focused": focused, "folder": folder})
         )?
     );
+    high_cardinality()?;
+    Ok(())
+}
+
+fn high_cardinality() -> Result<(), Box<dyn std::error::Error>> {
+    let temporary = tempfile::tempdir()?;
+    let projects = [LibraryProject {
+        id: "large".into(),
+        name: "Large".into(),
+        root: temporary.path().into(),
+    }];
+    for note in 0..400 {
+        let text = (0..250)
+            .map(|tag| format!("#topic-{note:03}-{tag:03} "))
+            .collect::<String>();
+        std::fs::write(temporary.path().join(format!("{note}.md")), text)?;
+    }
+    let mut index = TagIndex::default();
+    let first = index.query(&projects, &Default::default(), true, ps_render::inline_tags)?;
+    assert_eq!(first.total_tags, 100_000);
+    let mut samples = Vec::new();
+    for _ in 0..25 {
+        let start = Instant::now();
+        let result = index.query(
+            &projects,
+            &Default::default(),
+            false,
+            ps_render::inline_tags,
+        )?;
+        samples.push(start.elapsed().as_secs_f64() * 1000.0);
+        assert_eq!(
+            serde_json::to_value(&result)?,
+            serde_json::to_value(&first)?
+        );
+        std::hint::black_box(result);
+    }
+    samples.sort_by(f64::total_cmp);
+    eprintln!(
+        "100,000 related tags / 400 notes: cached page median {:.2}ms",
+        samples[12]
+    );
     Ok(())
 }

@@ -861,6 +861,18 @@
   async function openWorkspaceNote(projectId: string, path: string) {
     if (secureOperations || closePrompt)
       throw new Error('Finish the current document operation first.')
+    if (
+      active?.id === projectId &&
+      openMeta?.projectId === projectId &&
+      openMeta.relPath === path &&
+      docMeta
+    ) {
+      documentGeneration += 1
+      const current = snapshotCurrentTab()
+      if (current) tabs = placeDocTab(tabs, current, 'pin')
+      workspacePage = 'document'
+      return
+    }
     if (active?.id !== projectId) {
       if (dirtyRelPaths.length)
         throw new Error(

@@ -5,6 +5,18 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Opening the current note from Tags or Library preserves its unsaved editor
+  buffer. Explicit Reload continues to use the existing discard safeguards.
+- Tags inside underscore emphasis are recognized. Numeric/date hierarchies
+  require closing hashes, including copied cloud labels (`#2026/06#`).
+
+### Changed
+
+- Tags Cloud coalesces pending filter changes and refreshes, and formats labels
+  only for the displayed page to reduce work in large tag networks.
+
 ## [0.12.0] - 2026-10-29
 
 ### Added

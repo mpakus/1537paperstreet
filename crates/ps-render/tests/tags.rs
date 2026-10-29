@@ -313,7 +313,7 @@ fn emitted_cloud_labels_round_trip_for_punctuation_numbers_and_unicode() {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(
         dir.path().join("tags.md"),
-        "#!# #rock & roll# #2021# #café #🚀 #nested/tag",
+        "---\ntags: ['2026/06', '_foo_', '__foo__']\n---\n#!# #rock & roll# #2021# #café #🚀 #nested/tag",
     )
     .unwrap();
     let roots = [LibraryProject {
@@ -325,6 +325,9 @@ fn emitted_cloud_labels_round_trip_for_punctuation_numbers_and_unicode() {
         .query(&roots, &Default::default(), true, inline_tags)
         .unwrap();
     for tag in result.tags {
+        if tag.key == "2026/06" {
+            assert_eq!(tag.label, "#2026/06#");
+        }
         assert_eq!(inline_tags(&tag.label)[0].to_lowercase(), tag.key);
     }
 }
@@ -336,4 +339,80 @@ fn closed_tags_preserve_names_across_markdown_emphasis_boundaries() {
         ["foo_bar_", "nested/a_b_", "a*b*"]
     );
     assert_eq!(inline_tags("#foo_bar_"), ["foo_bar_"]);
+    assert_eq!(inline_tags("#_foo_ #__foo__"), ["_foo_", "__foo__"]);
+}
+
+#[test]
+fn numeric_hierarchies_need_a_closing_hash() {
+    assert_eq!(
+        inline_tags("#2021/2022 #2026/06# #work/2026 #2026/work"),
+        ["2026/06", "work/2026", "2026/work"]
+    );
+}
+
+#[test]
+fn tags_inside_underscore_emphasis_exclude_the_outer_delimiters() {
+    assert_eq!(
+        inline_tags("_#work_ __#bold__ _#project alpha#_ word#suffix #snake_case"),
+        ["work", "bold", "project alpha", "snake_case"]
+    );
+    assert_eq!(
+        inline_tags(
+            r"_words #work_ ___#bold___ **_#project alpha#_** _\#escaped_ #foo_bar_# #a*b*#"
+        ),
+        ["work", "bold", "project alpha", "foo_bar_", "a*b*"]
+    );
+}
+
+#[test]
+fn cloud_pages_preserve_frequency_order_weights_and_folder_counts() {
+    use ps_core::{
+        library::LibraryProject,
+        tags::{TagIndex, TagQuery},
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let mut projects = Vec::new();
+    for (id, range) in [("a", 0..181), ("b", 0..90), ("c", 0..1)] {
+        let root = dir.path().join(id);
+        std::fs::create_dir(&root).unwrap();
+        let source = range.map(|i| format!("#topic{i:03} ")).collect::<String>();
+        std::fs::write(root.join("note.md"), source).unwrap();
+        projects.push(LibraryProject {
+            id: id.into(),
+            name: id.into(),
+            root,
+        });
+    }
+    let mut index = TagIndex::default();
+    for offset in [0, 80, 160] {
+        let result = index
+            .query(
+                &projects,
+                &TagQuery {
+                    tag_offset: offset,
+                    ..Default::default()
+                },
+                false,
+                inline_tags,
+            )
+            .unwrap();
+        assert_eq!(result.total_tags, 181);
+        assert_eq!(result.tag_offset, offset);
+        assert_eq!(result.tags.len(), (181 - offset).min(80) as usize);
+        for (i, tag) in result.tags.iter().enumerate() {
+            let ordinal = offset + i as u32;
+            let count = if ordinal == 0 {
+                3
+            } else if ordinal < 90 {
+                2
+            } else {
+                1
+            };
+            assert_eq!(tag.key, format!("topic{ordinal:03}"));
+            assert_eq!(tag.label, format!("#topic{ordinal:03}"));
+            assert_eq!(tag.documents, count);
+            assert_eq!(tag.projects, count);
+            assert_eq!(tag.weight, ((count - 1) * 2) as u8);
+        }
+    }
 }

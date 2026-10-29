@@ -63,3 +63,46 @@ Global results are explicitly partial at the documented scanner/index caps.
 Choose folder rebuilds within that root to recover globally omitted notes.
 No release installers, signing/notarization, production upgrade or native
 cross-platform manual acceptance is established by these local checks.
+
+## Review and optimization — T-227
+
+Review found and reproduced a same-note navigation bug that could replace an
+unsaved editor buffer with disk content, repeated full scans while filters changed
+during an in-flight refresh, and missing tags inside underscore emphasis. Numeric
+hierarchies now follow Bear's [documented date-tag delimiters](https://blog.bear.app/2017/08/bear-tips-organize-notes-with-tags-and-infinite-nested-tags/),
+including YAML-derived cloud labels. Regressions were run before each fix.
+The App integration checks cover edit → Tags → reopen → Save, plus a delayed
+open of another note after returning to the current draft. Request tests cover
+coalescing, refresh during a scan, stale failure retry and unmount cancellation.
+Parser checks distinguish enclosing underscore emphasis from underscores inside
+tag names (`#_foo_` / `#__foo__`) and verify copied labels round-trip.
+
+A temporary browser fixture held a scan pending while the search changed twice:
+only the initial refresh and the final cached query were sent, the cloud finished
+loading, and the browser console had no warnings/errors. The fixture was removed.
+
+Final local gates: Rust formatting, Clippy with warnings denied, all **407 Rust
+tests** (two existing ignored tests), all **221 UI tests**, Svelte/TypeScript
+checks, ESLint, Prettier and the production UI build passed. Independent final
+review found no remaining blockers. Existing ts-rs attribute diagnostics,
+proc-macro-error2 future-compatibility warning and the Mermaid bundle-size
+warning remain documented limitations; this change adds no dependencies.
+
+The query now sorts borrowed count entries and constructs labels only for the
+80 displayed tags. The benchmark adds 400 temporary notes containing 100,000
+distinct tags, within the existing index cap, and checks identical snapshots on
+repeated queries. Three alternating runs of the before/after release binaries
+(25 queries per run, median) measured:
+
+| Fixture | Before | After |
+| --- | --- | --- |
+| 100,000 tags: cached page, run 1 | 18.27 ms | 12.83 ms |
+| 100,000 tags: cached page, run 2 | 18.21 ms | 12.89 ms |
+| 100,000 tags: cached page, run 3 | 18.25 ms | 12.94 ms |
+| 1,000 notes: cached AND query | 0.25–0.26 ms | 0.25–0.26 ms |
+
+The median large-cloud query improved **29.4%** (18.25 → 12.89 ms). The ordinary
+fixture's all/focused/folder snapshots were identical before and after in all
+three runs. Dedicated pagination coverage also checks frequency order, tie
+ordering, weights, project counts and final-page size. No new cache or dependency
+was introduced.
