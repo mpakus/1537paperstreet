@@ -5,6 +5,17 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Tags Cloud connects saved Markdown notes across registered project folders
+  using Bear-style `#tags`, `#nested/tags` and `#multiple words#`, alongside YAML
+  tags. Focus on a tag, intersect related topics, filter by folder, and open the
+  original note. Counts show document and folder connections; the cloud is paged
+  and document results are virtualized. Tags remain editable in the normal editor.
+- A bounded, local tag index refreshes on workspace activation, file/project
+  changes and explicit Refresh, with visible partial-result notices. Encrypted
+  notes and symlinks are excluded; no document bodies are cached or sent online.
+
 ## [0.11.0] - 2026-10-22
 
 ### Added

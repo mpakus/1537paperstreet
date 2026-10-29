@@ -124,6 +124,12 @@
     >
     <button
       type="button"
+      title="Tags Cloud across projects"
+      aria-pressed={page === 'tags'}
+      onclick={() => oncommand('view-tags')}>Tags</button
+    >
+    <button
+      type="button"
       title="Document graph"
       aria-pressed={page === 'graph'}
       onclick={() => oncommand('view-graph')}>Graph</button

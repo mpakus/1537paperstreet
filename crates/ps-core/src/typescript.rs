@@ -35,6 +35,10 @@ fn ts_config() -> TsConfig {
 pub fn ipc_typescript() -> String {
     let ts = ts_config();
     let declarations = [
+        crate::tags::TagQuery::decl(&ts),
+        crate::tags::CloudTag::decl(&ts),
+        crate::tags::TagNote::decl(&ts),
+        crate::tags::TagSnapshot::decl(&ts),
         crate::library::NoteInput::decl(&ts),
         crate::library::LibraryQuery::decl(&ts),
         crate::library::NoteSection::decl(&ts),

@@ -4,7 +4,7 @@ mod notes;
 mod sets;
 mod types;
 
-pub use notes::{create_note, scan};
+pub use notes::{create_note, scan, scan_with_tags};
 pub use sets::{mutate, preview};
 pub use types::*;
 

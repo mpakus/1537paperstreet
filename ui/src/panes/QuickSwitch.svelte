@@ -3,10 +3,12 @@
   import { highlightQuery } from '../lib/text'
 
   let {
+    title = 'Switch project',
     onopen,
     onclose,
     onerror,
   }: {
+    title?: string
     onopen: (project: Project) => void
     onclose: () => void
     onerror: (message: string) => void
@@ -64,14 +66,14 @@
     class="palette"
     role="dialog"
     tabindex="-1"
-    aria-label="Switch project"
+    aria-label={title}
     onclick={(event) => event.stopPropagation()}
     onkeydown={(event) => event.stopPropagation()}
   >
     <input
       bind:this={inputEl}
       bind:value={query}
-      placeholder="Switch project"
+      placeholder={title}
       aria-label="Search projects"
       onkeydown={(event) => {
         if (event.key === 'Escape') {

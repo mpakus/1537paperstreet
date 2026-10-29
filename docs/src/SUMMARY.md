@@ -5,6 +5,7 @@
 - [First project](first-project.md)
 - [Working with files](files.md)
 - [Library](library.md)
+- [Tags Cloud](tags.md)
 - [Document graph](graph.md)
 - [Editing and saving](editing.md)
 - [Password-protected notes](encryption.md)

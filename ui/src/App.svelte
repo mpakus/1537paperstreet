@@ -37,6 +37,7 @@
     openUrl,
     pickAndOpen,
     projectsList,
+    projectsGet,
     revealInFinder,
     setWindowTitle,
     startWindowDrag,
@@ -711,7 +712,9 @@
           ? 'Graph'
           : workspacePage === 'library'
             ? 'Library'
-            : windowTitle(active?.path, openMeta?.relPath),
+            : workspacePage === 'tags'
+              ? 'Tags Cloud'
+              : windowTitle(active?.path, openMeta?.relPath),
   )
 
   $effect(() => {
@@ -845,12 +848,17 @@
     }
   }
 
+  function openTags() {
+    workspaceTabs = openWorkspaceTab(workspaceTabs, 'tags')
+    workspacePage = 'tags'
+  }
+
   function openLibrary() {
     workspaceTabs = openWorkspaceTab(workspaceTabs, 'library')
     workspacePage = 'library'
   }
 
-  async function openLibraryNote(projectId: string, path: string) {
+  async function openWorkspaceNote(projectId: string, path: string) {
     if (secureOperations || closePrompt)
       throw new Error('Finish the current document operation first.')
     if (active?.id !== projectId) {
@@ -858,10 +866,11 @@
         throw new Error(
           'Save your open document edits before opening a note from another project.',
         )
-      const project = projects.find((item) => item.id === projectId)
-      if (!project)
+      const project = await projectsGet(projectId)
+      // Recheck after IPC: a user may start editing while the lookup is pending.
+      if (secureOperations || closePrompt || dirtyRelPaths.length)
         throw new Error(
-          'This project is no longer available. Open it from Projects and refresh Library.',
+          'Finish or save your open document edits before switching projects.',
         )
       await activateProject(project, path)
     } else await openDocument(path, false, 'pin')
@@ -1332,6 +1341,10 @@
       }
       if (id === 'view-dashboard') {
         await openDashboard()
+        return
+      }
+      if (id === 'view-tags') {
+        openTags()
         return
       }
       if (id === 'view-library') {
@@ -2546,7 +2559,8 @@
               tab === 'assistant' ||
               tab === 'dashboard' ||
               tab === 'graph' ||
-              tab === 'library',
+              tab === 'library' ||
+              tab === 'tags',
           )
           for (const tab of tabsToReopen(
             restored.tabs,
@@ -2584,6 +2598,11 @@
             workspaceTabs.includes('library')
           ) {
             workspacePage = 'library'
+          } else if (
+            restored.page === 'tags' &&
+            workspaceTabs.includes('tags')
+          ) {
+            workspacePage = 'tags'
           }
         } else if (active && active.available !== false) {
           await activateProject(active)
@@ -3051,6 +3070,10 @@
         page={workspacePage}
         activeRelPath={openMeta?.relPath ?? null}
         onpage={(page) => {
+          if (page === 'tags') {
+            openTags()
+            return
+          }
           if (page === 'library') {
             openLibrary()
             return
@@ -3084,6 +3107,24 @@
         }}
         onclose={closeTab}
       />
+      {#if workspaceTabs.includes('tags')}
+        <div class="tags-page-host" hidden={workspacePage !== 'tags'}>
+          {#await import('./panes/Tags.svelte')}
+            <p class="hint">Opening Tags Cloud…</p>
+          {:then module}
+            <module.default
+              active={workspacePage === 'tags'}
+              {watchSeq}
+              projectsRevision={projectsReload +
+                ':' +
+                projects
+                  .map((project) => project.id + project.path + project.name)
+                  .join('\0')}
+              onopen={openWorkspaceNote}
+            />
+          {:catch cause}<p class="hint">{errorMessage(cause)}</p>{/await}
+        </div>
+      {/if}
       {#if workspaceTabs.includes('library')}
         <div class="library-page" hidden={workspacePage !== 'library'}>
           {#await import('./panes/Library.svelte')}
@@ -3095,7 +3136,7 @@
               projectName={active?.name ?? ''}
               active={workspacePage === 'library'}
               {watchSeq}
-              onopen={openLibraryNote}
+              onopen={openWorkspaceNote}
               oncontext={useLibraryContext}
               onclose={() => finishCloseWorkspacePage('library')}
             />
@@ -3226,7 +3267,7 @@
             void openSettings({ agents: true })
           }}
         />
-      {:else if workspacePage !== 'library'}
+      {:else if workspacePage !== 'library' && workspacePage !== 'tags'}
         <div
           class="workspace"
           class:split={viewMode === 'split'}
@@ -3733,12 +3774,17 @@
     color: var(--fg-muted);
   }
 
-  .library-page {
+  .tags-page-host {
+    display: flex;
+  }
+  .library-page,
+  .tags-page-host {
     flex: 1;
     min-height: 0;
     overflow: hidden;
   }
-  .library-page[hidden] {
+  .library-page[hidden],
+  .tags-page-host[hidden] {
     display: none;
   }
 

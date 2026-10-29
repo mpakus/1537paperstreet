@@ -1,4 +1,6 @@
 import type {
+  TagQuery,
+  TagSnapshot,
   LibraryQuery,
   LibrarySnapshot,
   LibraryMutation,
@@ -768,4 +770,17 @@ export function graphGet(
   query: GraphQuery,
 ): Promise<GraphSnapshot> {
   return invokeIpc('graph_get', { project_id: projectId, query })
+}
+
+/** Queries the shared saved-note tag index; refresh rebuilds it from disk. */
+export function tagsGet(
+  query: TagQuery,
+  refresh: boolean,
+): Promise<TagSnapshot> {
+  return invokeIpc('tags_get', { query, refresh })
+}
+
+/** Resolves any registered project by ID, independently of sidebar pagination. */
+export function projectsGet(id: string): Promise<Project> {
+  return invokeIpc('projects_get', { id })
 }

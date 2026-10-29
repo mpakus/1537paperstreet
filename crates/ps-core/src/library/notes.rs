@@ -211,6 +211,18 @@ pub fn scan(
     data: &LibraryData,
     sections: impl Fn(&str) -> Vec<NoteSection>,
 ) -> Result<LibrarySnapshot> {
+    scan_with_tags(projects, query, data, sections, |_| Vec::new())
+}
+
+/// Scans notes with additional inline topics supplied by the Markdown parser.
+/// The same filesystem limits and exclusions as [`scan`] apply.
+pub fn scan_with_tags(
+    projects: &[LibraryProject],
+    query: &LibraryQuery,
+    data: &LibraryData,
+    sections: impl Fn(&str) -> Vec<NoteSection>,
+    inline_tags: impl Fn(&str) -> Vec<String>,
+) -> Result<LibrarySnapshot> {
     let mut result = LibrarySnapshot {
         notes: vec![],
         sets: data.sets.clone(),
@@ -292,13 +304,14 @@ pub fn scan(
                 match read(&project.root, &path) {
                     Ok((text, hash)) => {
                         bytes += text.len();
-                        let info = match metadata(&text) {
+                        let mut info = match metadata(&text) {
                             Ok(value) => value,
                             Err(error) => {
                                 notice(&mut result, format!("{path}: {error}"));
                                 Metadata::default()
                             }
                         };
+                        info.tags.extend(inline_tags(&text));
                         let title = if info.title.is_empty() {
                             relative
                                 .file_stem()

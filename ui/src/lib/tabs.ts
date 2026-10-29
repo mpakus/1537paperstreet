@@ -3,7 +3,7 @@ import { followRenamedPath } from './tree'
 
 /** Workspace page shown in the main tab strip. */
 export type WorkspacePage =
-  'document' | 'assistant' | 'dashboard' | 'graph' | 'library'
+  'document' | 'assistant' | 'dashboard' | 'graph' | 'library' | 'tags'
 
 /** Optional non-document tab in the workspace strip. */
 export type WorkspaceTab = Exclude<WorkspacePage, 'document'>

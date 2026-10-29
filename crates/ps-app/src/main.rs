@@ -29,11 +29,11 @@ use commands::{
     files_search, finish_window_close, fs_copy, fs_create_file, fs_create_untitled, fs_import,
     fs_mkdir, fs_move, fs_rename, fs_transfer, fs_trash, graph_get, library_get,
     library_note_create, library_preview, library_update, mermaid_cache_get, mermaid_cache_put,
-    open_dropped_paths, open_external, open_url, projects_add, projects_list, projects_relocate,
-    projects_remove, projects_rename, reveal_in_finder, save_user_file, session_restore,
-    session_set, text_format, themes_css, themes_list, tree_expanded_get, tree_expanded_set,
-    tree_read_dir, updates_check, updates_install, updates_relaunch, watch_set_expanded,
-    watch_start, watch_stop,
+    open_dropped_paths, open_external, open_url, projects_add, projects_get, projects_list,
+    projects_relocate, projects_remove, projects_rename, reveal_in_finder, save_user_file,
+    session_restore, session_set, tags_get, text_format, themes_css, themes_list,
+    tree_expanded_get, tree_expanded_set, tree_read_dir, updates_check, updates_install,
+    updates_relaunch, watch_set_expanded, watch_start, watch_stop,
 };
 use fs_watch::WatchHub;
 use state::AppState;
@@ -75,6 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             config_set,
             projects_list,
             projects_add,
+            projects_get,
             projects_rename,
             projects_remove,
             projects_relocate,
@@ -143,6 +144,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             dashboard_get,
             graph_get,
             library_get,
+            tags_get,
             library_update,
             library_preview,
             library_note_create,

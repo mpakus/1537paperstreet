@@ -38,7 +38,9 @@
           ? 'Graph'
           : workspaceTab === 'library'
             ? 'Library'
-            : 'Assistant'}
+            : workspaceTab === 'tags'
+              ? 'Tags Cloud'
+              : 'Assistant'}
     <div class="tab" class:selected={page === workspaceTab}>
       <button
         type="button"
