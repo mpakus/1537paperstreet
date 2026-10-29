@@ -69,6 +69,37 @@ by older Fluent alongside the 2.x version used by Tauri/intl-memoizer.
 
 ## Verification scope
 
+### npm audit follow-up
+
+After the Rust gate passed, CI reached npm audit and reported previously
+unreached JavaScript findings. Each update was isolated and checked:
+
+- Mermaid keeps its existing version; only its resolved DOMPurify dependency
+  moves from 3.4.16 to [3.4.17](https://github.com/cure53/DOMPurify/releases/tag/3.4.17).
+  The patched sanitizer fixes the template/shadow-root, in-place and XHTML SMIL
+  advisories. Browser checks used the real local Mermaid import in strict mode:
+  normal diagrams rendered, hostile labels lost event handlers, and the XHTML
+  SVG animation guard passed. The console had no errors/warnings. The temporary
+  fixture and dev server were removed afterward.
+- [Happy DOM 21](https://github.com/capricorn86/happy-dom/releases/tag/v21.0.0)
+  disables iframe/CSS loading by default; those safer defaults remain enabled.
+  The test dependency is pinned to patched 21.0.4 after reviewing the major
+  release notes and passing the component tests and type checks.
+- Vitest and its matching coverage provider move together from 4.1.11 to
+  [4.1.12](https://github.com/vitest-dev/vitest/releases/tag/v4.1.12), which
+  hardens manual/redirect mocks. No production dependency is added.
+
+Install scripts were disabled during each targeted update. npm audit now reports
+**zero critical/high/moderate** findings, with the existing high-severity CI gate
+unchanged. Two low findings remain for `deepmerge` and its build-only Svelte
+plugin consumer ([GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4)).
+No fixed release is available. The merge inputs here are repository-controlled
+build configuration, not Markdown or user document data. Review by **2026-11-29**;
+adopt a fixed upstream release when available. No advisory suppression was added
+for npm. UI checks, coverage, lint and build passed with the patched tooling.
+
+### Completed checks
+
 Local checks cover the repository's Rust/UI Definition of Done, documentation,
 dependency audits, targeted regressions, bidirectional format compatibility and
 render performance: **390 Rust tests passed** (two existing ignored) and

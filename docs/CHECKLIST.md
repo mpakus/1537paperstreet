@@ -396,4 +396,4 @@
 
 ## Исправление security CI — согласовано пользователем
 
-- [x] **T-226** Устранить RUSTSEC-2026-0414 и RUSTSEC-2026-0387 в зависимостях: регрессия wiki-ссылок, совместимость age/scrypt, audit/deny и полный DoD перед слиянием Tags Cloud 0.12.0. (← T-218)
+- [x] **T-226** Устранить блокирующие security CI уязвимости Rust/npm: RUSTSEC-2026-0414/0387, DOMPurify, Happy DOM и Vitest; регрессия wiki-ссылок, совместимость age/scrypt, audit/deny и полный DoD перед слиянием Tags Cloud 0.12.0. (← T-218)
