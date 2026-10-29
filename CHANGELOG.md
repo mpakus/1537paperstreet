@@ -10,6 +10,9 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - Updated the Markdown parser to fix exponential output from repeated wiki links
   with empty labels (RUSTSEC-2026-0414). The document graph rebuilds its link cache
   using the corrected parser.
+- Removed the affected `crypto-bigint` dependency (RUSTSEC-2026-0387) by pinning
+  age 0.11.5 for the existing passphrase-only format. Existing encrypted notes
+  remain compatible; their format and save protections are unchanged.
 
 ## [0.11.0] - 2026-10-22
 

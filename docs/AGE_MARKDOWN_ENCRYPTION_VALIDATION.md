@@ -34,7 +34,7 @@ advisory alongside the existing dependency warnings; npm reports zero vulnerabil
 
 ## Implemented
 
-- Standard binary age v1/scrypt, pinned age 0.12.1; complete authentication and
+- Standard binary age v1/scrypt, now pinned age 0.11.5 by T-226; complete authentication and
   strict UTF-8 before source enters the editor. X25519 and armor are rejected.
 - Protected create, unlock, Preview/Edit/Split, Save, Lock, conversion, password
   changes and explicit no-clobber plaintext export. Conversion keeps its source
@@ -49,6 +49,13 @@ advisory alongside the existing dependency warnings; npm reports zero vulnerabil
 - Content-search exclusion, no protected Mermaid caches, no source in global
   chunk broadcasts, no plaintext session restore or stored passwords.
 - Generated IPC bindings, guide, ADR-013, changelog, and Windows crypto test lane.
+
+The 2026-10-29 dependency change removes the affected P-256 dependency chain
+from age 0.12.1 while retaining the same scrypt implementation. Its historical
+ciphertext fixture, bidirectional compatibility checks, audit results and
+maintenance tradeoff are documented in
+[T-226 validation](SECURITY_DEPENDENCIES_2026-10.md). Earlier measurements below
+describe the original dependency version.
 
 ## Executed locally
 
