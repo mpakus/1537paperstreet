@@ -10,7 +10,9 @@ path = "src/lib.rs"
 
 [dependencies]
 redb = "4.4.0"
-age = { version = "=0.12.1", default-features = false }
+# The 0.11.5 maintenance release supports our scrypt-only format without the
+# vulnerable crypto-bigint dependency pulled in by 0.12.1's P-256 recipients.
+age = { version = "=0.11.5", default-features = false }
 tempfile = "3.27.0"
 zeroize = "1"
 same-file = "1.0.6"
