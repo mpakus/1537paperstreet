@@ -126,7 +126,8 @@ pub fn snapshot(
     let root = fsops::resolve(project_root, Path::new(""))?;
     let key = blake3::hash(root.as_os_str().as_encoded_bytes()).to_hex();
     fs::create_dir_all(cache_dir).map_err(|e| Error::io("create the graph cache", cache_dir, e))?;
-    let file = cache_dir.join(format!("v1-{key}.redb"));
+    // v2 rebuilds links parsed before the empty-label wikilink fix in cmark 0.13.5.
+    let file = cache_dir.join(format!("v2-{key}.redb"));
     if query.rebuild && file.exists() {
         fs::remove_file(&file).map_err(|e| Error::io("rebuild the graph cache", &file, e))?;
     }

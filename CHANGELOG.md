@@ -5,6 +5,12 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- Updated the Markdown parser to fix exponential output from repeated wiki links
+  with empty labels (RUSTSEC-2026-0414). The document graph rebuilds its link cache
+  using the corrected parser.
+
 ## [0.11.0] - 2026-10-22
 
 ### Added
