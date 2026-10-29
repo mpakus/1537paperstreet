@@ -5,6 +5,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-29
+
 ### Added
 
 - Tags Cloud connects saved Markdown notes across registered project folders
@@ -708,7 +710,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/mpakus/1537paperstreet/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/mpakus/1537paperstreet/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/mpakus/1537paperstreet/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/mpakus/1537paperstreet/compare/v0.8.26...v0.9.0
