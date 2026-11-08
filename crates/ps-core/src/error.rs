@@ -210,17 +210,21 @@ pub enum Error {
     #[error("Images open in Preview. Editing is not available.")]
     ImageNotEditable,
 
+    /// A PDF cannot be overwritten from the editor.
+    #[error("PDFs open in Preview. Editing is not available.")]
+    PdfNotEditable,
+
     /// JSON in the editor could not be parsed.
     #[error("This file is not valid JSON.")]
     InvalidJsonBuffer,
 
     /// A Finder drop contained no paths.
-    #[error("Drop a Markdown file or a folder onto the window to open it.")]
+    #[error("Drop a Markdown file, a PDF, or a folder onto the window to open it.")]
     EmptyDrop,
 
-    /// A dropped path is not a folder or a Markdown file.
+    /// A dropped path is not a folder, a Markdown file, or a PDF.
     #[error(
-        "Only Markdown files and folders can be opened. '{}' is not a Markdown file.",
+        "Only Markdown files, PDF files, and folders can be opened. '{}' is not one of those.",
         path.display()
     )]
     UnsupportedDrop {

@@ -5,6 +5,18 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-07
+
+### Added
+
+- Opening a Markdown or PDF file from Finder, Explorer, or the file manager
+  registers its folder and opens the file, including when the app is already
+  running. The app is listed under Open With and does not replace the default
+  editor.
+- PDF files open in Preview from the tree, Open File…, a drop, or the file
+  manager. On macOS each page is drawn in the reading pane. Editing a PDF is
+  not available.
+
 ## [0.12.2] - 2026-10-29
 
 ### Changed
@@ -732,7 +744,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/mpakus/1537paperstreet/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/mpakus/1537paperstreet/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/mpakus/1537paperstreet/compare/v0.11.0...v0.12.1
 [0.12.0]: https://github.com/mpakus/1537paperstreet/compare/v0.11.0...c7263ebf03f6b24edb4f64dbd4682fe6e898b650

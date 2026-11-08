@@ -138,6 +138,28 @@ fn image_files_preview_without_exposing_bytes_and_cannot_be_saved() {
     assert!(matches!(err, Error::ImageNotEditable));
     assert_eq!(fs::read(root.join("cover.png")).expect("png bytes"), png);
 
+    let pdf_bytes = b"%PDF-1.4\n1 0 obj\n";
+    let (_temp, root) = project_file("paper.pdf", pdf_bytes);
+    let loaded = docio::read_doc(&root, Path::new("paper.pdf")).expect("pdf");
+    assert_eq!(loaded.source.text, "");
+    assert!(!loaded.source.writable);
+    assert!(loaded.source.readonly_reason.is_none());
+    assert!(!loaded.source_only);
+    assert_eq!(loaded.size, pdf_bytes.len() as u64);
+    let err = docio::write_doc(
+        &root,
+        Path::new("paper.pdf"),
+        "",
+        &loaded.hash,
+        RestoreTraits::from_source(&loaded.source),
+    )
+    .expect_err("pdf save");
+    assert!(matches!(err, Error::PdfNotEditable));
+    assert_eq!(
+        fs::read(root.join("paper.pdf")).expect("pdf bytes"),
+        pdf_bytes
+    );
+
     let (_temp, root) = project_file("icon.svg", b"<svg><script>alert(1)</script></svg>\n");
     let loaded = docio::read_doc(&root, Path::new("icon.svg")).expect("svg");
     assert_eq!(loaded.source.text, "");

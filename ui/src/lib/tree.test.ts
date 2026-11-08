@@ -7,6 +7,8 @@ import {
   flattenTree,
   isEditablePath,
   isImagePath,
+  isPdfPath,
+  isPreviewOnlyPath,
   isJsonPath,
   isMarkdownPath,
   isSourcePath,
@@ -137,6 +139,12 @@ describe('tree helpers', () => {
     expect(isImagePath('anim.gif')).toBe(true)
     expect(isImagePath('icon.svg')).toBe(true)
     expect(isImagePath('readme.md')).toBe(false)
+    expect(isPdfPath('papers/note.PDF')).toBe(true)
+    expect(isPdfPath('readme.md')).toBe(false)
+    expect(isPreviewOnlyPath('cover.png')).toBe(true)
+    expect(isPreviewOnlyPath('paper.pdf')).toBe(true)
+    expect(isPreviewOnlyPath('lib.rs')).toBe(false)
+    expect(isSourcePath('paper.pdf')).toBe(false)
     expect(isSourcePath('cover.png')).toBe(false)
   })
 

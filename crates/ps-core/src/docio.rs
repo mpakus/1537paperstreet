@@ -1,14 +1,14 @@
 //! Document reading and writing: encoding, BOM, line endings, and atomic saves.
 
 use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::projects::is_image_path;
+use crate::projects::{is_image_path, is_pdf_path};
 use crate::{Error, Result, fsops};
 
 const UTF8_BOM: &[u8] = &[0xEF, 0xBB, 0xBF];
@@ -218,13 +218,11 @@ pub fn read_doc(project_root: &Path, rel_path: &Path) -> Result<LoadedDocument> 
         });
     }
 
-    let bytes = fs::read(&path).map_err(|source| Error::io("read the document", &path, source))?;
-    if crate::encrypted::is_age_path(rel_path) || bytes.starts_with(b"age-encryption.org/") {
-        return Err(Error::DocumentLocked);
-    }
-    let size = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
-    let hash = blake3::hash(&bytes).to_hex().to_string();
-    if is_image_path(rel_path) {
+    if is_image_path(rel_path) || is_pdf_path(rel_path) {
+        if crate::encrypted::is_age_path(rel_path) || starts_with_age(&path)? {
+            return Err(Error::DocumentLocked);
+        }
+        let (hash, size) = hash_file(&path)?;
         return Ok(LoadedDocument {
             source: DocumentSource {
                 text: String::new(),
@@ -240,12 +238,38 @@ pub fn read_doc(project_root: &Path, rel_path: &Path) -> Result<LoadedDocument> 
             source_only: false,
         });
     }
+
+    let bytes = fs::read(&path).map_err(|source| Error::io("read the document", &path, source))?;
+    if crate::encrypted::is_age_path(rel_path) || bytes.starts_with(b"age-encryption.org/") {
+        return Err(Error::DocumentLocked);
+    }
+    let size = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+    let hash = blake3::hash(&bytes).to_hex().to_string();
     Ok(decode_document_bytes(
         &bytes,
         is_writable(&path),
         hash,
         size,
     ))
+}
+
+fn starts_with_age(path: &Path) -> Result<bool> {
+    let mut file =
+        fs::File::open(path).map_err(|source| Error::io("read the document", path, source))?;
+    let mut prefix = [0_u8; 19];
+    let read = file
+        .read(&mut prefix)
+        .map_err(|source| Error::io("read the document", path, source))?;
+    Ok(prefix[..read].starts_with(b"age-encryption.org/"))
+}
+
+fn hash_file(path: &Path) -> Result<(String, u64)> {
+    let mut file =
+        fs::File::open(path).map_err(|source| Error::io("read the document", path, source))?;
+    let mut hasher = blake3::Hasher::new();
+    let size = io::copy(&mut file, &mut hasher)
+        .map_err(|source| Error::io("read the document", path, source))?;
+    Ok((hasher.finalize().to_hex().to_string(), size))
 }
 
 pub(crate) fn decode_document_bytes(
@@ -377,6 +401,9 @@ pub fn write_doc(
     }
     if is_image_path(rel_path) {
         return Err(Error::ImageNotEditable);
+    }
+    if is_pdf_path(rel_path) {
+        return Err(Error::PdfNotEditable);
     }
     let path = fsops::resolve(project_root, rel_path)?;
     let metadata = fs::symlink_metadata(&path)

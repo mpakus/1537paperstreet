@@ -33,6 +33,7 @@
     fsTrash,
     getAppVersion,
     openDroppedPaths,
+    takeExternalOpen,
     openExternal,
     openUrl,
     pickAndOpen,
@@ -126,8 +127,9 @@
     dropDirAtPoint,
     followRenamedPath,
     isDraftDirty,
-    isImagePath,
     isJsonPath,
+    isPdfPath,
+    isPreviewOnlyPath,
     isMarkdownPath,
     peekTreeDrag,
     peekTreeDragCopy,
@@ -1189,6 +1191,13 @@
     error = ''
   }
 
+  async function drainExternalOpens() {
+    if (secureOperations || closePrompt) return
+    const opened = await takeExternalOpen()
+    if (!opened) return
+    await applyOpened(opened.project, opened.openRelPath)
+  }
+
   async function handleMenu(id: string) {
     try {
       if (secureOperations || closePrompt) return
@@ -1822,7 +1831,7 @@
   }
 
   function viewForDocument(relPath: string, mode: ViewMode): ViewMode {
-    return isImagePath(relPath) ? 'preview' : mode
+    return isPreviewOnlyPath(relPath) ? 'preview' : mode
   }
 
   async function setViewMode(next: ViewMode) {
@@ -1830,8 +1839,12 @@
       showEncryption('unlock')
       return
     }
-    if (openMeta && isImagePath(openMeta.relPath) && next !== 'preview') {
-      showError('Images open in Preview. Editing is not available.')
+    if (openMeta && isPreviewOnlyPath(openMeta.relPath) && next !== 'preview') {
+      showError(
+        isPdfPath(openMeta.relPath)
+          ? 'PDFs open in Preview. Editing is not available.'
+          : 'Images open in Preview. Editing is not available.',
+      )
       return
     }
     viewMode = next
@@ -2533,6 +2546,7 @@
     }
 
     const stops: Array<() => void> = []
+    let eventsReady: Promise<void> = Promise.resolve()
 
     void (async () => {
       try {
@@ -2626,6 +2640,10 @@
             await activateProject(fallback)
           }
         }
+        await eventsReady.catch((cause) => {
+          showError(errorMessage(cause))
+        })
+        await drainExternalOpens()
         sessionReady = true
         writeSession(currentSession())
         if (config.updates.check_on_launch) {
@@ -2633,6 +2651,13 @@
         }
       } catch (cause) {
         showError(errorMessage(cause))
+        await eventsReady.catch(() => {})
+        try {
+          await drainExternalOpens()
+        } catch (openError) {
+          showError(errorMessage(openError))
+        }
+        sessionReady = true
       }
     })()
 
@@ -2645,31 +2670,36 @@
     media.addEventListener('change', onScheme)
     stops.push(() => media.removeEventListener('change', onScheme))
 
-    void import('@tauri-apps/api/event')
-      .then(({ listen }) => {
-        void listen('menu://action', (event) => {
-          void handleMenu(menuActionId(event.payload)).catch((cause) => {
-            showError(errorMessage(cause))
-          })
-        }).then((unlisten) => stops.push(unlisten))
-
-        void listen<{ projectId: string; relPath: string; html: string }>(
-          'doc://chunk',
-          (event) => {
-            appendChunk(event.payload)
-          },
-        ).then((unlisten) => stops.push(unlisten))
-
-        void listen<FsChangedEvent>('fs://changed', (event) => {
-          applyWatch(event.payload)
-        }).then((unlisten) => stops.push(unlisten))
-
-        void listen<AgentClientEvent>('agent://event', (event) => {
-          applyAgentEvent(event.payload)
-        }).then((unlisten) => stops.push(unlisten))
-      })
-      .catch((cause) => {
-        showError(errorMessage(cause))
+    eventsReady = import('@tauri-apps/api/event')
+      .then(({ listen }) =>
+        Promise.all([
+          listen('menu://action', (event) => {
+            void handleMenu(menuActionId(event.payload)).catch((cause) => {
+              showError(errorMessage(cause))
+            })
+          }),
+          listen<{ projectId: string; relPath: string; html: string }>(
+            'doc://chunk',
+            (event) => {
+              appendChunk(event.payload)
+            },
+          ),
+          listen<FsChangedEvent>('fs://changed', (event) => {
+            applyWatch(event.payload)
+          }),
+          listen<AgentClientEvent>('agent://event', (event) => {
+            applyAgentEvent(event.payload)
+          }),
+          listen('open://external', () => {
+            if (!sessionReady) return
+            void drainExternalOpens().catch((cause) => {
+              showError(errorMessage(cause))
+            })
+          }),
+        ]),
+      )
+      .then((unlistens) => {
+        for (const unlisten of unlistens) stops.push(unlisten)
       })
 
     void import('@tauri-apps/api/webview')
@@ -2894,7 +2924,7 @@
       security={docMeta?.security ?? 'plain'}
       canProtect={Boolean(active) && !secureOperations}
       canEdit={docMeta?.security !== 'locked' &&
-        !isImagePath(openMeta?.relPath ?? '')}
+        !isPreviewOnlyPath(openMeta?.relPath ?? '')}
       readingZoom={previewZoom}
       onmode={(mode) => {
         workspacePage = 'document'

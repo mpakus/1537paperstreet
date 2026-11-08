@@ -9,10 +9,13 @@ use tauri::{Emitter, Manager};
 
 mod agent;
 mod commands;
+mod external_open;
 mod fs_watch;
 mod menu;
 mod open_path;
 mod pdf;
+#[cfg(target_os = "macos")]
+mod pdf_pages;
 mod protocol;
 mod state;
 mod tray;
@@ -31,9 +34,9 @@ use commands::{
     library_note_create, library_preview, library_update, mermaid_cache_get, mermaid_cache_put,
     open_dropped_paths, open_external, open_url, projects_add, projects_get, projects_list,
     projects_relocate, projects_remove, projects_rename, reveal_in_finder, save_user_file,
-    session_restore, session_set, tags_get, text_format, themes_css, themes_list,
-    tree_expanded_get, tree_expanded_set, tree_read_dir, updates_check, updates_install,
-    updates_relaunch, watch_set_expanded, watch_start, watch_stop,
+    session_restore, session_set, tags_get, take_external_open, text_format, themes_css,
+    themes_list, tree_expanded_get, tree_expanded_set, tree_read_dir, updates_check,
+    updates_install, updates_relaunch, watch_set_expanded, watch_start, watch_stop,
 };
 use fs_watch::WatchHub;
 use state::AppState;
@@ -42,8 +45,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let state = AppState::open(AppPaths::discover()?)?;
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            crate::tray::show_main_window(app);
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            crate::external_open::accept_args(app, &argv);
         }))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
@@ -65,6 +68,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let _ = window.set_focus();
                 crate::tray::apply_dock_visibility(app.handle());
             }
+            let args: Vec<String> = std::env::args().collect();
+            crate::external_open::accept_args(app.handle(), &args);
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -85,6 +90,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             mermaid_cache_put,
             save_user_file,
             open_dropped_paths,
+            take_external_open,
             tree_read_dir,
             tree_expanded_get,
             tree_expanded_set,
@@ -161,7 +167,15 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let _ = app.emit(crate::menu::MENU_ACTION_EVENT, "app-quit");
             }
             #[cfg(target_os = "macos")]
-            if let tauri::RunEvent::Reopen { .. } = event {
+            if let tauri::RunEvent::Opened { urls } = &event {
+                let paths = urls
+                    .iter()
+                    .filter_map(|url| url.to_file_path().ok())
+                    .collect();
+                crate::external_open::accept_paths(app, paths);
+            }
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = &event {
                 crate::tray::show_main_window(app);
             }
             #[cfg(not(target_os = "macos"))]

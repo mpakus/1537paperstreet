@@ -89,6 +89,38 @@ mod tests {
     }
 
     #[test]
+    fn bundle_registers_markdown_and_pdf_without_taking_ownership() {
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).expect("tauri config");
+        let associations = config["bundle"]["fileAssociations"]
+            .as_array()
+            .expect("fileAssociations");
+        let markdown = associations
+            .iter()
+            .find(|item| item["name"].as_str() == Some("Markdown"))
+            .expect("markdown association");
+        let extensions: Vec<&str> = markdown["ext"]
+            .as_array()
+            .expect("ext")
+            .iter()
+            .filter_map(|value| value.as_str())
+            .collect();
+        assert_eq!(extensions, ["md", "markdown", "mdown", "mdwn"]);
+        assert_eq!(markdown["role"].as_str(), Some("Editor"));
+        assert_eq!(markdown["rank"].as_str(), Some("Alternate"));
+        let pdf = associations
+            .iter()
+            .find(|item| item["name"].as_str() == Some("PDF"))
+            .expect("pdf association");
+        assert_eq!(pdf["ext"][0].as_str(), Some("pdf"));
+        assert_eq!(pdf["role"].as_str(), Some("Viewer"));
+        assert_eq!(pdf["rank"].as_str(), Some("Alternate"));
+        let csp = config["app"]["security"]["csp"].as_str().expect("csp");
+        assert!(csp.contains("object-src 'self' asset: blob:"));
+        assert!(csp.contains("frame-src 'self' asset: blob:"));
+    }
+
+    #[test]
     fn linux_and_windows_use_a_decorated_window() {
         let linux: serde_json::Value =
             serde_json::from_str(include_str!("../tauri.linux.conf.json")).expect("linux config");

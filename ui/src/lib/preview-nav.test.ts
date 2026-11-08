@@ -80,5 +80,6 @@ describe('classifyPreviewHref', () => {
     expect(linkOpensEditor('shots/photo.jpeg', false)).toBe(false)
     expect(linkOpensEditor('anim.gif', false)).toBe(false)
     expect(linkOpensEditor('assets/cover.png', true)).toBe(false)
+    expect(linkOpensEditor('papers/note.pdf', false)).toBe(false)
   })
 })

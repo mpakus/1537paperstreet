@@ -84,6 +84,40 @@ fn dropping_a_markdown_file_reuses_a_containing_project() {
 }
 
 #[test]
+fn dropping_a_pdf_opens_it_inside_the_parent_folder() {
+    let temp = tempfile::tempdir().expect("temporary directory");
+    let notes = temp.path().join("notes");
+    fs::create_dir(&notes).expect("notes folder");
+    let document = notes.join("paper.pdf");
+    fs::write(&document, b"%PDF-1.4\n").expect("pdf");
+
+    let mut store = ProjectStore::open(temp.path().join("projects.json")).expect("store");
+    let opened = open_dropped_paths(&mut store, &[document]).expect("open pdf");
+
+    assert_eq!(opened.project.name, "notes");
+    assert_eq!(
+        opened.open_rel_path.as_deref().map(|path| path.to_str()),
+        Some(Some("paper.pdf"))
+    );
+    assert_eq!(opened.project.last_file.as_deref(), Some("paper.pdf"));
+}
+
+#[test]
+fn launch_arguments_keep_files_and_file_urls() {
+    use ps_core::projects::paths_from_launch_args;
+
+    let paths = paths_from_launch_args(&[
+        "file://localhost/Users/ada/chapter.md",
+        "file://files.example/secret.md",
+        "--flag",
+    ]);
+    assert_eq!(
+        paths,
+        vec![std::path::PathBuf::from("/Users/ada/chapter.md")]
+    );
+}
+
+#[test]
 fn dropping_a_non_markdown_file_is_rejected() {
     let temp = tempfile::tempdir().expect("temporary directory");
     let notes = temp.path().join("notes");
@@ -104,5 +138,9 @@ fn dropping_nothing_explains_how_to_open_a_project() {
     let temp = tempfile::tempdir().expect("temporary directory");
     let mut store = ProjectStore::open(temp.path().join("projects.json")).expect("store");
     let error = open_dropped_paths(&mut store, &[]).expect_err("empty drop");
-    assert!(error.to_string().contains("Markdown file or a folder"));
+    assert!(
+        error
+            .to_string()
+            .contains("Markdown file, a PDF, or a folder")
+    );
 }

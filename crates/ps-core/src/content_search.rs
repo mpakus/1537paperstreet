@@ -232,7 +232,7 @@ fn looks_like_regex(query: &str) -> bool {
 }
 
 fn read_searchable_text(project_root: &Path, rel_path: &Path) -> Result<Option<String>> {
-    if crate::encrypted::is_age_path(rel_path) {
+    if crate::encrypted::is_age_path(rel_path) || crate::projects::is_pdf_path(rel_path) {
         return Ok(None);
     }
     let root = project_root

@@ -131,9 +131,11 @@ and wikis that already live next to your code.
 Keep several folders in the **Projects** list. Search filters by name and path.
 
 Add a folder with Open Folder…, File → Open Folder…, File → Open File…
-(registers the containing folder and opens the `.md`), or drop a folder or
-Markdown file from Finder, Explorer, or the file manager onto the window.
-Opening the same folder again reuses the existing entry.
+(registers the containing folder and opens the `.md` or `.pdf`), drop a folder
+or one of those files onto the window, or open a `.md` or `.pdf` with the app
+from Finder, Explorer, or the file manager. Opening the same folder again
+reuses the existing entry. The app is listed under Open With and does not
+replace the default editor.
 
 If you moved a folder, the row turns dim; context menu → Find Folder… points
 the record at the new location. Remove from List only drops the list entry.
@@ -149,7 +151,8 @@ persist. Icons distinguish folders, Markdown (`.md`, `.markdown`, `.mdown`,
 the next single click replaces. Double-click pins the tab. A single click on
 a folder expands it. A red dot at the top-left of a file icon means the editor
 has changes that are not saved yet. UTF-8 text is editable, with highlighting
-when a language mode exists. Images open in Preview and are not saved as text.
+when a language mode exists. Images and PDF files open in Preview and are
+not saved as text.
 Folders such as `.docs` and `.git` are always listed. ⌘2 hides the tree. ⌘P
 quick-opens a file in the current project. ⌘⇧F, the toolbar search icon, or
 Search on a folder searches file contents (plain text or a regular expression;

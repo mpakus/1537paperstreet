@@ -2,6 +2,7 @@ import {
   isHttpHref,
   isImagePath,
   isMarkdownPath,
+  isPdfPath,
   parentDir,
   parseAssetHref,
 } from './tree'
@@ -61,13 +62,14 @@ export function classifyPreviewHref(
   return { kind: 'document', relPath: relative.relPath, hash: relative.hash }
 }
 
-/** A linked text file other than Markdown or an image opens in the code editor. */
+/** A linked text file other than Markdown, an image, or a PDF opens in the code editor. */
 export function linkOpensEditor(relPath: string, sourceOnly: boolean): boolean {
   return (
     relPath.length > 0 &&
     !sourceOnly &&
     !isMarkdownPath(relPath) &&
-    !isImagePath(relPath)
+    !isImagePath(relPath) &&
+    !isPdfPath(relPath)
   )
 }
 

@@ -91,6 +91,11 @@ fn skips_binary_files_git_metadata_and_hidden_files() {
     let shown =
         content_search::search_documents(root, Path::new(""), "needle", true, 20).expect("shown");
     assert_eq!(shown.hits.len(), 1);
+
+    fs::write(root.join("scan.pdf"), b"%PDF-1.4\nunique-pdf-body\n").expect("pdf");
+    let pdf = content_search::search_documents(root, Path::new(""), "unique-pdf-body", false, 20)
+        .expect("pdf");
+    assert!(pdf.hits.iter().all(|hit| hit.snippet.is_empty()));
 }
 
 #[test]

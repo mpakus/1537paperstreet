@@ -14,6 +14,7 @@ mod library;
 mod links;
 mod markers;
 mod mermaid;
+mod pdf;
 mod pipeline;
 mod sanitize;
 mod tags;
@@ -28,6 +29,7 @@ pub use highlight::render_source;
 pub use images::render_image;
 pub use library::library_sections;
 pub use markers::{apply_highlight, highlight_source};
+pub use pdf::{render_pdf, render_pdf_page_images};
 pub use pipeline::{
     RenderOptions, RenderedDocument, render, render_document, render_document_with_options,
     render_project, render_project_with_options, render_with_options,

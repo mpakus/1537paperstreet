@@ -41,8 +41,14 @@ pub fn render_image(project_scope: &str, rel_path: &Path) -> String {
 }
 
 fn image_src(project_scope: &str, rel_path: &Path) -> Option<String> {
-    if !is_image_path(rel_path)
-        || project_scope.is_empty()
+    if !is_image_path(rel_path) {
+        return None;
+    }
+    project_asset_url(project_scope, rel_path)
+}
+
+pub(crate) fn project_asset_url(project_scope: &str, rel_path: &Path) -> Option<String> {
+    if project_scope.is_empty()
         || !project_scope
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
@@ -86,7 +92,7 @@ fn encode_segment(output: &mut String, value: &str) {
     }
 }
 
-fn escape_text(value: &str) -> String {
+pub(crate) fn escape_text(value: &str) -> String {
     let mut escaped = String::with_capacity(value.len());
     for character in value.chars() {
         match character {

@@ -385,12 +385,17 @@ export function finishWindowClose(quit: boolean): Promise<void> {
   return invokeIpc('finish_window_close', { quit })
 }
 
-/** Registers dropped folders or opens a dropped Markdown file. */
+/** Registers dropped folders or opens a dropped Markdown or PDF file. */
 export function openDroppedPaths(paths: string[]): Promise<OpenDropResult> {
   return invokeIpc('open_dropped_paths', { paths })
 }
 
-/** Shows a native picker, then opens the chosen Markdown file or folder. */
+/** Registers a file the operating system asked the app to open, if one is waiting. */
+export function takeExternalOpen(): Promise<OpenDropResult | null> {
+  return invokeIpc('take_external_open')
+}
+
+/** Shows a native picker, then opens the chosen Markdown file, PDF, or folder. */
 export async function pickAndOpen(
   kind: 'file' | 'folder',
 ): Promise<OpenDropResult | null> {
@@ -402,8 +407,8 @@ export async function pickAndOpen(
       kind === 'file'
         ? [
             {
-              name: 'Markdown',
-              extensions: ['md', 'markdown', 'mdown', 'mdwn', 'age'],
+              name: 'Markdown or PDF',
+              extensions: ['md', 'markdown', 'mdown', 'mdwn', 'age', 'pdf'],
             },
           ]
         : undefined,

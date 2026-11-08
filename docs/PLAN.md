@@ -814,7 +814,7 @@ strip = "symbols"
 
 ## 13. Безопасность
 
-- **CSP:** `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data:; connect-src 'self'`. Никаких удалённых источников.
+- **CSP:** `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data:; media-src 'self' asset:; connect-src 'self' asset:; frame-src 'self' asset: blob:; object-src 'self' asset: blob:`. Никаких удалённых источников. PDF в превью грузится через `asset:`.
 - **Санитайзинг:** сырой HTML в Markdown по умолчанию чистится `ammonia` (whitelist тегов/атрибутов, `javascript:` и `data:` в `href` запрещены). Это особенно важно в режиме Split: пользователь печатает — рендер идёт непрерывно, и любая дыра эксплуатируется по мере набора текста.
 - **Asset protocol:** `scope` ограничен корнями зарегистрированных проектов, обновляется динамически.
 - **Запись файлов** проходит через тот же `fsops::resolve`, что и чтение. Импорт вставленных изображений — тоже.

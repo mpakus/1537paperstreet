@@ -348,10 +348,11 @@ fn now_rfc3339() -> Result<String> {
         .map_err(|source| Error::TimeFormat { source })
 }
 
-/// Opens dropped filesystem paths as a project, optionally focusing a Markdown file.
+/// Opens dropped filesystem paths as a project, optionally focusing a file.
 ///
-/// Folders are registered (or reused). Markdown files reuse a containing project when
-/// one exists; otherwise the file's parent folder is registered and the file is opened.
+/// Folders are registered (or reused). Markdown and PDF files reuse a containing
+/// project when one exists; otherwise the file's parent folder is registered and
+/// the file is opened.
 pub fn open_dropped_paths(store: &mut ProjectStore, paths: &[PathBuf]) -> Result<OpenDropResult> {
     let mut opened = None;
     for path in paths {
@@ -371,7 +372,7 @@ fn open_dropped_path(store: &mut ProjectStore, path: &Path) -> Result<OpenDropRe
             open_rel_path: None,
         });
     }
-    if !metadata.is_file() || !is_markdown_path(path) {
+    if !metadata.is_file() || !(is_markdown_path(path) || is_pdf_path(path)) {
         return Err(Error::UnsupportedDrop {
             path: path.to_path_buf(),
         });
@@ -424,10 +425,10 @@ pub fn is_markdown_path(path: &Path) -> bool {
 
 /// Language hint used to highlight a non-Markdown file in the preview.
 ///
-/// Markdown and image paths return [`None`] so they are not highlighted as source.
-/// Every other path returns the extension, or the lowercased file name when
-/// there is no extension (`Makefile`, `Dockerfile`). Unknown languages are
-/// still shown as escaped plain text.
+/// Markdown, image, and PDF paths return [`None`] so they are not highlighted
+/// as source. Every other path returns the extension, or the lowercased file
+/// name when there is no extension (`Makefile`, `Dockerfile`). Unknown
+/// languages are still shown as escaped plain text.
 ///
 /// ```
 /// use std::path::Path;
@@ -438,17 +439,19 @@ pub fn is_markdown_path(path: &Path) -> bool {
 /// assert_eq!(source_language(Path::new("Makefile")).as_deref(), Some("makefile"));
 /// assert_eq!(source_language(Path::new("notes.md")), None);
 /// assert_eq!(source_language(Path::new("cover.png")), None);
+/// assert_eq!(source_language(Path::new("paper.pdf")), None);
 /// assert!(is_source_path(Path::new("notes.txt")));
 /// assert!(is_editable_path(Path::new("LICENSE")));
 /// assert!(is_editable_path(Path::new("cover.png")));
 /// assert!(!is_source_path(Path::new("cover.png")));
 /// assert!(!is_source_path(Path::new("notes.md")));
+/// assert!(!is_source_path(Path::new("paper.pdf")));
 /// assert!(is_image_path(Path::new("photo.JPEG")));
 /// assert!(is_image_path(Path::new("anim.gif")));
 /// assert!(!is_image_path(Path::new("notes.md")));
 /// ```
 pub fn source_language(path: &Path) -> Option<String> {
-    if is_markdown_path(path) || is_image_path(path) {
+    if is_markdown_path(path) || is_image_path(path) || is_pdf_path(path) {
         return None;
     }
     Some(language_hint(path))
@@ -505,6 +508,135 @@ pub fn is_source_path(path: &Path) -> bool {
 /// Returns whether the app will try to open `path` as a document.
 pub fn is_editable_path(path: &Path) -> bool {
     path.file_name().is_some()
+}
+
+/// Returns whether `path` is a PDF the preview can show.
+///
+/// ```
+/// use std::path::Path;
+/// use ps_core::projects::is_pdf_path;
+///
+/// assert!(is_pdf_path(Path::new("papers/note.PDF")));
+/// assert!(!is_pdf_path(Path::new("notes.md")));
+/// assert!(!is_pdf_path(Path::new("notes.pdf.txt")));
+/// ```
+pub fn is_pdf_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("pdf"))
+}
+
+/// Returns whether Finder, Explorer, or a file manager may open `path`.
+///
+/// Folders, Markdown files, and PDFs are accepted. The path must exist.
+pub fn is_external_open_path(path: &Path) -> bool {
+    let Ok(metadata) = fs::metadata(path) else {
+        return false;
+    };
+    if metadata.is_dir() {
+        return true;
+    }
+    metadata.is_file() && (is_markdown_path(path) || is_pdf_path(path))
+}
+
+/// Turns launch arguments and `file://` URLs into filesystem paths.
+///
+/// Flags such as `-psn_…` are skipped. Only `file` URLs are accepted; other
+/// schemes are ignored. The result is not checked against the disk.
+///
+/// ```
+/// use std::path::PathBuf;
+/// use ps_core::projects::paths_from_launch_args;
+///
+/// let paths = paths_from_launch_args(&[
+///     "/Applications/1537paperstreet.app/Contents/MacOS/app",
+///     "-psn_0_1",
+///     "file:///Users/ada/My%20Note.md",
+///     "https://example.com/nope.md",
+/// ]);
+/// assert_eq!(
+///     paths,
+///     vec![
+///         PathBuf::from("/Applications/1537paperstreet.app/Contents/MacOS/app"),
+///         PathBuf::from("/Users/ada/My Note.md"),
+///     ]
+/// );
+/// ```
+pub fn paths_from_launch_args<S: AsRef<str>>(args: &[S]) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    for arg in args {
+        let arg = arg.as_ref();
+        if arg.is_empty() || arg.starts_with('-') {
+            continue;
+        }
+        if arg.contains("://") {
+            if let Some(path) = file_url_to_path(arg) {
+                paths.push(path);
+            }
+            continue;
+        }
+        paths.push(PathBuf::from(arg));
+    }
+    paths
+}
+
+fn file_url_to_path(value: &str) -> Option<PathBuf> {
+    let rest = value.strip_prefix("file:")?;
+    let path_part = if let Some(after_slashes) = rest.strip_prefix("//") {
+        if let Some(path) = after_slashes.strip_prefix('/') {
+            format!("/{path}")
+        } else {
+            let (host, path) = after_slashes.split_once('/')?;
+            if !host.eq_ignore_ascii_case("localhost") {
+                return None;
+            }
+            format!("/{path}")
+        }
+    } else {
+        rest.to_owned()
+    };
+    let path_part = path_part.split(['?', '#']).next().unwrap_or(&path_part);
+    let decoded = percent_decode_path(path_part)?;
+    if decoded.is_empty() {
+        return None;
+    }
+    Some(normalize_file_url_path(decoded))
+}
+
+fn percent_decode_path(input: &str) -> Option<String> {
+    let mut bytes = Vec::with_capacity(input.len());
+    let chars: Vec<char> = input.chars().collect();
+    let mut index = 0;
+    while index < chars.len() {
+        match chars[index] {
+            '%' if index + 2 < chars.len() => {
+                let hex: String = chars[index + 1..index + 3].iter().collect();
+                bytes.push(u8::from_str_radix(&hex, 16).ok()?);
+                index += 3;
+            }
+            character => {
+                let mut buffer = [0; 4];
+                bytes.extend_from_slice(character.encode_utf8(&mut buffer).as_bytes());
+                index += 1;
+            }
+        }
+    }
+    String::from_utf8(bytes).ok()
+}
+
+fn normalize_file_url_path(decoded: String) -> PathBuf {
+    #[cfg(windows)]
+    {
+        let bytes = decoded.as_bytes();
+        if bytes.len() >= 3
+            && bytes[0] == b'/'
+            && bytes[2] == b':'
+            && bytes[1].is_ascii_alphabetic()
+        {
+            return PathBuf::from(&decoded[1..]);
+        }
+    }
+    PathBuf::from(decoded)
 }
 
 fn paths_refer_to_same_folder(

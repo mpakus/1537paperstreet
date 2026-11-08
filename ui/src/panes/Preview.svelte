@@ -511,6 +511,9 @@
         onpointerdowncapture={(event) => {
           const target = event.target
           const scroller = event.currentTarget
+          if (target instanceof Element && target.closest('.pdf-file')) {
+            return
+          }
           if (
             !(target instanceof Element) ||
             !(scroller instanceof HTMLElement) ||
@@ -523,6 +526,9 @@
         onclickcapture={(event) => {
           const target = event.target
           if (!(target instanceof Element)) {
+            return
+          }
+          if (target.closest('.pdf-file')) {
             return
           }
           if (window.getSelection()?.toString()) {
@@ -763,8 +769,78 @@
     height: auto;
   }
 
-  .preview:has(:global(.image-file)) article {
+  .preview:has(:global(.image-file)) article,
+  .preview:has(:global(.pdf-file)) article,
+  .preview:has(:global(.pdf-pages)) article {
     max-width: none;
+  }
+
+  .preview :global(.pdf-pages) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    margin: 0;
+  }
+
+  .preview :global(.pdf-pages img) {
+    width: min(100%, 48rem);
+    height: auto;
+    background: var(--read-bg, var(--bg));
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+
+  .preview :global(.pdf-pages p) {
+    margin: 0;
+    color: var(--fg-muted);
+  }
+
+  .preview:has(:global(.pdf-file)) {
+    overflow: hidden;
+  }
+
+  .preview:has(:global(.pdf-file)) article {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: var(--space-3);
+  }
+
+  .preview:has(:global(.pdf-file)) :global(section.chunk) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    content-visibility: visible;
+    contain-intrinsic-size: none;
+  }
+
+  .preview :global(.pdf-file) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+  }
+
+  .preview :global(.pdf-file object) {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 12rem;
+    border: 0;
+    background: var(--read-bg, var(--bg));
+  }
+
+  .preview :global(.pdf-file p) {
+    margin: 0;
+    color: var(--fg-muted);
   }
 
   .preview :global(.image-file) {

@@ -74,6 +74,17 @@ pub(crate) async fn projects_add(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn take_external_open(
+    state: State<'_, AppState>,
+) -> Result<Option<OpenDropResult>, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.take_external_open())
+        .await
+        .map_err(|error| error.to_string())
+        .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
 pub(crate) async fn open_dropped_paths(
     state: State<'_, AppState>,
     paths: Vec<PathBuf>,

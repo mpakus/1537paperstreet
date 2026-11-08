@@ -44,6 +44,20 @@ pub(crate) struct AppState {
     log: Arc<FileLog>,
     mermaid_cache: Arc<MermaidSvgCache>,
     prompt_history: Arc<Mutex<JsonStore<PromptHistory>>>,
+    external_opens: Arc<Mutex<Vec<PathBuf>>>,
+}
+
+fn pdf_preview_html(root: &Path, project_id: &str, rel_path: &Path) -> String {
+    #[cfg(target_os = "macos")]
+    if let Some(html) = fsops::resolve(root, rel_path)
+        .ok()
+        .and_then(|absolute| crate::pdf_pages::preview_html(&absolute))
+    {
+        return html;
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = root;
+    ps_render::render_pdf(project_id, rel_path)
 }
 
 impl AppState {
@@ -82,6 +96,7 @@ impl AppState {
             log: Arc::new(log),
             mermaid_cache: Arc::new(mermaid_cache),
             prompt_history: Arc::new(Mutex::new(prompt_history)),
+            external_opens: Arc::new(Mutex::new(Vec::new())),
         })
     }
 
@@ -323,6 +338,46 @@ impl AppState {
         }
         projects.flush()?;
         Ok(result)
+    }
+
+    /// Queues folders, Markdown files, and PDFs the operating system asked to open.
+    ///
+    /// Other paths are ignored. The same canonical path is stored once.
+    pub(crate) fn enqueue_external_paths(&self, paths: Vec<PathBuf>) -> bool {
+        let mut queue = self
+            .external_opens
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let mut added = false;
+        for path in paths {
+            if !projects::is_external_open_path(&path) {
+                continue;
+            }
+            let Ok(canonical) = path.canonicalize() else {
+                continue;
+            };
+            if queue.iter().any(|existing| existing == &canonical) {
+                continue;
+            }
+            queue.push(canonical);
+            added = true;
+        }
+        added
+    }
+
+    /// Registers every queued external path and returns the last one opened.
+    pub(crate) fn take_external_open(&self) -> Result<Option<OpenDropResult>> {
+        let paths = {
+            let mut queue = self
+                .external_opens
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            std::mem::take(&mut *queue)
+        };
+        if paths.is_empty() {
+            return Ok(None);
+        }
+        self.open_dropped_paths(paths).map(Some)
     }
 
     pub(crate) fn projects_rename(&self, id: String, name: String) -> Result<()> {
@@ -985,6 +1040,11 @@ impl AppState {
             (
                 Vec::new(),
                 vec![ps_render::render_image(&project_id, &rel_path)],
+            )
+        } else if projects::is_pdf_path(&rel_path) {
+            (
+                Vec::new(),
+                vec![pdf_preview_html(&root, &project_id, &rel_path)],
             )
         } else if loaded.source_only {
             (Vec::new(), Vec::new())
@@ -1702,6 +1762,16 @@ mod tests {
         let image = notes.join("cover.png");
         fs::write(&image, b"png").expect("image");
         assert!(state.open_dropped_paths(vec![image]).is_err());
+
+        let pdf = notes.join("paper.pdf");
+        fs::write(&pdf, b"%PDF-1.4\n").expect("pdf");
+        assert!(!state.enqueue_external_paths(vec![notes.join("cover.png")]));
+        assert!(state.enqueue_external_paths(vec![pdf.clone()]));
+        assert!(!state.enqueue_external_paths(vec![pdf]));
+        let opened = state.take_external_open().expect("take").expect("opened");
+        assert_eq!(opened.project.id, file.project.id);
+        assert_eq!(opened.open_rel_path, Some(PathBuf::from("paper.pdf")));
+        assert!(state.take_external_open().expect("empty").is_none());
     }
 
     #[test]
@@ -2494,6 +2564,22 @@ mod tests {
         assert!(svg_html.contains("<img "));
         assert!(!svg_html.contains("<script"));
         assert!(!svg_html.contains("alert"));
+
+        fs::write(project_root.join("paper.pdf"), b"%PDF-1.4\n").expect("pdf");
+        let pdf = state
+            .doc_open(project.id.clone(), PathBuf::from("paper.pdf"))
+            .expect("pdf open");
+        assert!(!pdf.result.meta.source_only);
+        assert!(!pdf.result.meta.writable);
+        assert!(pdf.result.meta.readonly_reason.is_none());
+        let pdf_html = pdf.result.first_chunk.expect("pdf chunk");
+        assert!(pdf_html.contains(&format!(
+            "data=\"asset://localhost/{}/paper.pdf\"",
+            project.id
+        )));
+        assert!(pdf_html.contains("type=\"application/pdf\""));
+        assert!(pdf_html.contains("class=\"pdf-file\""));
+        assert!(!pdf_html.contains("%PDF"));
 
         assert!(
             state
