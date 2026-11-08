@@ -44,7 +44,7 @@ by Prettier. Run `python3 scripts/test-site-release.py` to check the renderer.
 
 Release: tag `vX.Y.Z` (same version as `package.json`) runs
 `.github/workflows/release.yml`. That publishes a universal `.app` and DMG
-from `macos-14`, a `.deb` from `ubuntu-24.04`, and an NSIS installer from
+from `macos-15`, a `.deb` from `ubuntu-24.04`, and an NSIS installer from
 `windows-latest`. The workflow refuses to publish an unsigned macOS build. It
 needs the same Developer ID certificate and App Store Connect API key used by
 GitRonimo in these repository secrets:

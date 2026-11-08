@@ -13,6 +13,16 @@ on:
         description: Optional existing tag to attach the DMG to (e.g. v0.1.0). Leave empty to only upload workflow artifacts.
         required: false
         type: string
+      only:
+        description: Limit this run to one package. all builds macOS, Linux, and Windows.
+        required: false
+        type: choice
+        options:
+          - all
+          - macos
+          - linux
+          - windows
+        default: all
 
 permissions:
   contents: write
@@ -27,7 +37,8 @@ env:
 
 jobs:
   release-macos:
-    runs-on: macos-14
+    if: github.event_name != 'workflow_dispatch' || inputs.only == 'all' || inputs.only == 'macos'
+    runs-on: macos-15
     timeout-minutes: 180
     env:
       APPLE_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
@@ -167,6 +178,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/AuthKey_${APPLE_API_KEY}.p8"
 
   release-linux:
+    if: github.event_name != 'workflow_dispatch' || inputs.only == 'all' || inputs.only == 'linux'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -244,6 +256,7 @@ jobs:
         run: bash scripts/publish-release.sh "$TAG" "$VERSION" "$DEB"
 
   release-windows:
+    if: github.event_name != 'workflow_dispatch' || inputs.only == 'all' || inputs.only == 'windows'
     runs-on: windows-latest
     timeout-minutes: 120
     defaults:
