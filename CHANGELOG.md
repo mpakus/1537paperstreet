@@ -5,6 +5,13 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-07
+
+### Fixed
+
+- macOS release builds use the `macos-15` runner after GitHub retired
+  `macos-14`, so the universal app and DMG are published again.
+
 ## [0.13.0] - 2026-11-07
 
 ### Added
@@ -744,7 +751,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
   minimized regression test.
 - ADR-001…ADR-007 and the mdBook user-guide skeleton.
 
-[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/mpakus/1537paperstreet/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/mpakus/1537paperstreet/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/mpakus/1537paperstreet/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/mpakus/1537paperstreet/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/mpakus/1537paperstreet/compare/v0.11.0...v0.12.1
