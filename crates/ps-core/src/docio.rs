@@ -219,24 +219,7 @@ pub fn read_doc(project_root: &Path, rel_path: &Path) -> Result<LoadedDocument> 
     }
 
     if is_image_path(rel_path) || is_pdf_path(rel_path) {
-        if crate::encrypted::is_age_path(rel_path) || starts_with_age(&path)? {
-            return Err(Error::DocumentLocked);
-        }
-        let (hash, size) = hash_file(&path)?;
-        return Ok(LoadedDocument {
-            source: DocumentSource {
-                text: String::new(),
-                eol: LineEnding::Lf,
-                bom: false,
-                trailing_newline: false,
-                encoding: DocumentEncoding::Binary,
-                writable: false,
-                readonly_reason: None,
-            },
-            hash,
-            size,
-            source_only: false,
-        });
+        return preview_binary(&path);
     }
 
     let bytes = fs::read(&path).map_err(|source| Error::io("read the document", &path, source))?;
@@ -253,23 +236,38 @@ pub fn read_doc(project_root: &Path, rel_path: &Path) -> Result<LoadedDocument> 
     ))
 }
 
-fn starts_with_age(path: &Path) -> Result<bool> {
+const AGE_HEADER: &[u8] = b"age-encryption.org/";
+
+/// Reads an image or PDF without keeping its bytes, and refuses an age header.
+fn preview_binary(path: &Path) -> Result<LoadedDocument> {
     let mut file =
         fs::File::open(path).map_err(|source| Error::io("read the document", path, source))?;
-    let mut prefix = [0_u8; 19];
+    let mut prefix = [0_u8; AGE_HEADER.len()];
     let read = file
         .read(&mut prefix)
         .map_err(|source| Error::io("read the document", path, source))?;
-    Ok(prefix[..read].starts_with(b"age-encryption.org/"))
-}
-
-fn hash_file(path: &Path) -> Result<(String, u64)> {
-    let mut file =
-        fs::File::open(path).map_err(|source| Error::io("read the document", path, source))?;
+    if prefix[..read].starts_with(AGE_HEADER) {
+        return Err(Error::DocumentLocked);
+    }
     let mut hasher = blake3::Hasher::new();
-    let size = io::copy(&mut file, &mut hasher)
+    hasher.update(&prefix[..read]);
+    let rest = io::copy(&mut file, &mut hasher)
         .map_err(|source| Error::io("read the document", path, source))?;
-    Ok((hasher.finalize().to_hex().to_string(), size))
+    let size = u64::try_from(read).unwrap_or(0).saturating_add(rest);
+    Ok(LoadedDocument {
+        source: DocumentSource {
+            text: String::new(),
+            eol: LineEnding::Lf,
+            bom: false,
+            trailing_newline: false,
+            encoding: DocumentEncoding::Binary,
+            writable: false,
+            readonly_reason: None,
+        },
+        hash: hasher.finalize().to_hex().to_string(),
+        size,
+        source_only: false,
+    })
 }
 
 pub(crate) fn decode_document_bytes(

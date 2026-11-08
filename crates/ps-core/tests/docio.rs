@@ -122,6 +122,7 @@ fn image_files_preview_without_exposing_bytes_and_cannot_be_saved() {
     let png = b"\x89PNG\r\n\x1a\n";
     let (_temp, root) = project_file("cover.png", png);
     let loaded = docio::read_doc(&root, Path::new("cover.png")).expect("read");
+    assert_eq!(loaded.size, png.len() as u64);
     assert_eq!(loaded.source.text, "");
     assert_eq!(loaded.source.encoding, DocumentEncoding::Binary);
     assert!(!loaded.source.writable);
@@ -159,6 +160,24 @@ fn image_files_preview_without_exposing_bytes_and_cannot_be_saved() {
         fs::read(root.join("paper.pdf")).expect("pdf bytes"),
         pdf_bytes
     );
+
+    let age = b"age-encryption.org/v1\n-> header\n";
+    let (_temp, root) = project_file("secret.png", age);
+    let err = docio::read_doc(&root, Path::new("secret.png")).expect_err("locked image");
+    assert!(matches!(err, Error::DocumentLocked));
+    assert_eq!(fs::read(root.join("secret.png")).expect("png bytes"), age);
+
+    let (_temp, root) = project_file("secret.pdf", age);
+    let err = docio::read_doc(&root, Path::new("secret.pdf")).expect_err("locked pdf");
+    assert!(matches!(err, Error::DocumentLocked));
+    assert_eq!(fs::read(root.join("secret.pdf")).expect("pdf bytes"), age);
+
+    let (_temp, root) = project_file("empty.pdf", b"");
+    let loaded = docio::read_doc(&root, Path::new("empty.pdf")).expect("empty pdf");
+    assert_eq!(loaded.source.text, "");
+    assert_eq!(loaded.size, 0);
+    assert!(!loaded.source_only);
+    assert!(!loaded.hash.is_empty());
 
     let (_temp, root) = project_file("icon.svg", b"<svg><script>alert(1)</script></svg>\n");
     let loaded = docio::read_doc(&root, Path::new("icon.svg")).expect("svg");
@@ -229,6 +248,19 @@ fn unwritable_utf8_files_are_marked_read_only() {
     assert!(!loaded.source.writable);
     assert!(!loaded.source_only);
     assert!(loaded.source.readonly_reason.is_some());
+}
+
+#[cfg(unix)]
+#[test]
+fn unreadable_preview_files_surface_as_io_errors() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let (_temp, root) = project_file("cover.png", b"\x89PNG\r\n\x1a\n");
+    let path = root.join("cover.png");
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o000)).expect("lock");
+    let result = docio::read_doc(&root, Path::new("cover.png"));
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).expect("unlock");
+    assert!(result.is_err());
 }
 
 #[cfg(unix)]

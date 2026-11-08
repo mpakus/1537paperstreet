@@ -11,6 +11,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 - macOS release builds use the `macos-15` runner after GitHub retired
   `macos-14`, so the universal app and DMG are published again.
+- Markdown parsing uses pulldown-cmark 0.13.6, which removes the quadratic
+  wiki-link scan (RUSTSEC-2026-0433).
 
 ## [0.13.0] - 2026-11-07
 
