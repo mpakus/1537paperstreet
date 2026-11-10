@@ -15,6 +15,30 @@ Made in Austin ✩ Texas · [aomega.co](https://aomega.co)
 
 ![Preview of a Markdown document with Projects, file tree, table of contents, and rendered headings](docs/screen-preview.png)
 
+## Open a file. Read a PDF.
+
+**New in 0.13:** choose a `.md` or `.pdf` in Finder, Explorer, or the file
+manager and open it with 1537paperstreet. The folder is added to Projects if
+it is not there yet, and the file opens. File → Open File… and a drop onto
+the window do the same. The app is listed under Open With and does not replace
+your default editor.
+
+PDFs open in Preview and are not edited. On macOS each page is drawn in the
+reading pane (the first 40 pages). On Linux and Windows the system viewer
+shows the file when it can. Markdown in the same folder still uses Preview,
+Edit, and Split. The full list is in the [formats guide](docs/src/formats.md).
+
+![A PDF open in Preview, with welcome.md beside it in the file tree](docs/screen-pdf.png)
+
+| Kind            | Names                                                                  | What you can do                                      |
+| --------------- | ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| Markdown        | `.md`, `.markdown`, `.mdown`, `.mdwn`                                  | Preview, Edit, Split, Save, Format                   |
+| Protected notes | those names plus `.age`                                                | Unlock, then the same editing                        |
+| PDF             | `.pdf`                                                                 | Preview only                                         |
+| Images          | PNG, JPEG, GIF, WebP, SVG, and the other common types                  | Preview only                                         |
+| Source and JSON | JavaScript, TypeScript, Ruby, Elixir, Go, Rust, C#, Java, PHP, `.json` | Editor, with highlighting; Format pretty-prints JSON |
+| Other text      | UTF-8, including names with no extension                               | Editor                                               |
+
 ## Your notes, protected with age
 
 **New in 0.9.0:** keep a journal, project notes, or an unfinished draft under a
@@ -194,6 +218,8 @@ Markdown:
   block and quote has a Copy button
 - Mermaid diagrams and KaTeX math (`$...$` / `$$...$$`)
 - images (PNG, JPEG, GIF, WebP, SVG, and the other common formats) in Preview
+- PDF files in Preview — pages drawn on macOS; not editable. See the
+  [formats guide](docs/src/formats.md)
 
 A line written `[ ] one` or `- [x] two` is a checkbox. Clicking it writes
 `[x]` or `[ ]` back into the file. Split updates the page from the editor as

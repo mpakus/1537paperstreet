@@ -11,7 +11,10 @@ Split, then Search, Save, Format, Export, Board (Dashboard), and AI
 visible; a heading in the contents list scrolls the page and the source. On
 macOS that bar sits beside the window controls. Linux and Windows use a
 normal window frame. To use another editor, Open in External Editor (⌘⇧O) —
-the tree picks up disk changes on its own.
+the tree picks up disk changes on its own. Opening a `.md` or `.pdf` from
+Finder, Explorer, or the file manager adds that file’s folder and opens the
+file. PDFs are read in Preview; Markdown still uses Preview, Edit, and Split.
+See [Formats](formats.md).
 
 ![Preview of a Markdown file with syntax highlighting, the Projects list, and the file tree](../screen01.png)
 

@@ -4,6 +4,7 @@
 - [Install](install.md)
 - [First project](first-project.md)
 - [Working with files](files.md)
+- [Formats](formats.md)
 - [Library](library.md)
 - [Tags Cloud](tags.md)
 - [Document graph](graph.md)

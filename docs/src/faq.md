@@ -1,5 +1,14 @@
 # FAQ
 
+**How do I open a file from Finder?** Choose 1537paperstreet in Open With for
+a `.md` or `.pdf`. The folder is added to Projects and the file opens. The
+app does not become the default editor unless you set that yourself. Details
+are in [Formats](formats.md).
+
+**Can I edit a PDF?** No. PDF files open in Preview. On macOS the pages are
+drawn in the reading pane. Use another program, or Open in External Editor,
+to change the file.
+
 **Why can’t I type in the preview?** Preview is read-only. Switch to Edit or
 Split (⌘E / ⌘⇧E) and save with ⌘S, or Open in External Editor (⌘⇧O).
 

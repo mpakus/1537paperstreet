@@ -14,8 +14,9 @@ TypeScript, Ruby, Elixir, Go, Rust, C#, Java, and PHP (and other languages
 when a grammar exists). Binary files and files larger than 8 MB stay
 source-only. Images (PNG, JPEG, GIF, WebP, SVG, and similar) and PDF files
 open in Preview and cannot be edited. On macOS each PDF page is drawn in
-the reading pane. On Linux and Windows the system viewer shows the file when
-it can. Folders such as `.docs` and `.git` are always listed. Hidden
+the reading pane (the first 40 pages). On Linux and Windows the system viewer
+shows the file when it can. The full list of names is in [Formats](formats.md).
+Folders such as `.docs` and `.git` are always listed. Hidden
 files stay behind Settings → Show hidden files.
 
 ## Actions
@@ -85,6 +86,8 @@ type and keeps the edited text visible. A contents heading scrolls both panels
 and focuses the cursor at the start of its source line. Board opens the
 Dashboard tab; AI opens the Assistant. More in [editing](editing.md) and
 [assistant](assistant.md).
+
+![A PDF open in Preview beside the file tree](../screen-pdf.png)
 
 Images get width and height from the file header so layout does not jump.
 A file that is too large (> 8 MB), binary, or missing shows a message instead

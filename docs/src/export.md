@@ -5,6 +5,9 @@ Markdown as PDF on macOS: native Save dialog, then a snapshot of the preview
 (theme, diagrams, images). You can put the file in any folder. On Linux and
 Windows the same command says PDF export is available on macOS.
 
+Opening a `.pdf` you already have is separate. That file is shown in Preview
+and is not edited. See [Formats](formats.md).
+
 ZIP of the whole project is a later phase (P12); Export… on a project’s
 context menu currently says packaging will arrive later.
 

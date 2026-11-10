@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>1537paperstreet — Markdown with age encryption</title>
+    <title>1537paperstreet — Markdown, PDFs, and your folders</title>
     <meta
       name="description"
-      content="Read, edit, and protect Markdown notes with age encryption. Local folders, persistent highlights, live Split preview. Free for macOS, Linux, and Windows."
+      content="Open a Markdown or PDF file from Finder and read it in place. Password-protected notes, live Split preview, local folders. Free for macOS, Linux, and Windows."
     />
     <link rel="canonical" href="https://1537paperstreet.org/" />
     <meta name="theme-color" content="#fbfaf7" />
@@ -16,11 +16,11 @@
     <meta property="og:site_name" content="1537paperstreet" />
     <meta
       property="og:title"
-      content="1537paperstreet — Markdown with age encryption"
+      content="1537paperstreet — Markdown, PDFs, and your folders"
     />
     <meta
       property="og:description"
-      content="Read, edit, and protect Markdown notes with age encryption. Local folders, persistent highlights, live Split preview. Free for macOS, Linux, and Windows."
+      content="Open a Markdown or PDF file from Finder and read it in place. Password-protected notes, live Split preview, local folders. Free for macOS, Linux, and Windows."
     />
     <meta property="og:url" content="https://1537paperstreet.org/" />
     <meta
@@ -30,11 +30,11 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="1537paperstreet — Markdown with age encryption"
+      content="1537paperstreet — Markdown, PDFs, and your folders"
     />
     <meta
       name="twitter:description"
-      content="Read, edit, and protect Markdown notes with age encryption. Local folders, persistent highlights, live Split preview. Free for macOS, Linux, and Windows."
+      content="Open a Markdown or PDF file from Finder and read it in place. Password-protected notes, live Split preview, local folders. Free for macOS, Linux, and Windows."
     />
     <meta
       name="twitter:image"
@@ -54,7 +54,7 @@
       type="font/woff2"
       crossorigin
     />
-    <link rel="stylesheet" href="styles.css?v=20261020-downloads" />
+    <link rel="stylesheet" href="styles.css?v=20261110-formats" />
     <script>
       document.documentElement.classList.add('js')
     </script>
@@ -71,7 +71,7 @@
           "priceCurrency": "USD"
         },
         "url": "https://1537paperstreet.org/",
-        "description": "Read, edit, and protect Markdown notes with age encryption. Local folders, persistent highlights, live Split preview. Free for macOS, Linux, and Windows."
+        "description": "Open a Markdown or PDF file from Finder and read it in place. Password-protected notes, live Split preview, local folders. Free for macOS, Linux, and Windows."
       }
     </script>
   </head>
@@ -83,6 +83,7 @@
           <img src="logo.png" alt="1537paperstreet" width="833" height="128" />
         </a>
         <nav class="nav" aria-label="Page">
+          <a class="section-link" href="#formats">Formats</a>
           <a class="section-link" href="#encryption">Encryption</a>
           <a class="section-link" href="#editing">Editing</a>
           <a class="section-link" href="#features">Features</a>
@@ -110,7 +111,8 @@
           <a class="quiet" href="#encryption">Explore age encryption</a>
         </div>
         <p class="fine rise rise-4">
-          New in 0.9.0: password-protected notes · macOS, Linux, and Windows
+          New: open a .md or .pdf from the file manager · read PDF pages in
+          Preview
         </p>
         <figure class="shot stage rise rise-4">
           <img
@@ -165,6 +167,63 @@
           <li><kbd>⌘⌥E</kbd> Export PDF</li>
         </ul>
       </div>
+
+      <section
+        class="block wrap reveal"
+        id="formats"
+        aria-labelledby="formats-title"
+      >
+        <p class="index">Open a file</p>
+        <div class="prose">
+          <h2 id="formats-title">A Markdown note. A PDF. The same folder.</h2>
+          <p>
+            Choose a <code>.md</code> or <code>.pdf</code> in Finder, Explorer,
+            or the file manager and open it with 1537paperstreet. The folder is
+            added to Projects, and the file opens. The app is listed under Open
+            With and does not replace your default editor.
+          </p>
+        </div>
+        <ul class="catalog">
+          <li>
+            <h3>Markdown</h3>
+            <p>
+              <code>.md</code>, <code>.markdown</code>, <code>.mdown</code>, and
+              <code>.mdwn</code> open in Preview, Edit, and Split. Save and
+              Format stay available. A password-protected note is the same name
+              with <code>.age</code> added.
+            </p>
+          </li>
+          <li>
+            <h3>PDF</h3>
+            <p>
+              <code>.pdf</code> opens in Preview and is not edited. On macOS
+              each page is drawn in the reading pane. On Linux and Windows the
+              system viewer shows it when it can.
+            </p>
+          </li>
+          <li>
+            <h3>Images and source</h3>
+            <p>
+              PNG, JPEG, GIF, WebP, and SVG stay images in Preview. JavaScript,
+              TypeScript, Ruby, Elixir, Go, Rust, C#, Java, PHP, and JSON open
+              in the editor. Other UTF-8 opens too.
+            </p>
+          </li>
+        </ul>
+        <figure class="shot">
+          <img
+            src="media/pdf.png"
+            width="1560"
+            height="960"
+            alt="paper.pdf open in Preview. The Field Notes folder is in Projects, and welcome.md sits beside the PDF in the file tree."
+            loading="lazy"
+          />
+          <figcaption>
+            Open a PDF from the file manager. The folder is registered, and the
+            page is drawn in Preview.
+          </figcaption>
+        </figure>
+      </section>
 
       <section
         class="block wrap reveal encryption"
@@ -352,21 +411,22 @@
             </p>
           </li>
           <li>
-            <h3>Pictures and source</h3>
+            <h3>Pictures, PDFs, and source</h3>
             <p>
-              PNG, JPEG, GIF, WebP, SVG, and the other common images open in
-              Preview and stay images. Ruby, JavaScript, Elixir, and other
-              source files open in the editor. Code blocks and quotes have Copy.
-              Format aligns Markdown tables and pretty-prints JSON.
+              PNG, JPEG, GIF, WebP, SVG, and PDF open in Preview and stay files,
+              not text. Ruby, JavaScript, Elixir, and other source files open in
+              the editor. Code blocks and quotes have Copy. Format aligns
+              Markdown tables and pretty-prints JSON.
             </p>
           </li>
           <li>
             <h3>Diagrams and PDF</h3>
             <p>
               Click a Mermaid drawing to move, resize, and zoom it. The window
-              remembers its size and place. KaTeX stays on the page. PDF export
-              is on macOS; protected notes require a deliberate decrypted
-              Markdown export first.
+              remembers its size and place. KaTeX stays on the page. Export PDF
+              saves the open Markdown page on macOS. Opening a PDF you already
+              have is separate, and protected notes require a deliberate
+              decrypted Markdown export before export.
             </p>
           </li>
         </ul>
@@ -507,8 +567,9 @@
             <li>
               <h3>No vault</h3>
               <p>
-                Open a folder, or drop one on the window. The same files stay
-                available to Git, your file manager, and any other editor.
+                Open a folder, drop one on the window, or open a Markdown or PDF
+                file from the file manager. The same files stay available to Git
+                and any other editor.
               </p>
             </li>
             <li>

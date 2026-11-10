@@ -20,6 +20,9 @@ Opening the same folder again reuses the existing list entry. Opening a
 Markdown or PDF file opens it and registers the containing folder. Dropping
 onto a tree row inside an already open project copies files into that folder.
 
+Which names open as notes, PDFs, images, or source is listed in
+[Formats](formats.md).
+
 The project list is virtualized, so thousands of rows still scroll. The search
 field filters by name and path and highlights the match.
 

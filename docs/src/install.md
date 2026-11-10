@@ -20,6 +20,9 @@ and an unsigned Windows NSIS installer (WebView2). On Linux, install with
 `sudo apt install ./1537paperstreet_*_amd64.deb`. On Windows, run the
 `*-setup.exe`. PDF export and installing an update over the running app stay
 on macOS; Check for Updates on Linux and Windows opens the release page.
+The installed app can open `.md` and `.pdf` from the file manager. It is
+listed under Open With and does not replace the default program. Open the app
+once after install so the system records that list.
 
 **From source** (development):
 
