@@ -54,7 +54,7 @@
       type="font/woff2"
       crossorigin
     />
-    <link rel="stylesheet" href="styles.css?v=20261110-formats" />
+    <link rel="stylesheet" href="styles.css?v=20261110-workspace" />
     <script>
       document.documentElement.classList.add('js')
     </script>
@@ -84,6 +84,7 @@
         </a>
         <nav class="nav" aria-label="Page">
           <a class="section-link" href="#formats">Formats</a>
+          <a class="section-link" href="#workspace">Workspace</a>
           <a class="section-link" href="#encryption">Encryption</a>
           <a class="section-link" href="#editing">Editing</a>
           <a class="section-link" href="#features">Features</a>
@@ -331,6 +332,136 @@
           <figcaption>
             Split keeps the source next to the page. The page updates in place.
             Diagrams are Mermaid, drawn locally.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section
+        class="block wrap reveal"
+        id="workspace"
+        aria-labelledby="workspace-title"
+      >
+        <p class="index">Workspace</p>
+        <div class="prose">
+          <h2 id="workspace-title">
+            Library, tags, a map, a local agent, and a PDF of the page.
+          </h2>
+          <p>
+            These stay in the same window as the notes. Files are not copied
+            into a vault. Encrypted notes stay out of the library, the tag
+            cloud, the graph, and content search.
+          </p>
+        </div>
+
+        <div class="prose" id="library">
+          <h3>Library</h3>
+          <p>
+            Structured notes for specifications, decisions, papers, and
+            experiments, with YAML you can still edit as Markdown. Save a
+            collection of documents or heading sections, then copy it or append
+            it to the Assistant composer. That does not start or send the agent.
+          </p>
+        </div>
+        <figure class="shot">
+          <img
+            src="media/library.png"
+            width="1560"
+            height="960"
+            alt="Library workspace listing structured notes, with type, status, and tags for the selected experiment, and a control to use the selection in the Assistant."
+            loading="lazy"
+          />
+          <figcaption>
+            Library keeps the structure next to the files. Use in Assistant only
+            fills the prompt.
+          </figcaption>
+        </figure>
+
+        <div class="prose" id="tags">
+          <h3>Tags</h3>
+          <p>
+            Bear-style tags connect notes across registered folders:
+            <code>#research</code>, <code>#research/agents</code>, and
+            <code>#multiple words#</code>. Focus a tag, intersect another, and
+            open the original file. Edit tags in the note and Save.
+          </p>
+        </div>
+        <figure class="shot">
+          <img
+            src="media/tags.png"
+            width="1560"
+            height="960"
+            alt="Tags Cloud with research and agents selected, larger labels for those topics, and two matching notes from Field Notes."
+            loading="lazy"
+          />
+          <figcaption>
+            The cloud is a way to open notes. It does not move them.
+          </figcaption>
+        </figure>
+
+        <div class="prose" id="graph">
+          <h3>Graph</h3>
+          <p>
+            Saved Markdown and wiki links become a local map: stars for notes,
+            lines for links. Search, focus a neighborhood, and open a note from
+            a star. The cache stores paths and links, not document bodies.
+          </p>
+        </div>
+        <figure class="shot">
+          <img
+            src="media/graph.png"
+            width="1560"
+            height="960"
+            alt="Document graph with welcome, paper, and agents connected. Neighborhood is selected and Open note is available."
+            loading="lazy"
+          />
+          <figcaption>
+            A neighborhood is the selected note and the notes linked to it.
+          </figcaption>
+        </figure>
+
+        <div class="prose" id="assistant">
+          <h3>Assistant</h3>
+          <p>
+            ⌘⌥A opens a tab for a local agent you already installed: Codex,
+            Claude, OpenCode, or a custom command. Allowance asks before tools.
+            Plan prefers read-only. Full can let the CLI change files. Send is
+            explicit. The app does not call a model service itself.
+          </p>
+        </div>
+        <figure class="shot">
+          <img
+            src="media/assistant.png"
+            width="1560"
+            height="960"
+            alt="Assistant tab with Codex selected, Allowance permission, a question about PDF notes, and a reply that names two files without changing them."
+            loading="lazy"
+          />
+          <figcaption>
+            The agent works in the open project. Nothing is sent until Send.
+          </figcaption>
+        </figure>
+
+        <div class="prose" id="export">
+          <h3>Export</h3>
+          <p>
+            Export, File → Export PDF…, and ⌘⌥E save the open Markdown page as a
+            PDF on macOS: theme, diagrams, and images included. Linux and
+            Windows say that export is available on macOS. Opening a PDF you
+            already have is a different command. A protected note needs an
+            explicit decrypted Markdown export first.
+          </p>
+        </div>
+        <figure class="shot">
+          <img
+            src="media/export.png"
+            width="1560"
+            height="960"
+            alt="The note The long room in Preview, with Export selected and a save sheet named Field-notes.pdf."
+            loading="lazy"
+          />
+          <figcaption>
+            Export writes a snapshot of the page. The Markdown file stays where
+            it is.
           </figcaption>
         </figure>
       </section>
