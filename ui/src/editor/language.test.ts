@@ -5,6 +5,7 @@ import { matchedLanguageName } from './catalog'
 import {
   editorFileName,
   usesCodeEditor,
+  usesConfigLinter,
   usesJsonLinter,
   usesSyntaxLinter,
 } from './language'
@@ -53,5 +54,16 @@ describe('editor language from file name', () => {
     expect(usesSyntaxLinter('gem.rb')).toBe(false)
     expect(usesSyntaxLinter('mix.exs')).toBe(false)
     expect(usesSyntaxLinter('Program.cs')).toBe(false)
+  })
+
+  it('highlights and lints configuration file extensions case-insensitively', () => {
+    expect(matchedLanguageName('settings.YML')).toBe('YAML')
+    expect(matchedLanguageName('settings.YAML')).toBe('YAML')
+    expect(matchedLanguageName('Cargo.TOML')).toBe('TOML')
+    expect(matchedLanguageName('package.JSON')).toBe('JSON')
+    expect(usesConfigLinter('settings.yaml')).toBe(true)
+    expect(usesConfigLinter('Cargo.toml')).toBe(true)
+    expect(usesConfigLinter('package.json')).toBe(false)
+    expect(usesJsonLinter('package.JSON')).toBe(true)
   })
 })

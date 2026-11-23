@@ -26,6 +26,8 @@
     onerror,
     onadd,
     onremoved,
+    onchangefolder,
+    onrelocated,
     oncollapse,
     onfilesdrop,
     externalDropId = null,
@@ -36,6 +38,8 @@
     onerror: (message: string) => void
     onadd: () => void
     onremoved: (id: string) => void
+    onchangefolder?: (id: string) => boolean
+    onrelocated?: (project: Project) => void
     oncollapse?: () => void
     onfilesdrop?: (
       project: Project,
@@ -185,14 +189,11 @@
   async function relocate(project: Project) {
     try {
       const path = await pickFolder()
-      if (!path) {
-        return
-      }
+      if (!path || onchangefolder?.(project.id) === false) return
       const updated = await projectsRelocate(project.id, path)
       items = items.map((item) => (item.id === project.id ? updated : item))
-      if (activeId === project.id) {
-        onopen(updated)
-      }
+      if (onrelocated) onrelocated(updated)
+      else if (activeId === project.id) onopen(updated)
     } catch (cause) {
       onerror(errorMessage(cause))
     }
@@ -200,6 +201,10 @@
 
   async function remove(project: Project) {
     try {
+      if (onchangefolder?.(project.id) === false) {
+        removeTarget = null
+        return
+      }
       await projectsRemove(project.id)
       removeTarget = null
       items = items.filter((item) => item.id !== project.id)
@@ -299,8 +304,8 @@
         {#if query.trim()}
           No projects match.
         {:else}
-          Your Markdown projects will appear here. Drop a Markdown file or a
-          folder to open it.
+          Your Markdown projects will appear here. Drop files or folders to open
+          them.
         {/if}
       </p>
     {:else}

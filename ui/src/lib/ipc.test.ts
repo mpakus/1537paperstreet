@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   docOpen,
@@ -11,6 +11,7 @@ import {
   mermaidCachePut,
   saveUserFile,
   exportPdf,
+  openFileDrop,
   textFormat,
   themesCss,
   themesList,
@@ -20,11 +21,43 @@ import {
 } from './ipc'
 import { mockIpc, resetIpc } from './ipc.mock'
 
+const { confirm } = vi.hoisted(() => ({ confirm: vi.fn() }))
+vi.mock('@tauri-apps/plugin-dialog', () => ({ confirm }))
+
 afterEach(() => {
   resetIpc()
 })
 
 describe('ipc helpers', () => {
+  it.each([true, false])(
+    'passes only approved folders when confirmation is %s',
+    async (approved) => {
+      const paths = ['/registered/notes.md', '/new/config.toml']
+      const folders = ['/new']
+      const open = vi.fn(() => [])
+      confirm.mockResolvedValueOnce(approved)
+      mockIpc({ file_drop_folders: () => folders, open_file_drop: open })
+      await openFileDrop(paths)
+      expect(confirm).toHaveBeenLastCalledWith(
+        '/new',
+        expect.objectContaining({ okLabel: 'Add to Projects' }),
+      )
+      expect(open).toHaveBeenCalledWith({
+        paths,
+        approved_folders: approved ? folders : [],
+      })
+    },
+  )
+
+  it('opens a drop in registered folders without showing confirmation', async () => {
+    confirm.mockClear()
+    const paths = ['/registered/notes.md']
+    const open = vi.fn(() => [])
+    mockIpc({ file_drop_folders: () => [], open_file_drop: open })
+    await openFileDrop(paths)
+    expect(confirm).not.toHaveBeenCalled()
+    expect(open).toHaveBeenCalledWith({ paths, approved_folders: [] })
+  })
   it('turns failures into a user-visible string', () => {
     expect(errorMessage('disk full')).toBe('disk full')
     expect(errorMessage(new Error('not found'))).toBe('not found')

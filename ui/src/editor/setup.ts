@@ -21,9 +21,10 @@ import {
 } from '@codemirror/view'
 
 import { isMarkdownPath } from '../lib/tree'
+import { errorMessage, textLint } from '../lib/ipc'
 import { languageSupport } from './catalog'
 import { codeHighlightStyle, markdownHighlightStyle } from './highlight'
-import { usesJsonLinter, usesSyntaxLinter } from './language'
+import { usesConfigLinter, usesJsonLinter, usesSyntaxLinter } from './language'
 import { syntaxErrors } from './lint'
 import type { MarkdownEditor, MarkdownEditorOptions } from './types'
 
@@ -110,6 +111,22 @@ function highlightExtension(fileName: string): Extension {
 function lintExtension(fileName: string): Extension {
   if (usesJsonLinter(fileName)) {
     return linter(jsonParseLinter())
+  }
+  if (usesConfigLinter(fileName)) {
+    return linter(async (view) => {
+      const doc = view.state.doc
+      try {
+        const diagnostics = await textLint(fileName, doc.toString())
+        return diagnostics.map(({ line, message }) => {
+          const { from, to } = doc.line(Math.max(1, Math.min(line, doc.lines)))
+          return { from, to, severity: 'error', message }
+        })
+      } catch (cause) {
+        return [
+          { from: 0, to: 0, severity: 'warning', message: errorMessage(cause) },
+        ]
+      }
+    })
   }
   if (usesSyntaxLinter(fileName)) {
     return linter((view) => syntaxErrors(view.state))

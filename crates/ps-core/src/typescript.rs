@@ -15,7 +15,7 @@ use crate::docio::{
     DocChunkEvent, DocDoneEvent, DocOpenResult, DocPreview, DocumentEncoding, DocumentMeta,
     DocumentSource, DocumentStat, LineEnding, RestoreTraits, TocEntry, WrittenDocument,
 };
-use crate::edit::{HighlightRange, HighlightSource};
+use crate::edit::{ConfigDiagnostic, HighlightRange, HighlightSource};
 use crate::fsops::{ConflictStrategy, UntitledKind};
 use crate::graph::{GraphEdge, GraphNode, GraphQuery, GraphSnapshot};
 use crate::projects::{OpenDropResult, Project, ProjectsListQuery, ProjectsListResult};
@@ -101,6 +101,7 @@ pub fn ipc_typescript() -> String {
         DocPreview::decl(&ts),
         HighlightRange::decl(&ts),
         HighlightSource::decl(&ts),
+        ConfigDiagnostic::decl(&ts),
         DocChunkEvent::decl(&ts),
         DocDoneEvent::decl(&ts),
         WatchUpdate::decl(&ts),

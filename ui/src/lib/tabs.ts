@@ -25,8 +25,12 @@ export function closeWorkspaceTab(
 }
 
 /** One open document in the tab strip. */
-export type DocTab = {
+export type TabPath = {
+  projectId: string
   relPath: string
+}
+
+export type DocTab = TabPath & {
   title: string
   html: string
   docMeta: DocumentMeta | null
@@ -38,6 +42,18 @@ export type DocTab = {
   viewMode: ViewMode
   /** Reading-pane scroll offset in pixels. */
   scrollTop: number
+}
+
+/** Stable identity for a document in the workspace. */
+export function tabKey(tab: TabPath): string {
+  return JSON.stringify([tab.projectId, tab.relPath])
+}
+
+/** True when both paths name the same tab. */
+export function sameTab(first: TabPath | null, second: TabPath): boolean {
+  return (
+    first?.projectId === second.projectId && first.relPath === second.relPath
+  )
 }
 
 /** Pixel offset of the reading pane, or 0 when it is not on screen. */
@@ -82,9 +98,9 @@ export function tabTitle(relPath: string): string {
   return relPath.split(/[/\\]/).filter(Boolean).at(-1) ?? relPath
 }
 
-/** Inserts or replaces a tab for the same relative path. */
+/** Inserts or replaces a tab for the same project and path. */
 export function upsertTab(tabs: DocTab[], tab: DocTab): DocTab[] {
-  const index = tabs.findIndex((item) => item.relPath === tab.relPath)
+  const index = tabs.findIndex((item) => sameTab(item, tab))
   if (index < 0) {
     return [...tabs, tab]
   }
@@ -129,7 +145,7 @@ export function placeDocTab(
   tab: DocTab,
   mode: TabOpenMode,
 ): DocTab[] {
-  const existing = tabs.find((item) => item.relPath === tab.relPath)
+  const existing = tabs.find((item) => sameTab(item, tab))
   if (mode === 'keep') {
     return upsertTab(tabs, {
       ...tab,
@@ -141,16 +157,15 @@ export function placeDocTab(
   }
   let next = tabs
   const dirtyPreview = next.find(
-    (item) =>
-      item.preview && item.relPath !== tab.relPath && tabHasUnsavedDraft(item),
+    (item) => item.preview && !sameTab(item, tab) && tabHasUnsavedDraft(item),
   )
   if (dirtyPreview) {
     next = upsertTab(next, { ...dirtyPreview, preview: false })
   }
   const previewIndex = next.findIndex((item) => item.preview)
-  if (previewIndex >= 0 && next[previewIndex]?.relPath !== tab.relPath) {
+  if (previewIndex >= 0 && !sameTab(next[previewIndex]!, tab)) {
     const placed = next.slice()
-    const same = placed.findIndex((item) => item.relPath === tab.relPath)
+    const same = placed.findIndex((item) => sameTab(item, tab))
     if (same >= 0) {
       placed.splice(previewIndex, 1)
       const index = same > previewIndex ? same - 1 : same
@@ -164,8 +179,8 @@ export function placeDocTab(
 }
 
 /** Drops a tab. */
-export function removeTab(tabs: DocTab[], relPath: string): DocTab[] {
-  return tabs.filter((tab) => tab.relPath !== relPath)
+export function removeTab(tabs: DocTab[], target: TabPath): DocTab[] {
+  return tabs.filter((tab) => !sameTab(tab, target))
 }
 
 /** Writes the tab we are leaving back into the strip, if it is still open. */
@@ -173,7 +188,7 @@ export function persistLeavingTab(
   tabs: DocTab[],
   leaving: DocTab | null,
 ): DocTab[] {
-  if (!leaving || !tabs.some((tab) => tab.relPath === leaving.relPath)) {
+  if (!leaving || !tabs.some((tab) => sameTab(tab, leaving))) {
     return tabs
   }
   return placeDocTab(tabs, leaving, 'keep')
@@ -200,20 +215,26 @@ export function closeActiveTarget(
 }
 
 /** Tab to activate after `closed` is removed. */
-export function nextAfterClose(tabs: DocTab[], closed: string): string | null {
-  const index = tabs.findIndex((tab) => tab.relPath === closed)
+export function nextAfterClose(tabs: DocTab[], closed: TabPath): DocTab | null {
+  const index = tabs.findIndex((tab) => sameTab(tab, closed))
   if (index < 0) {
-    return tabs.at(-1)?.relPath ?? null
+    return tabs.at(-1) ?? null
   }
-  return tabs[index + 1]?.relPath ?? tabs[index - 1]?.relPath ?? null
+  return tabs[index + 1] ?? tabs[index - 1] ?? null
 }
 
 /** Keeps a tab when its file is renamed. */
-export function retitleTab(tabs: DocTab[], from: string, to: string): DocTab[] {
+export function retitleTab(
+  tabs: DocTab[],
+  projectId: string,
+  from: string,
+  to: string,
+): DocTab[] {
   if (from === to) {
     return tabs
   }
   return tabs.map((tab) => {
+    if (tab.projectId !== projectId) return tab
     const relPath = followRenamedPath(tab.relPath, from, to)
     if (relPath === tab.relPath) {
       return tab
@@ -231,21 +252,30 @@ export function retitleTab(tabs: DocTab[], from: string, to: string): DocTab[] {
  * Order for reopening saved tabs. Pinned files come first, then a preview,
  * and the active file last so it stays focused.
  */
-export function tabsToReopen<T extends { rel_path: string; preview: boolean }>(
+export function tabsToReopen<
+  T extends { project_id?: string; rel_path: string; preview: boolean },
+>(
   tabs: readonly T[],
+  activeProjectId: string,
   activeRelPath: string | null,
 ): T[] {
-  const rest = tabs.filter((tab) => tab.rel_path !== activeRelPath)
+  const active = tabs.find(
+    (tab) =>
+      (tab.project_id ?? activeProjectId) === activeProjectId &&
+      tab.rel_path === activeRelPath,
+  )
+  const rest = tabs.filter((tab) => tab !== active)
   return [
     ...rest.filter((tab) => !tab.preview),
     ...rest.filter((tab) => tab.preview),
-    ...tabs.filter((tab) => tab.rel_path === activeRelPath),
+    ...(active ? [active] : []),
   ]
 }
 
 /** Tab strip and open document after a project rename, without reloading disk. */
 export function followOpenRename(
   tabs: DocTab[],
+  projectId: string,
   openRelPath: string | null,
   docMeta: DocumentMeta | null,
   from: string,
@@ -256,7 +286,7 @@ export function followOpenRename(
   docMeta: DocumentMeta | null
 } {
   return {
-    tabs: retitleTab(tabs, from, to),
+    tabs: retitleTab(tabs, projectId, from, to),
     openRelPath: openRelPath ? followRenamedPath(openRelPath, from, to) : null,
     docMeta: docMeta
       ? { ...docMeta, relPath: followRenamedPath(docMeta.relPath, from, to) }

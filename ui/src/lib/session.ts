@@ -1,5 +1,5 @@
 import type { OpenSession, ViewMode } from './generated/core'
-import type { WorkspacePage, WorkspaceTab } from './tabs'
+import type { TabPath, WorkspacePage, WorkspaceTab } from './tabs'
 
 /** `preview`, `editor`, or `split` stored for one tab. Anything else is unset. */
 export function savedViewMode(value: string): ViewMode | undefined {
@@ -24,7 +24,7 @@ export function modeForTab(
 /** Snapshot of the open project, document tabs, and workspace tabs. */
 export function openSession(input: {
   projectId: string
-  tabs: { relPath: string; preview: boolean; viewMode: ViewMode }[]
+  tabs: (TabPath & { preview: boolean; viewMode: ViewMode })[]
   activeRelPath: string | null
   workspaceTabs: readonly WorkspaceTab[]
   page: WorkspacePage
@@ -33,12 +33,18 @@ export function openSession(input: {
   const tabs = input.tabs
     .filter((tab) => tab.relPath.length > 0)
     .map((tab) => ({
+      ...(tab.projectId === input.projectId
+        ? {}
+        : { project_id: tab.projectId }),
       rel_path: tab.relPath,
       preview: tab.preview,
       view_mode: tab.viewMode,
     }))
   const active = input.activeRelPath
-  if (active && !tabs.some((tab) => tab.rel_path === active)) {
+  if (
+    active &&
+    !tabs.some((tab) => !tab.project_id && tab.rel_path === active)
+  ) {
     tabs.push({ rel_path: active, preview: false, view_mode: input.viewMode })
   }
   return {

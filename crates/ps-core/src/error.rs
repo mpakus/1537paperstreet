@@ -203,7 +203,7 @@ pub enum Error {
     },
 
     /// Format Document does not support this file type.
-    #[error("Format is available for Markdown and JSON.")]
+    #[error("Format is available for Markdown, YAML, JSON, and TOML.")]
     FormatUnavailable,
 
     /// An image cannot be overwritten from the editor.
@@ -218,13 +218,24 @@ pub enum Error {
     #[error("This file is not valid JSON.")]
     InvalidJsonBuffer,
 
+    /// A configuration file has an error the formatter cannot handle.
+    #[error("{format} line {line}: {message}")]
+    InvalidConfigBuffer {
+        /// Format name shown to the user.
+        format: &'static str,
+        /// One-based source line.
+        line: usize,
+        /// Parser diagnostic.
+        message: String,
+    },
+
     /// A Finder drop contained no paths.
-    #[error("Drop a Markdown file, a PDF, or a folder onto the window to open it.")]
+    #[error("Drop a file or folder onto the window to open it.")]
     EmptyDrop,
 
-    /// A dropped path is not a folder, a Markdown file, or a PDF.
+    /// A dropped path cannot be opened by this entry point.
     #[error(
-        "Only Markdown files, PDF files, and folders can be opened. '{}' is not one of those.",
+        "Couldn't open '{}'. Choose a supported file or folder.",
         path.display()
     )]
     UnsupportedDrop {
@@ -298,7 +309,7 @@ mod tests {
         );
         assert_eq!(
             Error::FormatUnavailable.to_string(),
-            "Format is available for Markdown and JSON."
+            "Format is available for Markdown, YAML, JSON, and TOML."
         );
         assert_eq!(
             Error::InvalidJsonBuffer.to_string(),
@@ -307,7 +318,7 @@ mod tests {
         assert!(
             Error::EmptyDrop
                 .to_string()
-                .contains("Drop a Markdown file")
+                .contains("Drop a file or folder")
         );
         assert!(
             Error::ProjectNotFound { id: "abc".into() }

@@ -12,7 +12,7 @@ describe('App', () => {
     expect(body).toContain('aria-label="Projects"')
     expect(body).toContain('aria-label="File tree"')
     expect(body).toContain('Your Markdown projects will appear here.')
-    expect(body).toContain('Drop a Markdown file or a folder to open it.')
+    expect(body).toContain('Drop files or folders to open them.')
     expect(body).toContain('aria-label="Document"')
     expect(body).toContain('Preview')
     expect(body).toContain('Edit')

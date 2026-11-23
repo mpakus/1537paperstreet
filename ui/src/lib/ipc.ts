@@ -19,6 +19,7 @@ import type {
   DocumentSource,
   DocumentStat,
   RestoreTraits,
+  ConfigDiagnostic,
   OpenDropResult,
   Project,
   ProjectsListQuery,
@@ -296,6 +297,14 @@ export function textFormat(relPath: string, text: string): Promise<string> {
   return invokeIpc('text_format', { rel_path: relPath, text })
 }
 
+/** Returns line diagnostics for a YAML or TOML editor buffer. */
+export function textLint(
+  relPath: string,
+  text: string,
+): Promise<ConfigDiagnostic[]> {
+  return invokeIpc('text_lint', { rel_path: relPath, text })
+}
+
 /** Writes a document, restoring BOM, EOL, and a trailing newline. */
 export function docSave(
   projectId: string,
@@ -390,12 +399,33 @@ export function openDroppedPaths(paths: string[]): Promise<OpenDropResult> {
   return invokeIpc('open_dropped_paths', { paths })
 }
 
+/** Opens native file drops after confirming any new project folders. */
+export async function openFileDrop(paths: string[]): Promise<OpenDropResult[]> {
+  const folders = await invokeIpc<string[]>('file_drop_folders', { paths })
+  let approved: string[] = []
+  if (folders.length > 0) {
+    const { confirm } = await import('@tauri-apps/plugin-dialog')
+    if (
+      await confirm(folders.join('\n'), {
+        title:
+          folders.length === 1
+            ? 'Add this folder to Projects?'
+            : 'Add these folders to Projects?',
+        okLabel: 'Add to Projects',
+        cancelLabel: 'Cancel',
+      })
+    )
+      approved = folders
+  }
+  return invokeIpc('open_file_drop', { paths, approved_folders: approved })
+}
+
 /** Registers a file the operating system asked the app to open, if one is waiting. */
 export function takeExternalOpen(): Promise<OpenDropResult | null> {
   return invokeIpc('take_external_open')
 }
 
-/** Shows a native picker, then opens the chosen Markdown file, PDF, or folder. */
+/** Shows a native picker, then opens the chosen file or folder. */
 export async function pickAndOpen(
   kind: 'file' | 'folder',
 ): Promise<OpenDropResult | null> {
@@ -407,8 +437,19 @@ export async function pickAndOpen(
       kind === 'file'
         ? [
             {
-              name: 'Markdown or PDF',
-              extensions: ['md', 'markdown', 'mdown', 'mdwn', 'age', 'pdf'],
+              name: 'Markdown, PDF, or configuration',
+              extensions: [
+                'md',
+                'markdown',
+                'mdown',
+                'mdwn',
+                'age',
+                'pdf',
+                'yaml',
+                'yml',
+                'json',
+                'toml',
+              ],
             },
           ]
         : undefined,

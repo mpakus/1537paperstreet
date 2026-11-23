@@ -15,7 +15,7 @@ bar shows what you can do with the document:
   `window.editor_w`).
 - **Save** — write the file (⌘S); the button is disabled until a file is open
   and writable
-- **Format** — align Markdown tables or pretty-print JSON
+- **Format** — align Markdown tables or format YAML, JSON, and TOML
 - **Export** — PDF of the current document (⌘⌥E); the Save dialog picks the
   folder
 - **Board** — Dashboard tab (local counts; no telemetry)
@@ -64,10 +64,11 @@ edits — the file is byte-for-byte the same.
 The editor loads CodeMirror the first time you leave Preview or apply a highlight. Markdown markup
 marks (`#`, `*`, `` ` ``) are faded; headings, emphasis, and links stay readable.
 Other files use a language highlighter when one is available. JavaScript,
-TypeScript, Go, Rust, Java, and PHP underline syntax errors; JSON shows parse
-errors; otherwise they edit as plain text in the monospace font.
+TypeScript, Go, Rust, Java, PHP, YAML, JSON, and TOML underline syntax errors.
 Settings → File formats lists the first-class source languages.
-Save with ⌘S or Save. Format aligns Markdown tables or pretty-prints JSON.
+Save with ⌘S or Save. Switching projects keeps existing tabs and unsaved
+edits. Before closing an edited file, choose **Save** to write the changes
+and close, or **Cancel** to keep editing. If saving fails, the tab stays open.
 Renaming the file in the tree does not reload it from
 disk, so unsaved edits stay in the editor. An external editor is still
 available (⌘⇧O). If that editor (or another program) saves the open file, a

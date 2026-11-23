@@ -20,6 +20,11 @@ export function isJsonPath(name: string): boolean {
   return /\.json$/i.test(name)
 }
 
+/** Returns whether Format supports this configuration file. */
+export function isConfigPath(name: string): boolean {
+  return isJsonPath(name) || /\.(ya?ml|toml)$/i.test(name)
+}
+
 /** Returns whether a file name is shown as source text. */
 export function isSourcePath(name: string): boolean {
   return name.length > 0 && !isMarkdownPath(name) && !isPreviewOnlyPath(name)

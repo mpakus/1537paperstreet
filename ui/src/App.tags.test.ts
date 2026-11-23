@@ -258,3 +258,207 @@ describe('opening notes from Tags Cloud', () => {
     )
   })
 })
+
+async function openEditingWorkspace(extra?: Parameters<typeof mockIpc>[0]) {
+  const beta = { ...project, id: 'b', name: 'Beta', path: '/fixture/beta' }
+  const save = vi.fn<(args?: Record<string, unknown>) => unknown>(() => ({
+    hash: 'written',
+    size: 20,
+    skipped: false,
+  }))
+  mockIpc({
+    projects_list: () => ({ items: [project, beta], total: 2 }),
+    projects_get: (args) => (args?.id === 'a' ? project : beta),
+    tree_expanded_get: () => [],
+    tree_expanded_set: () => undefined,
+    tree_read_dir: () => [],
+    watch_start: () => undefined,
+    watch_set_expanded: () => undefined,
+    doc_lock_all: () => undefined,
+    doc_open: (args) => ({
+      ...opened,
+      meta: {
+        ...opened.meta,
+        projectId: args?.project_id,
+        relPath: args?.rel_path,
+        hash: `${args?.project_id}-hash`,
+      },
+    }),
+    doc_source: (args) => ({
+      ...source,
+      text: `${args?.project_id} saved text`,
+    }),
+    doc_preview: () => ({ html: '', toc: [] }),
+    doc_save: save,
+    ...extra,
+  })
+  component = mount(App, { target })
+  await settle()
+  await selectProject('a')
+  button('Edit').click()
+  await settle()
+  expect(editor().value).toBe('a saved text')
+  return save
+}
+
+async function selectProject(projectId: string) {
+  target.querySelector<HTMLElement>(`[data-project-id="${projectId}"]`)!.click()
+  await settle()
+}
+
+function editor() {
+  return target.querySelector<HTMLTextAreaElement>(
+    '[aria-label="Test document editor"]',
+  )!
+}
+
+function edit(text: string) {
+  editor().value = text
+  editor().dispatchEvent(new Event('input', { bubbles: true }))
+  flushSync()
+}
+
+function documentTabs() {
+  return Array.from(
+    target.querySelectorAll<HTMLButtonElement>(
+      '[aria-label="Workspace"] [role="tab"]',
+    ),
+  )
+}
+
+async function requestClose(tab: HTMLButtonElement) {
+  tab.parentElement!.querySelector<HTMLButtonElement>('button.close')!.click()
+  await settle()
+}
+
+async function chooseClose(choice: 'Cancel' | 'Save') {
+  const prompt = target.querySelector(
+    'dialog[aria-labelledby="save-changes-title"]',
+  )
+  expect(prompt).toBeTruthy()
+  const action = Array.from(prompt!.querySelectorAll('button')).find(
+    (button) => button.textContent?.trim() === choice,
+  )!
+  action.click()
+  await settle()
+}
+
+describe('open document tabs', () => {
+  it('opens every dropped file and keeps the existing draft', async () => {
+    const beta = { ...project, id: 'b', name: 'Beta', path: '/fixture/beta' }
+    const file = '/fixture/beta/config.yaml'
+    const second = '/fixture/beta/Cargo.toml'
+    await openEditingWorkspace({
+      file_drop_folders: () => [],
+      open_file_drop: () => [
+        { project: beta, openRelPath: 'config.yaml' },
+        { project: beta, openRelPath: 'Cargo.toml' },
+      ],
+    })
+    edit('Keep this draft')
+    const transfer = new DataTransfer()
+    transfer.setData('text/uri-list', `file://${file}\r\nfile://${second}`)
+    window.dispatchEvent(
+      Object.assign(new Event('drop', { cancelable: true }), {
+        dataTransfer: transfer,
+      }),
+    )
+    await settle()
+    expect(documentTabs().map((tab) => tab.textContent?.trim())).toEqual([
+      'note.md',
+      'config.yaml',
+      'Cargo.toml',
+    ])
+    documentTabs()[0]!.click()
+    await settle()
+    expect(editor().value).toBe('Keep this draft')
+  })
+
+  it('keeps separate buffers for matching paths when switching projects', async () => {
+    const save = await openEditingWorkspace()
+    edit('Alpha draft')
+    await selectProject('b')
+    expect(documentTabs()).toHaveLength(2)
+    expect(editor().value).toBe('b saved text')
+    edit('Beta draft')
+
+    documentTabs()[0]!.click()
+    await settle()
+    expect(editor().value).toBe('Alpha draft')
+    button('Save').click()
+    await settle()
+    expect(save).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        project_id: 'a',
+        rel_path: 'note.md',
+        text: 'Alpha draft',
+        base_hash: 'a-hash',
+      }),
+    )
+
+    documentTabs()[1]!.click()
+    await settle()
+    expect(editor().value).toBe('Beta draft')
+  })
+
+  it('keeps a dirty tab on cancel and waits for Save before closing it', async () => {
+    const save = await openEditingWorkspace()
+    let finishSave!: (result: unknown) => void
+    save.mockReturnValueOnce(new Promise((resolve) => (finishSave = resolve)))
+    edit('Keep these edits')
+
+    await requestClose(documentTabs()[0]!)
+    await chooseClose('Cancel')
+    expect(save).not.toHaveBeenCalled()
+    expect(editor().value).toBe('Keep these edits')
+
+    await requestClose(documentTabs()[0]!)
+    await chooseClose('Save')
+    expect(documentTabs()).toHaveLength(1)
+    expect(save).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        project_id: 'a',
+        text: 'Keep these edits',
+        base_hash: 'a-hash',
+      }),
+    )
+    finishSave({ hash: 'written', size: 16, skipped: false })
+    await settle()
+    expect(documentTabs()).toHaveLength(0)
+  })
+
+  it('keeps the draft open when saving before close fails', async () => {
+    const save = await openEditingWorkspace()
+    save.mockRejectedValueOnce(new Error('The file changed on disk.'))
+    edit('Preserve after a conflict')
+
+    await requestClose(documentTabs()[0]!)
+    await chooseClose('Save')
+
+    expect(target.textContent).toContain('The file changed on disk.')
+    expect(documentTabs()).toHaveLength(1)
+    expect(editor().value).toBe('Preserve after a conflict')
+  })
+
+  it('saves an inactive tab to its own project before closing it', async () => {
+    const save = await openEditingWorkspace()
+    edit('Inactive Alpha draft')
+    await selectProject('b')
+    expect(documentTabs()).toHaveLength(2)
+    edit('Active Beta draft')
+
+    await requestClose(documentTabs()[0]!)
+    await chooseClose('Save')
+
+    expect(save).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        project_id: 'a',
+        rel_path: 'note.md',
+        text: 'Inactive Alpha draft',
+        base_hash: 'a-hash',
+      }),
+    )
+    expect(documentTabs()).toHaveLength(1)
+    expect(editor().value).toBe('Active Beta draft')
+  })
+})

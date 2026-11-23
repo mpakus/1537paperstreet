@@ -7,18 +7,18 @@ Ways to open a folder — each **adds it to Projects** if it is not there yet:
 
 - Projects pane → Open Folder…
 - File → Open Folder…
-- File → Open File… — registers the folder that contains the `.md` or `.pdf`
-  and opens the file
-- Drop a folder, a `.md`, or a `.pdf` from Finder, Explorer, or the file
-  manager onto the window
+- File → Open File… — opens Markdown, PDF, YAML, JSON, and TOML files and
+  registers their folder if needed
+- Drop files or folders from another app onto the window. Choose **Add to
+  Projects** when the app asks about a new folder.
 - Open a `.md` or `.pdf` with 1537paperstreet from the file manager. The file
   opens and its folder is added to Projects when it is not there yet. The app
   is listed under Open With and does not replace your default editor. After
   installing a new build, open the app once so the system records that list.
 
-Opening the same folder again reuses the existing list entry. Opening a
-Markdown or PDF file opens it and registers the containing folder. Dropping
-onto a tree row inside an already open project copies files into that folder.
+Opening the same folder again reuses the existing list entry. Dropped files
+open in tabs from their current locations. Any tabs you already had open stay
+in the workspace.
 
 Which names open as notes, PDFs, images, or source is listed in
 [Formats](formats.md).

@@ -1,8 +1,8 @@
-//! Format for Markdown and JSON editor buffers.
+//! Formatting and syntax diagnostics for editor buffers.
 
 use std::path::Path;
 
-use crate::projects::is_markdown_path;
+use crate::projects::{config_language, is_markdown_path};
 use crate::{Error, Result};
 
 /// An exact rendered text run and the selected UTF-16 offsets within it.
@@ -29,21 +29,136 @@ pub struct HighlightSource {
     pub hash: String,
 }
 
-/// Pretty-prints Markdown tables or JSON. Other files are left to an external editor.
+/// Formats Markdown tables and YAML, JSON, or TOML buffers.
 pub fn format_text(rel_path: &Path, text: &str) -> Result<String> {
     if is_markdown_path(rel_path) {
         return Ok(format_markdown(text));
     }
-    if is_json_path(rel_path) {
-        return format_json(text);
+    match config_language(rel_path) {
+        Some("json") => format_json(text),
+        Some("yaml") => {
+            check_config("yaml", text)?;
+            let mut options = pretty_yaml::config::FormatOptions::default();
+            options.language.trim_trailing_whitespaces = false;
+            let mut formatted = pretty_yaml::format_text(text, &options)
+                .map_err(|error| config_error("YAML", text, error.offset(), error.message()))?;
+            if !text.ends_with('\n') && formatted.ends_with('\n') {
+                formatted.pop();
+            }
+            Ok(formatted)
+        }
+        Some("toml") => format_toml(text),
+        _ => Err(Error::FormatUnavailable),
     }
-    Err(Error::FormatUnavailable)
 }
 
-fn is_json_path(path: &Path) -> bool {
-    path.extension()
-        .and_then(|extension| extension.to_str())
-        .is_some_and(|extension| extension.eq_ignore_ascii_case("json"))
+/// A syntax diagnostic attached to a one-based editor line.
+#[derive(serde::Serialize, ts_rs::TS)]
+pub struct ConfigDiagnostic {
+    /// One-based source line.
+    pub line: usize,
+    /// Human-readable parser message.
+    pub message: String,
+}
+
+/// Checks a YAML or TOML editor buffer using the same validation as Format.
+pub fn lint_config(rel_path: &Path, text: &str) -> Vec<ConfigDiagnostic> {
+    match config_language(rel_path).map(|language| check_config(language, text)) {
+        Some(Err(Error::InvalidConfigBuffer { line, message, .. })) => {
+            vec![ConfigDiagnostic { line, message }]
+        }
+        _ => Vec::new(),
+    }
+}
+
+fn check_config(language: &str, text: &str) -> Result<()> {
+    // The formatting parsers recurse. Validate with bounded parsers first.
+    match language {
+        "yaml" => {
+            let mut options = serde_saphyr::Options::default();
+            options.with_snippet = false;
+            serde_saphyr::from_multiple_with_options::<serde::de::IgnoredAny>(text, options)
+                .map(|_| ())
+                .map_err(|error| Error::InvalidConfigBuffer {
+                    format: "YAML",
+                    line: error
+                        .location()
+                        .map_or(1, |location| location.line() as usize),
+                    message: error.to_string(),
+                })
+        }
+        "toml" => parse_toml(text).map(|_| ()),
+        _ => Ok(()),
+    }
+}
+
+fn parse_toml(text: &str) -> Result<toml_edit::DocumentMut> {
+    text.parse::<toml_edit::DocumentMut>().map_err(|error| {
+        config_error(
+            "TOML",
+            text,
+            error.span().map_or(0, |span| span.start),
+            error.message(),
+        )
+    })
+}
+
+fn format_toml(text: &str) -> Result<String> {
+    use toml_edit::visit_mut::VisitMut;
+
+    struct FormatToml;
+
+    impl VisitMut for FormatToml {
+        fn visit_table_like_kv_mut(
+            &mut self,
+            mut key: toml_edit::KeyMut<'_>,
+            item: &mut toml_edit::Item,
+        ) {
+            if let Some(value) = item.as_value_mut() {
+                key.leaf_decor_mut().set_suffix(" ");
+                value.decor_mut().set_prefix(" ");
+            }
+            self.visit_item_mut(item);
+        }
+
+        fn visit_array_mut(&mut self, array: &mut toml_edit::Array) {
+            let single_line = |trivia: &toml_edit::RawString| {
+                trivia
+                    .as_str()
+                    .is_some_and(|text| text.bytes().all(|byte| matches!(byte, b' ' | b'\t')))
+            };
+            // Only compact arrays whose layout contains no comments or line breaks.
+            if single_line(array.trailing())
+                && array.iter().all(|value| {
+                    let decor = value.decor();
+                    decor.prefix().is_none_or(single_line) && decor.suffix().is_none_or(single_line)
+                })
+            {
+                array.fmt();
+            }
+            toml_edit::visit_mut::visit_array_mut(self, array);
+        }
+    }
+
+    let mut doc = parse_toml(text)?;
+    FormatToml.visit_document_mut(&mut doc);
+    let mut formatted = doc.to_string();
+    if !text.ends_with('\n') && formatted.ends_with('\n') {
+        formatted.pop();
+    }
+    Ok(formatted)
+}
+
+fn config_error(format: &'static str, text: &str, offset: usize, message: &str) -> Error {
+    Error::InvalidConfigBuffer {
+        format,
+        line: 1 + text
+            .bytes()
+            .take(offset)
+            .filter(|byte| *byte == b'\n')
+            .count(),
+        message: message.to_owned(),
+    }
 }
 
 fn format_json(text: &str) -> Result<String> {

@@ -20,6 +20,9 @@ describe('supported formats catalog', () => {
       'C#',
       'Java',
       'PHP',
+      'YAML',
+      'JSON',
+      'TOML',
     ])
     expect(byName.JavaScript).toContain('.js')
     expect(byName.JavaScript).toContain('.rsx')

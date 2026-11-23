@@ -1,6 +1,8 @@
 use std::fs;
 
-use ps_core::projects::{ProjectStore, ProjectsDocument, open_dropped_paths};
+use ps_core::projects::{
+    ProjectStore, ProjectsDocument, file_drop_folders, open_dropped_paths, open_file_drop,
+};
 use ps_core::store::VersionedDocument;
 use ulid::Ulid;
 
@@ -178,4 +180,37 @@ fn dropping_a_socket_is_rejected() {
     let _listener = UnixListener::bind(&socket).expect("socket");
     let mut store = ProjectStore::open(temp.path().join("projects.json")).expect("store");
     assert!(open_dropped_paths(&mut store, &[socket]).is_err());
+}
+
+#[test]
+fn dropped_files_open_from_existing_and_approved_projects_only() {
+    let temp = tempfile::tempdir().expect("temporary directory");
+    let registered = temp.path().join("registered");
+    let new = temp.path().join("new");
+    fs::create_dir(&registered).expect("registered folder");
+    fs::create_dir(&new).expect("new folder");
+    let paths = [
+        registered.join("settings.yaml"),
+        new.join("settings.yaml"),
+        new.join("app.toml"),
+    ];
+    for path in &paths {
+        fs::write(path, "").expect("configuration");
+    }
+    let mut store = ProjectStore::open(temp.path().join("projects.json")).expect("store");
+    let project = store.add("Registered", registered).expect("project");
+    let canonical = new.canonicalize().expect("canonical new folder");
+    assert_eq!(
+        file_drop_folders(&store, &paths).expect("plan"),
+        vec![canonical.clone()]
+    );
+    let opened = open_file_drop(&mut store, &paths, &[]).expect("decline new folder");
+    assert_eq!(opened.len(), 1);
+    assert_eq!(opened[0].project.id, project.id);
+    assert_eq!(store.list().len(), 1);
+    let opened = open_file_drop(&mut store, &paths, &[canonical]).expect("approve new folder");
+    assert_eq!(opened.len(), 3);
+    assert_eq!(store.list().len(), 2);
+    assert_eq!(opened[1].project.id, opened[2].project.id);
+    assert_ne!(opened[0].project.id, opened[1].project.id);
 }

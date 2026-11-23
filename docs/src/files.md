@@ -38,9 +38,10 @@ Tree context menu and File / Go:
 | Move to Trash | ⌘⌫, with confirmation |
 
 Drag inside the tree moves a file. Hold ⌥ while dropping to copy. A stacked
-ghost of the dragged names follows the pointer and eases into the folder. Drop from
-the file manager into a tree folder copies files into the project. Drag a file onto
-another project in the Projects list to move it there; hold ⌥ to copy.
+ghost of the dragged names follows the pointer and eases into the folder. Drag
+a file onto another project in the Projects list to move it there. Hold ⌥ to
+copy. Files dropped from another app open from their current locations. The
+app asks before adding a new folder to Projects.
 
 ⇧ and ⌘ select several nodes for group copy, move, duplicate, and trash.
 
@@ -49,7 +50,7 @@ Themes are chosen there — light and dark palettes with a live preview
 (Solarized, Nord, Gruvbox, Catppuccin, Tokyo Night, GitHub, and Paper). You
 can also keep or hide the Dock icon after the window is hidden, and set
 preview font and colors. File formats lists JavaScript, TypeScript, Ruby,
-Elixir, Go, Rust, C#, Java, and PHP. Other UTF-8 still opens; it is
+Elixir, Go, Rust, C#, Java, PHP, YAML, JSON, and TOML. Other UTF-8 still opens and is
 highlighted when a grammar exists.
 
 ⌘P quick-opens Markdown in the current project. ⌘⇧F, the toolbar search
@@ -63,7 +64,8 @@ and does not read binary files.
 
 Open files stay in tabs above
 the preview. Each document tab remembers its own Preview, Edit, or Split
-mode, so a Markdown file can stay in Preview while a source file stays in
+mode. Switch projects to open more files while keeping existing tabs and edits.
+A Markdown file can stay in Preview while a source file stays in
 the editor. The last folder, document tabs, Dashboard, Assistant, and those
 per-tab modes open again the next time the app starts. If a file or folder from that session is gone, the app skips it and
 adds a note to Message history. ⌘W closes the active tab only (a document,

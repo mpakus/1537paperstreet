@@ -961,7 +961,7 @@ export type OpenDropResult = {
  */
 project: Project, 
 /**
- * Project-relative path of a dropped Markdown file, when one was opened.
+ * Project-relative path of the opened file, when the path was a file.
  */
 openRelPath: string | null, };
 
@@ -1193,6 +1193,16 @@ html: string,
  */
 hash: string, };
 
+export type ConfigDiagnostic = { 
+/**
+ * One-based source line.
+ */
+line: number, 
+/**
+ * Human-readable parser message.
+ */
+message: string, };
+
 export type DocChunkEvent = { 
 /**
  * Registered project that owns the file.
@@ -1267,6 +1277,10 @@ builtin: boolean, };
 
 export type SessionTab = { 
 /**
+ * Project for this tab. An older session inherits the workspace's project.
+ */
+project_id?: string, 
+/**
  * Project-relative path of the open document.
  */
 rel_path: string, 
@@ -1281,7 +1295,7 @@ view_mode: string, };
 
 export type OpenSession = { 
 /**
- * Registered project that owned the open files.
+ * Project selected in the sidebar and owner of the active document.
  */
 project_id: string, 
 /**

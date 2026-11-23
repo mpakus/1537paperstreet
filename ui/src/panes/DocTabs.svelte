@@ -1,7 +1,10 @@
 <script lang="ts">
   import {
+    sameTab,
+    tabKey,
     tabTitle,
     type DocTab,
+    type TabPath,
     type WorkspacePage,
     type WorkspaceTab,
   } from '../lib/tabs'
@@ -10,7 +13,8 @@
     tabs,
     workspaceTabs = [],
     page = 'document',
-    activeRelPath = null,
+    activeTab = null,
+    projects = [],
     onpage,
     onclosepage,
     onselect,
@@ -20,12 +24,13 @@
     tabs: DocTab[]
     workspaceTabs?: WorkspaceTab[]
     page?: WorkspacePage
-    activeRelPath?: string | null
+    activeTab?: TabPath | null
+    projects?: { id: string; path: string }[]
     onpage: (page: WorkspaceTab) => void
     onclosepage: (page: WorkspaceTab) => void
-    onselect: (relPath: string) => void
-    onclose: (relPath: string) => void
-    onpin?: (relPath: string) => void
+    onselect: (tab: TabPath) => void
+    onclose: (tab: TabPath) => void
+    onpin?: (tab: TabPath) => void
   } = $props()
 </script>
 
@@ -60,16 +65,20 @@
       >
     </div>
   {/each}
-  {#each tabs as tab (tab.relPath)}
-    {@const selected = page === 'document' && tab.relPath === activeRelPath}
+  {#each tabs as tab (tabKey(tab))}
+    {@const selected = page === 'document' && sameTab(activeTab, tab)}
+    {@const projectPath = projects.find(
+      (project) => project.id === tab.projectId,
+    )?.path}
+    {@const path = projectPath ? `${projectPath}/${tab.relPath}` : tab.relPath}
     <div class="tab" class:selected class:preview={tab.preview}>
       <button
         type="button"
         role="tab"
         aria-selected={selected}
-        title={tab.preview ? `${tab.relPath} (preview)` : tab.relPath}
-        onclick={() => onselect(tab.relPath)}
-        ondblclick={() => onpin?.(tab.relPath)}
+        title={tab.preview ? `${path} (preview)` : path}
+        onclick={() => onselect(tab)}
+        ondblclick={() => onpin?.(tab)}
         >{tab.title || tabTitle(tab.relPath)}</button
       >
       <button
@@ -79,7 +88,7 @@
         aria-label="Close {tab.title}"
         onclick={(event) => {
           event.stopPropagation()
-          onclose(tab.relPath)
+          onclose(tab)
         }}>×</button
       >
     </div>

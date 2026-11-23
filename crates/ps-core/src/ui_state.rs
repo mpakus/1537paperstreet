@@ -68,6 +68,10 @@ impl VersionedDocument for UiState {
 /// One document tab remembered for the next launch.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, TS)]
 pub struct SessionTab {
+    /// Project for this tab. An older session inherits the workspace's project.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub project_id: Option<String>,
     /// Project-relative path of the open document.
     #[ts(type = "string")]
     pub rel_path: PathBuf,
@@ -81,7 +85,7 @@ pub struct SessionTab {
 /// Workspace the user left open: project, document tabs, and extra tabs.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, TS)]
 pub struct OpenSession {
-    /// Registered project that owned the open files.
+    /// Project selected in the sidebar and owner of the active document.
     pub project_id: String,
     /// Document tabs in strip order.
     pub tabs: Vec<SessionTab>,
@@ -153,6 +157,12 @@ impl RestoredSession {
     }
 }
 
+impl SessionTab {
+    fn project<'a>(&'a self, fallback: &'a str) -> &'a str {
+        self.project_id.as_deref().unwrap_or(fallback)
+    }
+}
+
 impl OpenSession {
     fn validate(&self) -> Result<()> {
         for tab in &self.tabs {
@@ -206,7 +216,16 @@ impl UiState {
             }
             let rel_path = PathBuf::from(display_rel(&tab.rel_path));
             let view_mode = normalize_view_mode(&tab.view_mode);
-            if let Some(existing) = tabs.iter_mut().find(|item| item.rel_path == rel_path) {
+            let owner = tab
+                .project_id
+                .as_deref()
+                .map(str::trim)
+                .filter(|owner| !owner.is_empty() && *owner != project_id)
+                .map(str::to_owned);
+            if let Some(existing) = tabs
+                .iter_mut()
+                .find(|item| item.rel_path == rel_path && item.project_id == owner)
+            {
                 if !tab.preview {
                     existing.preview = false;
                 }
@@ -216,6 +235,7 @@ impl UiState {
                 continue;
             }
             tabs.push(SessionTab {
+                project_id: owner,
                 rel_path,
                 preview: tab.preview,
                 view_mode,
@@ -225,7 +245,7 @@ impl UiState {
             tabs = tabs.split_off(tabs.len() - MAX_SESSION_TABS);
         }
         keep_one_preview(&mut tabs);
-        let active_rel_path = normalize_active(session.active_rel_path, &tabs)?;
+        let active_rel_path = normalize_active(session.active_rel_path, &tabs, &project_id)?;
         let workspace_tabs = normalize_workspace(session.workspace_tabs, &session.page);
         let page = normalize_page(&session.page, &workspace_tabs);
         self.session = Some(OpenSession {
@@ -242,53 +262,64 @@ impl UiState {
     /// Drops tabs and folders that are gone and returns what can still be opened.
     ///
     /// Missing paths are removed from the saved session so the same note is not
-    /// added on every later launch. `kind_at` is only called when the project
-    /// folder is still on disk.
+    /// added on every later launch. `kind_at` receives the owning project id and path.
     pub fn restore_session(
         &mut self,
         probe: &SessionProbe,
-        kind_at: impl Fn(&str) -> DiskKind,
+        kind_at: impl Fn(&str, &str) -> DiskKind,
     ) -> RestoredSession {
         let Some(session) = self.session.clone() else {
             return RestoredSession::empty();
         };
+        let mut notices = Vec::new();
+        let primary_available = probe.project_listed && probe.root_is_dir;
         if !probe.project_listed {
-            self.session = None;
-            let mut restored = RestoredSession::empty();
-            restored.notices.push(missing_project_notice());
-            return restored;
-        }
-        if !probe.root_is_dir {
-            self.session = None;
-            let mut restored = RestoredSession::empty();
-            restored
-                .notices
-                .push(missing_folder_notice(&probe.project_name));
-            return restored;
+            notices.push(missing_project_notice());
+        } else if !probe.root_is_dir {
+            notices.push(missing_folder_notice(&probe.project_name));
         }
 
-        let mut notices = Vec::new();
         let mut kept = Vec::new();
         for tab in &session.tabs {
+            let project = tab.project(&session.project_id);
+            if project == session.project_id && !primary_available {
+                continue;
+            }
             let rel = display_rel(&tab.rel_path);
-            if kind_at(&rel) == DiskKind::File {
-                kept.push(SessionTab {
-                    rel_path: PathBuf::from(rel),
-                    preview: tab.preview,
-                    view_mode: normalize_view_mode(&tab.view_mode),
-                });
+            if kind_at(project, &rel) == DiskKind::File {
+                kept.push(tab.clone());
             } else {
                 notices.push(missing_file_notice(&rel));
             }
         }
         keep_one_preview(&mut kept);
-        let active_rel_path =
-            choose_active(&session.tabs, &kept, session.active_rel_path.as_deref());
+        let mut project_id = session.project_id.clone();
+        let active_rel_path = if primary_available {
+            choose_active(
+                &session.tabs,
+                &kept,
+                session.active_rel_path.as_deref(),
+                &project_id,
+            )
+            .map(PathBuf::from)
+        } else if let Some(last) = kept.last() {
+            project_id = last.project(&session.project_id).to_owned();
+            Some(last.rel_path.clone())
+        } else {
+            self.session = None;
+            let mut restored = RestoredSession::empty();
+            restored.notices = notices;
+            return restored;
+        };
 
         let mut drop_expanded = Vec::new();
-        if let Some(paths) = self.expanded.get(&session.project_id) {
+        if let Some(paths) = self
+            .expanded
+            .get(&session.project_id)
+            .filter(|_| primary_available)
+        {
             for path in paths {
-                if kind_at(path) != DiskKind::Directory {
+                if kind_at(&session.project_id, path) != DiskKind::Directory {
                     drop_expanded.push(path.clone());
                 }
             }
@@ -309,18 +340,18 @@ impl UiState {
         let page = session.page.clone();
         let view_mode = session.view_mode.clone();
         self.session = Some(OpenSession {
-            project_id: session.project_id.clone(),
+            project_id: project_id.clone(),
             tabs: kept.clone(),
-            active_rel_path: active_rel_path.clone().map(PathBuf::from),
+            active_rel_path: active_rel_path.clone(),
             workspace_tabs: workspace_tabs.clone(),
             page: page.clone(),
             view_mode: view_mode.clone(),
         });
 
         RestoredSession {
-            project_id: Some(session.project_id),
+            project_id: Some(project_id),
             tabs: kept,
-            active_rel_path: active_rel_path.map(PathBuf::from),
+            active_rel_path,
             workspace_tabs,
             page,
             view_mode,
@@ -331,12 +362,19 @@ impl UiState {
     /// Drops expansion and session state for a project removed from the registry.
     pub fn remove_project(&mut self, project_id: &str) {
         self.expanded.remove(project_id);
-        if self
-            .session
-            .as_ref()
-            .is_some_and(|session| session.project_id == project_id)
-        {
-            self.session = None;
+        let Some(session) = &mut self.session else {
+            return;
+        };
+        session
+            .tabs
+            .retain(|tab| tab.project(&session.project_id) != project_id);
+        if session.project_id == project_id {
+            if let Some(tab) = session.tabs.last() {
+                session.project_id = tab.project(&session.project_id).to_owned();
+                session.active_rel_path = Some(tab.rel_path.clone());
+            } else {
+                self.session = None;
+            }
         }
     }
 }
@@ -363,7 +401,11 @@ fn display_rel(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
 }
 
-fn normalize_active(active: Option<PathBuf>, tabs: &[SessionTab]) -> Result<Option<PathBuf>> {
+fn normalize_active(
+    active: Option<PathBuf>,
+    tabs: &[SessionTab],
+    project_id: &str,
+) -> Result<Option<PathBuf>> {
     let Some(active) = active else {
         return Ok(None);
     };
@@ -372,10 +414,16 @@ fn normalize_active(active: Option<PathBuf>, tabs: &[SessionTab]) -> Result<Opti
         return Ok(None);
     }
     let rel = PathBuf::from(display_rel(&active));
-    if tabs.iter().any(|tab| tab.rel_path == rel) {
+    if tabs
+        .iter()
+        .any(|tab| tab.project(project_id) == project_id && tab.rel_path == rel)
+    {
         Ok(Some(rel))
     } else {
-        Ok(tabs.last().map(|tab| tab.rel_path.clone()))
+        Ok(tabs
+            .iter()
+            .rfind(|tab| tab.project(project_id) == project_id)
+            .map(|tab| tab.rel_path.clone()))
     }
 }
 
@@ -434,30 +482,31 @@ fn choose_active(
     original: &[SessionTab],
     kept: &[SessionTab],
     active: Option<&Path>,
+    project_id: &str,
 ) -> Option<String> {
-    let active = display_rel(active?);
-    if kept.iter().any(|tab| display_rel(&tab.rel_path) == active) {
-        return Some(active);
-    }
-    let Some(index) = original
-        .iter()
-        .position(|tab| display_rel(&tab.rel_path) == active)
-    else {
-        return kept.last().map(|tab| display_rel(&tab.rel_path));
+    let active = active?;
+    let remains = |path: &Path| {
+        kept.iter()
+            .any(|tab| tab.project(project_id) == project_id && tab.rel_path == path)
     };
-    for tab in original.iter().skip(index + 1) {
-        let rel = display_rel(&tab.rel_path);
-        if kept.iter().any(|item| display_rel(&item.rel_path) == rel) {
-            return Some(rel);
-        }
+    if remains(active) {
+        return Some(display_rel(active));
     }
-    for tab in original.iter().take(index).rev() {
-        let rel = display_rel(&tab.rel_path);
-        if kept.iter().any(|item| display_rel(&item.rel_path) == rel) {
-            return Some(rel);
-        }
+    let index = original
+        .iter()
+        .position(|tab| tab.project(project_id) == project_id && tab.rel_path == active);
+    if let Some(index) = index {
+        let (before, after) = original.split_at(index);
+        return after
+            .iter()
+            .skip(1)
+            .chain(before.iter().rev())
+            .find(|tab| tab.project(project_id) == project_id && remains(&tab.rel_path))
+            .map(|tab| display_rel(&tab.rel_path));
     }
-    None
+    kept.iter()
+        .rfind(|tab| tab.project(project_id) == project_id)
+        .map(|tab| display_rel(&tab.rel_path))
 }
 
 fn missing_file_notice(rel: &str) -> String {

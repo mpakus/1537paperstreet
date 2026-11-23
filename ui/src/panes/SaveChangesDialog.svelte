@@ -2,9 +2,11 @@
   import { onMount } from 'svelte'
   let {
     path,
+    protectedNote,
     onchoose,
   }: {
     path: string
+    protectedNote: boolean
     onchoose: (choice: 'save' | 'discard' | 'cancel') => void
   } = $props()
   let dialog: HTMLDialogElement
@@ -25,12 +27,17 @@
 >
   <h2 id="save-changes-title">Save changes before closing?</h2>
   <p>
-    {path} has unsaved changes. Discard saves an encrypted recovery copy, then removes
-    the edits from memory.
+    {path} has unsaved changes.
+    {#if protectedNote}
+      Discard saves an encrypted recovery copy, then removes the edits from
+      memory.
+    {/if}
   </p>
   <div class="actions">
     <button onclick={() => onchoose('cancel')}>Cancel</button>
-    <button onclick={() => onchoose('discard')}>Discard</button>
+    {#if protectedNote}
+      <button onclick={() => onchoose('discard')}>Discard</button>
+    {/if}
     <button onclick={() => onchoose('save')}>Save</button>
   </div>
 </dialog>

@@ -11,7 +11,7 @@ use ps_core::docio::{
     DocChunkEvent, DocDoneEvent, DocOpenResult, DocPreview, DocumentSource, DocumentStat,
     RestoreTraits, WrittenDocument,
 };
-use ps_core::edit::format_text;
+use ps_core::edit::{ConfigDiagnostic, format_text, lint_config};
 use ps_core::fsops::{ConflictStrategy, UntitledKind};
 use ps_core::projects::{OpenDropResult, Project, ProjectsListQuery, ProjectsListResult};
 use ps_core::themes::ThemeInfo;
@@ -91,6 +91,31 @@ pub(crate) async fn open_dropped_paths(
 ) -> Result<OpenDropResult, String> {
     let state = state.inner().clone();
     tauri::async_runtime::spawn_blocking(move || state.open_dropped_paths(paths))
+        .await
+        .map_err(|error| error.to_string())
+        .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn file_drop_folders(
+    state: State<'_, AppState>,
+    paths: Vec<PathBuf>,
+) -> Result<Vec<PathBuf>, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.file_drop_folders(&paths))
+        .await
+        .map_err(|error| error.to_string())
+        .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn open_file_drop(
+    state: State<'_, AppState>,
+    paths: Vec<PathBuf>,
+    approved_folders: Vec<PathBuf>,
+) -> Result<Vec<OpenDropResult>, String> {
+    let state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || state.open_file_drop(&paths, &approved_folders))
         .await
         .map_err(|error| error.to_string())
         .and_then(|result| result.map_err(to_command_error))
@@ -464,6 +489,16 @@ pub(crate) async fn text_format(rel_path: PathBuf, text: String) -> Result<Strin
         .await
         .map_err(|error| error.to_string())
         .and_then(|result| result.map_err(to_command_error))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub(crate) async fn text_lint(
+    rel_path: PathBuf,
+    text: String,
+) -> Result<Vec<ConfigDiagnostic>, String> {
+    tauri::async_runtime::spawn_blocking(move || lint_config(&rel_path, &text))
+        .await
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command(rename_all = "snake_case")]

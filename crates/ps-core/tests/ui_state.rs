@@ -142,11 +142,13 @@ fn saved_session_round_trips_without_a_schema_bump() {
             project_id: "proj".into(),
             tabs: vec![
                 SessionTab {
+                    project_id: None,
                     rel_path: PathBuf::from("readme.md"),
                     preview: false,
                     view_mode: "preview".into(),
                 },
                 SessionTab {
+                    project_id: None,
                     rel_path: PathBuf::from("notes.md"),
                     preview: true,
                     view_mode: "editor".into(),
@@ -163,6 +165,7 @@ fn saved_session_round_trips_without_a_schema_bump() {
             .set_session(OpenSession {
                 project_id: "proj".into(),
                 tabs: vec![SessionTab {
+                    project_id: None,
                     rel_path: PathBuf::from("../secret"),
                     preview: false,
                     view_mode: String::new(),
@@ -190,11 +193,13 @@ fn saved_session_round_trips_without_a_schema_bump() {
         session.tabs,
         vec![
             SessionTab {
+                project_id: None,
                 rel_path: PathBuf::from("readme.md"),
                 preview: false,
                 view_mode: "preview".into(),
             },
             SessionTab {
+                project_id: None,
                 rel_path: PathBuf::from("notes.md"),
                 preview: true,
                 view_mode: "editor".into(),
@@ -222,16 +227,19 @@ fn restore_skips_missing_files_and_folders_once() {
             project_id: "proj".into(),
             tabs: vec![
                 SessionTab {
+                    project_id: None,
                     rel_path: PathBuf::from("keep.md"),
                     preview: false,
                     view_mode: "preview".into(),
                 },
                 SessionTab {
+                    project_id: None,
                     rel_path: PathBuf::from("gone.md"),
                     preview: false,
                     view_mode: "editor".into(),
                 },
                 SessionTab {
+                    project_id: None,
                     rel_path: PathBuf::from("next.md"),
                     preview: true,
                     view_mode: "split".into(),
@@ -249,7 +257,7 @@ fn restore_skips_missing_files_and_folders_once() {
         project_name: "Notes".into(),
         root_is_dir: true,
     };
-    let restored = state.restore_session(&listed, |rel| match rel {
+    let restored = state.restore_session(&listed, |_, rel| match rel {
         "keep.md" | "next.md" => DiskKind::File,
         "chapters" => DiskKind::Directory,
         _ => DiskKind::Missing,
@@ -271,7 +279,7 @@ fn restore_skips_missing_files_and_folders_once() {
     assert_eq!(restored.tabs[1].view_mode, "split");
     assert_eq!(state.expanded_for("proj"), vec!["chapters".to_owned()]);
 
-    let again = state.restore_session(&listed, |rel| match rel {
+    let again = state.restore_session(&listed, |_, rel| match rel {
         "keep.md" | "next.md" => DiskKind::File,
         "chapters" => DiskKind::Directory,
         _ => DiskKind::Missing,
@@ -284,7 +292,7 @@ fn restore_skips_missing_files_and_folders_once() {
             project_name: "Notes".into(),
             root_is_dir: false,
         },
-        |_| DiskKind::File,
+        |_, _| DiskKind::File,
     );
     assert_eq!(
         missing_folder.notices,
@@ -301,6 +309,7 @@ fn restore_skips_missing_files_and_folders_once() {
         .set_session(OpenSession {
             project_id: "proj".into(),
             tabs: vec![SessionTab {
+                project_id: None,
                 rel_path: PathBuf::from("keep.md"),
                 preview: false,
                 view_mode: String::new(),
@@ -317,7 +326,7 @@ fn restore_skips_missing_files_and_folders_once() {
             project_name: String::new(),
             root_is_dir: false,
         },
-        |_| DiskKind::File,
+        |_, _| DiskKind::File,
     );
     assert_eq!(
         unlisted.notices,
@@ -337,4 +346,47 @@ fn missing_file_starts_with_a_valid_default() {
     .expect("missing file uses defaults");
     assert_eq!(opened.value().schema_version, 1);
     assert!(opened.value().expanded_for("any").is_empty());
+}
+
+#[test]
+fn restores_identical_paths_from_different_projects() {
+    let mut state = UiState::default();
+    let tab = |project_id| SessionTab {
+        project_id,
+        rel_path: PathBuf::from("settings.toml"),
+        preview: false,
+        view_mode: "editor".into(),
+    };
+    state
+        .set_session(OpenSession {
+            project_id: "local".into(),
+            tabs: vec![tab(None), tab(Some("other".into()))],
+            active_rel_path: Some(PathBuf::from("settings.toml")),
+            workspace_tabs: Vec::new(),
+            page: "document".into(),
+            view_mode: "editor".into(),
+        })
+        .expect("session");
+    let probe = SessionProbe {
+        project_listed: true,
+        project_name: "Local".into(),
+        root_is_dir: true,
+    };
+    let restored = state.restore_session(&probe, |project, path| {
+        assert!(matches!(project, "local" | "other"));
+        assert_eq!(path, "settings.toml");
+        DiskKind::File
+    });
+    assert_eq!(restored.tabs, vec![tab(None), tab(Some("other".into()))]);
+    state.remove_project("local");
+    let restored = state.restore_session(&probe, |project, _| {
+        assert_eq!(project, "other");
+        DiskKind::File
+    });
+    assert_eq!(restored.project_id.as_deref(), Some("other"));
+    assert_eq!(restored.tabs.len(), 1);
+    assert_eq!(
+        restored.active_rel_path,
+        Some(PathBuf::from("settings.toml"))
+    );
 }

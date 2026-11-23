@@ -7,7 +7,20 @@ describe('openSession', () => {
     expect(
       openSession({
         projectId: 'proj',
-        tabs: [{ relPath: 'a.md', preview: false, viewMode: 'preview' }],
+        tabs: [
+          {
+            projectId: 'proj',
+            relPath: 'a.md',
+            preview: false,
+            viewMode: 'preview',
+          },
+          {
+            projectId: 'other',
+            relPath: 'b.md',
+            preview: false,
+            viewMode: 'editor',
+          },
+        ],
         activeRelPath: 'b.md',
         workspaceTabs: ['assistant'],
         page: 'assistant',
@@ -17,6 +30,12 @@ describe('openSession', () => {
       project_id: 'proj',
       tabs: [
         { rel_path: 'a.md', preview: false, view_mode: 'preview' },
+        {
+          project_id: 'other',
+          rel_path: 'b.md',
+          preview: false,
+          view_mode: 'editor',
+        },
         { rel_path: 'b.md', preview: false, view_mode: 'editor' },
       ],
       active_rel_path: 'b.md',

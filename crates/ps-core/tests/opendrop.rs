@@ -118,7 +118,7 @@ fn launch_arguments_keep_files_and_file_urls() {
 }
 
 #[test]
-fn dropping_a_non_markdown_file_is_rejected() {
+fn opening_a_file_unsupported_by_the_picker_is_rejected() {
     let temp = tempfile::tempdir().expect("temporary directory");
     let notes = temp.path().join("notes");
     fs::create_dir(&notes).expect("notes folder");
@@ -128,7 +128,7 @@ fn dropping_a_non_markdown_file_is_rejected() {
     let mut store = ProjectStore::open(temp.path().join("projects.json")).expect("store");
     let error = open_dropped_paths(&mut store, std::slice::from_ref(&image)).expect_err("rejected");
 
-    assert!(error.to_string().contains("Markdown"));
+    assert!(matches!(error, ps_core::Error::UnsupportedDrop { .. }));
     assert!(error.to_string().contains(&image.display().to_string()));
     assert!(store.list().is_empty());
 }
@@ -138,9 +138,5 @@ fn dropping_nothing_explains_how_to_open_a_project() {
     let temp = tempfile::tempdir().expect("temporary directory");
     let mut store = ProjectStore::open(temp.path().join("projects.json")).expect("store");
     let error = open_dropped_paths(&mut store, &[]).expect_err("empty drop");
-    assert!(
-        error
-            .to_string()
-            .contains("Markdown file, a PDF, or a folder")
-    );
+    assert!(error.to_string().contains("Drop a file or folder"));
 }

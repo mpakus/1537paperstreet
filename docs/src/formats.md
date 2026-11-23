@@ -8,18 +8,19 @@ opens in the editor.
 
 ## Open from the file manager
 
-Opening a `.md` or `.pdf` with 1537paperstreet — from Finder, Explorer, or the
-file manager — adds the file’s folder to Projects if it is not there yet, then
-opens the file. File → Open File… and dropping a `.md` or `.pdf` on the window
-do the same. Opening the folder itself adds the project without focusing a file.
+Open Markdown, PDF, YAML, JSON, or TOML with File → Open File… to open it from
+its folder. The picker adds the folder to Projects when needed. Markdown and PDF
+are also associated with 1537paperstreet in the system’s Open With list.
 
 The app is listed under Open With. It does not replace the default editor.
 After a new build is installed, open the app once so the system records that
 list. To make 1537paperstreet the default, use the file manager’s Get Info /
 Properties → Open with.
 
-Dropping onto a row in a project that is already open copies the files into
-that folder instead of registering a new project.
+Drag files from Finder, Explorer, or another app onto the window to open them
+from their current locations. Files already in Projects open right away. For
+other files, choose **Add to Projects** to register their folders and open them.
+You can also drop a folder to add it to Projects.
 
 ## What opens where
 
@@ -30,7 +31,7 @@ that folder instead of registering a new project.
 | PDF | `.pdf` | Preview only. Pages are drawn on macOS. Linux and Windows use the system viewer when it can show a PDF. |
 | Images | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`, `.bmp`, `.ico`, `.avif`, `.tif`, `.tiff` | Preview only. SVG is shown as an image, so scripts in the file do not run. |
 | Source | `.js`, `.ts`, `.rb`, `.ex`, `.go`, `.rs`, `.cs`, `.java`, `.php`, and the related names | The editor, with highlighting when a grammar exists. |
-| JSON | `.json` | The editor. Format pretty-prints it. |
+| Configuration | `.yaml`, `.yml`, `.json`, `.toml` | Preview and Edit with highlighting. Edit flags syntax errors. Format adjusts the editor buffer. |
 | Other text | UTF-8, including names with no extension | The editor. Highlighting is used when a grammar exists. |
 | Too large or not text | over 8 MB, or bytes that are not UTF-8 | A short message. The bytes are not shown as text. |
 

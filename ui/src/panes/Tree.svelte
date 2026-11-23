@@ -79,10 +79,10 @@
     onopen: (relPath: string, mode?: 'preview' | 'pin') => void
     onselect: (nodes: TreeNode[]) => void
     onexpanded: (paths: string[]) => void
-    ontrashed?: (relPaths: string[]) => void
+    ontrashed?: (projectId: string, relPaths: string[]) => void
     ontransfer: (mode: 'copy' | 'move', from: string[], toDir: string) => void
     onprojectdrop?: (projectId: string, copy: boolean) => void
-    onrenamed?: (from: string, to: string) => void
+    onrenamed?: (projectId: string, from: string, to: string) => void
     onsearch?: (relPath: string) => void
   } = $props()
 
@@ -608,9 +608,11 @@
     }
     try {
       const to = joinRel(parentDir(node.relPath), next)
-      const renamed = await fsRename(project.id, node.relPath, to)
+      const projectId = project.id
+      const renamed = await fsRename(projectId, node.relPath, to)
       // Follow the open buffer before the tree reload; do not reopen from disk.
-      onrenamed?.(node.relPath, renamed.relPath)
+      onrenamed?.(projectId, node.relPath, renamed.relPath)
+      if (project?.id !== projectId) return
       await loadDir(parentDir(node.relPath))
       applySelection([renamed.relPath], renamed.relPath)
     } catch (cause) {
@@ -624,13 +626,15 @@
     }
     try {
       const paths = nodes.map((node) => node.relPath)
-      await fsTrash(project.id, paths)
+      const projectId = project.id
+      await fsTrash(projectId, paths)
+      ontrashed(projectId, paths)
+      if (project?.id !== projectId) return
       trashTargets = []
       const parents = new Set(paths.map((path) => parentDir(path)))
       for (const dir of sortDirsByDepth(parents)) {
         await loadDir(dir)
       }
-      ontrashed(paths)
       if (paths.some((path) => selectedRelPaths.includes(path))) {
         onselect([])
       }

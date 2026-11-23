@@ -1,4 +1,4 @@
-import { isMarkdownPath } from '../lib/tree'
+import { isConfigPath, isJsonPath, isMarkdownPath } from '../lib/tree'
 
 /** Last path segment of a project-relative path. */
 export function fileBasename(relPath: string): string {
@@ -14,6 +14,8 @@ export function editorFileName(relPath: string): string {
   if (/\.rsx$/i.test(base)) {
     return base.replace(/rsx$/i, 'jsx')
   }
+  if (isConfigPath(base))
+    return base.replace(/\.[^.]+$/, (ext) => ext.toLowerCase())
   return base
 }
 
@@ -24,7 +26,12 @@ export function usesCodeEditor(relPath: string): boolean {
 
 /** True when a parse linter is available for this file. */
 export function usesJsonLinter(relPath: string): boolean {
-  return /\.json$/i.test(fileBasename(relPath))
+  return isJsonPath(fileBasename(relPath))
+}
+
+/** True when the Rust configuration parser provides lint diagnostics. */
+export function usesConfigLinter(relPath: string): boolean {
+  return isConfigPath(relPath) && !usesJsonLinter(relPath)
 }
 
 /** True when a Lezer parser can underline syntax errors. */

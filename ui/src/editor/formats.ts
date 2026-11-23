@@ -18,6 +18,9 @@ export const CORE_FORMATS: SupportedFormat[] = [
   { name: 'C#', patterns: '.cs' },
   { name: 'Java', patterns: '.java' },
   { name: 'PHP', patterns: '.php, .php3, .php4, .php5, .php7, .phtml' },
+  { name: 'YAML', patterns: '.yaml, .yml' },
+  { name: 'JSON', patterns: '.json' },
+  { name: 'TOML', patterns: '.toml' },
 ]
 
 /** First-class source formats listed in Settings. */

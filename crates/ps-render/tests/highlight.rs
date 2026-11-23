@@ -87,6 +87,7 @@ fn source_files_are_highlighted_without_markdown() {
             "syntax-source syntax-python",
         ),
         ("toml", "name = \"app\"\n", "syntax-source syntax-toml"),
+        ("yml", "name: app\n", "syntax-source syntax-yaml"),
         ("ts", "const n: number = 1;\n", "syntax-source syntax-ts"),
         ("cs", "class App {}\n", "syntax-source syntax-cs"),
         ("java", "class App {}\n", "syntax-source syntax-java"),

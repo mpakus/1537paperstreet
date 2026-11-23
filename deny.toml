@@ -54,6 +54,7 @@ skip = [
   { name = "getrandom", version = "=0.2.17", reason = "age uses rand_core 0.6 requiring 0.2; ulid and uuid require 0.4" },
   { name = "getrandom", version = "=0.3.4", reason = "Tauri requires 0.3; ulid and uuid require 0.4" },
   { name = "hashbrown", version = "=0.12.3", reason = "indexmap 1 requires 0.12; indexmap 2 requires 0.17" },
+  { name = "hashbrown", version = "=0.14.5", reason = "Pretty YAML's lossless syntax tree uses rowan 0.16 with hashbrown 0.14; indexmap 2 requires 0.17" },
   { name = "html5ever", version = "=0.38.0", reason = "Tauri dom_query requires 0.38; patched ammonia requires 0.39" },
   { name = "indexmap", version = "=1.9.3", reason = "Tauri schemars indexmap1 feature requires 1.x; plist requires 2.x" },
   { name = "markup5ever", version = "=0.38.0", reason = "Tauri html5ever requires 0.38; ammonia html5ever requires 0.39" },

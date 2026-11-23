@@ -6,6 +6,7 @@ import DocTabs from './DocTabs.svelte'
 
 function tab(relPath: string): DocTab {
   return {
+    projectId: 'p',
     relPath,
     title: tabTitle(relPath),
     html: '',
@@ -25,7 +26,7 @@ describe('DocTabs', () => {
         tabs: [tab('notes/guide.md'), tab('todo.md')],
         workspaceTabs: [],
         page: 'document',
-        activeRelPath: 'todo.md',
+        activeTab: tab('todo.md'),
         onpage() {},
         onclosepage() {},
         onselect() {},
@@ -49,7 +50,7 @@ describe('DocTabs', () => {
         tabs: [{ ...tab('scratch.md'), preview: true }],
         workspaceTabs: [],
         page: 'document',
-        activeRelPath: 'scratch.md',
+        activeTab: tab('scratch.md'),
         onpage() {},
         onclosepage() {},
         onselect() {},

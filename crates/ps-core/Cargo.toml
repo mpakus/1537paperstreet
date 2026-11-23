@@ -19,12 +19,14 @@ same-file = "1.0.6"
 nucleo = "0.5.0"
 regex = "1.11"
 notify = "8.2.0"
+pretty_yaml = "0.6.0"
 blake3 = "1.8.6"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 serde-saphyr = { version = "=2.0.0", default-features = false, features = ["serialize", "deserialize"] }
 thiserror = "2.0.20"
 time = { version = "0.3.55", features = ["formatting"] }
+toml_edit = "0.25.13"
 trash = { version = "5.2.6", default-features = false, features = ["coinit_apartmentthreaded"] }
 ts-rs = "12.0.1"
 ulid = "3.0.0"

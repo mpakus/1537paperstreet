@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
+  import { SvelteMap } from 'svelte/reactivity'
 
   import { usesTrafficLights } from './lib/platform'
 
@@ -27,12 +28,11 @@
     errorMessage,
     fsCopy,
     fsCreateUntitled,
-    fsImport,
     fsMove,
     fsTransfer,
     fsTrash,
     getAppVersion,
-    openDroppedPaths,
+    openFileDrop,
     takeExternalOpen,
     openExternal,
     openUrl,
@@ -103,12 +103,17 @@
     placeDocTab,
     readingScrollTop,
     scrollBeforeLink,
+    sameTab,
+    tabKey,
+    tabHasUnsavedDraft,
     tabsToReopen,
     promptAfterRename,
     removeTab,
+    retitleTab,
     tabTitle,
     unsavedPaths,
     type DocTab,
+    type TabPath,
     type TabOpenMode,
     type WorkspacePage,
     type WorkspaceTab,
@@ -127,7 +132,7 @@
     dropDirAtPoint,
     followRenamedPath,
     isDraftDirty,
-    isJsonPath,
+    isConfigPath,
     isPdfPath,
     isPreviewOnlyPath,
     isMarkdownPath,
@@ -175,12 +180,13 @@
   let revealRelPath = $state<string | null>(null)
   let html = $state('')
   let docMeta = $state<DocumentMeta | null>(null)
-  let openMeta = $state<{ projectId: string; relPath: string } | null>(null)
+  let openMeta = $state<TabPath | null>(null)
   let error = $state('')
   let errorSeq = $state(0)
   let messageHistory = $state<AppMessage[]>([])
   let sessionReady = false
   let lastSessionBody = ''
+  let sessionWrite = Promise.resolve()
   let historyOpen = $state(false)
   let dragging = $state(false)
   let sidebarWidth = $state(220)
@@ -208,12 +214,13 @@
   let activeThemeId = $state('paper-light')
   let treeReload = $state(0)
   let watchSeq = $state(0)
+  let watchStarting = Promise.resolve()
   let watchDirs = $state<string[]>([])
   let destMode = $state<'copy' | 'move' | null>(null)
   let transferFrom = $state<string[]>([])
   let conflictNames = $state<string[]>([])
   let pendingTransfer = $state<{
-    mode: 'copy' | 'move' | 'import'
+    mode: 'copy' | 'move'
     from: string[]
     toDir: string
     fromProjectId?: string
@@ -285,8 +292,11 @@
   let secureOperations = $state(0)
   let closingDocuments = $state(false)
   let documentGeneration = 0
+  let projectGeneration = 0
+  const pendingSaves = new SvelteMap<string, Promise<void>>()
   let closePrompt = $state<{
     path: string
+    protectedNote: boolean
     resolve: (choice: 'save' | 'discard' | 'cancel') => void
   } | null>(null)
 
@@ -318,7 +328,10 @@
       if (action === 'original' && convertedOriginal) {
         const original = convertedOriginal
         await docDeleteOriginal(original.projectId, original.encrypted)
-        tabs = removeTab(tabs, original.source)
+        tabs = removeTab(tabs, {
+          projectId: original.projectId,
+          relPath: original.source,
+        })
         treeReload += 1
         closeEncryption()
       } else if (action === 'create' || action === 'encrypt') {
@@ -405,77 +418,39 @@
     }
   }
 
-  async function confirmEncryptedClose(relPath: string): Promise<boolean> {
-    if (!active) return true
-    const current =
-      openMeta?.relPath === relPath
-        ? snapshotCurrentTab()
-        : tabs.find((tab) => tab.relPath === relPath)
-    if (
-      !current ||
-      current.docMeta?.security !== 'unlocked' ||
-      !current.docSourceMeta ||
-      current.draftText === current.docSourceMeta.text
-    )
-      return true
+  function findOpenTab(target: TabPath): DocTab | null {
+    return sameTab(openMeta, target)
+      ? snapshotCurrentTab()
+      : (tabs.find((tab) => sameTab(tab, target)) ?? null)
+  }
+
+  async function confirmClose(target: TabPath): Promise<boolean> {
+    await pendingSaves.get(tabKey(target))
+    const current = findOpenTab(target)
+    if (!current?.docSourceMeta || !tabHasUnsavedDraft(current)) return true
+    const protectedNote = current.docMeta?.security === 'unlocked'
     const choice = await new Promise<'save' | 'discard' | 'cancel'>(
       (resolve) => {
-        closePrompt = { path: relPath, resolve }
+        closePrompt = { path: current.relPath, protectedNote, resolve }
       },
     )
     closePrompt = null
     if (choice === 'cancel') return false
-    if (choice === 'discard') {
-      secureOperations += 1
-      try {
-        await docSnapshotEncrypted(active.id, relPath, current.draftText, {
-          eol: current.docSourceMeta.eol,
-          bom: current.docSourceMeta.bom,
-          trailingNewline: current.docSourceMeta.trailingNewline,
-        })
-        return true
-      } finally {
-        secureOperations -= 1
-      }
-    }
-    if (openMeta?.relPath === relPath) {
-      await saveDocument()
-      // Edits made while Save was running still need a choice.
-      return confirmEncryptedClose(relPath)
-    }
-    secureOperations += 1
-    try {
-      const written = await docSave(
-        active.id,
-        relPath,
+    if (choice === 'discard' && protectedNote) {
+      await docSnapshotEncrypted(
+        current.projectId,
+        current.relPath,
         current.draftText,
-        current.docMeta.hash,
         {
           eol: current.docSourceMeta.eol,
           bom: current.docSourceMeta.bom,
           trailingNewline: current.docSourceMeta.trailingNewline,
         },
       )
-      tabs = tabs.map((tab) =>
-        tab.relPath === relPath
-          ? {
-              ...tab,
-              docMeta: {
-                ...current.docMeta!,
-                hash: written.hash,
-                size: written.size,
-              },
-              docSourceMeta: {
-                ...current.docSourceMeta!,
-                text: current.draftText,
-              },
-            }
-          : tab,
-      )
       return true
-    } finally {
-      secureOperations -= 1
     }
+    await saveTab(current)
+    return confirmClose(target)
   }
 
   async function lockNote() {
@@ -483,8 +458,9 @@
     closingDocuments = true
     try {
       encryptionAction = null
-      const relPath = openMeta.relPath
-      if (!(await confirmEncryptedClose(relPath))) return
+      const target = openMeta
+      const { relPath } = target
+      if (!(await confirmClose(target))) return
       secureOperations += 1
       try {
         await docLock(active.id, relPath)
@@ -496,7 +472,7 @@
         editorApi = null
         editorOpened = false
         findOpen = false
-        tabs = removeTab(tabs, relPath)
+        tabs = removeTab(tabs, target)
         await openDocument(
           relPath,
           true,
@@ -514,15 +490,17 @@
     }
   }
 
-  async function clearEncryptedTabs(): Promise<boolean> {
+  async function clearEncryptedTabs(closingWindow = false): Promise<boolean> {
     if (closingDocuments) return false
     closingDocuments = true
     try {
       const current = snapshotCurrentTab()
       const all = current ? placeDocTab(tabs, current, 'keep') : tabs
-      for (const tab of all) {
-        if (!(await confirmEncryptedClose(tab.relPath))) return false
+      const unlocked = all.filter((tab) => tab.docMeta?.security === 'unlocked')
+      for (const tab of closingWindow ? all : unlocked) {
+        if (!(await confirmClose(tab))) return false
       }
+      if (unlocked.length === 0) return true
       await docLockAll()
       documentGeneration += 1
       draftPreviewGen += 1
@@ -589,12 +567,14 @@
       return
     }
     lastSessionBody = body
-    void sessionSet(snapshot).catch((cause) => {
-      if (lastSessionBody === body) {
-        lastSessionBody = ''
-      }
-      showError(errorMessage(cause))
-    })
+    sessionWrite = sessionWrite
+      .then(() => sessionSet(snapshot))
+      .catch((cause) => {
+        if (lastSessionBody === body) {
+          lastSessionBody = ''
+        }
+        showError(errorMessage(cause))
+      })
   }
 
   $effect(() => {
@@ -728,7 +708,7 @@
 
   const dirtyRelPaths = $derived(
     unsavedPaths(
-      tabs,
+      tabs.filter((tab) => tab.projectId === active?.id),
       openMeta?.relPath ?? null,
       isDraftDirty(editorOpened, docSourceMeta, draftText),
     ),
@@ -745,8 +725,8 @@
           : openMeta
             ? 'This note is empty.'
             : active
-              ? 'Select a file in the tree, or drop a Markdown file onto the window.'
-              : 'Your Markdown projects will appear here. Drop a Markdown file or a folder to open it.',
+              ? 'Select a file in the tree, or drop a file onto the window.'
+              : 'Your Markdown projects will appear here. Drop files or folders to open them.',
   )
 
   function applyConfig(config: Config) {
@@ -861,33 +841,7 @@
   }
 
   async function openWorkspaceNote(projectId: string, path: string) {
-    if (secureOperations || closePrompt)
-      throw new Error('Finish the current document operation first.')
-    if (
-      active?.id === projectId &&
-      openMeta?.projectId === projectId &&
-      openMeta.relPath === path &&
-      docMeta
-    ) {
-      documentGeneration += 1
-      const current = snapshotCurrentTab()
-      if (current) tabs = placeDocTab(tabs, current, 'pin')
-      workspacePage = 'document'
-      return
-    }
-    if (active?.id !== projectId) {
-      if (dirtyRelPaths.length)
-        throw new Error(
-          'Save your open document edits before opening a note from another project.',
-        )
-      const project = await projectsGet(projectId)
-      // Recheck after IPC: a user may start editing while the lookup is pending.
-      if (secureOperations || closePrompt || dirtyRelPaths.length)
-        throw new Error(
-          'Finish or save your open document edits before switching projects.',
-        )
-      await activateProject(project, path)
-    } else await openDocument(path, false, 'pin')
+    await selectDocTab({ projectId, relPath: path }, 'pin')
   }
 
   async function useLibraryContext(text: string) {
@@ -1142,34 +1096,75 @@
   async function activateProject(
     project: Project,
     openRelPath?: string | null,
-    options?: { skipFile?: boolean },
+    options?: { skipFile?: boolean; mode?: TabOpenMode; viewMode?: ViewMode },
   ) {
-    if (secureOperations || closePrompt) return
-    if (active?.id !== project.id) {
-      if (active && !(await clearEncryptedTabs())) return
-      tabs = []
+    if (secureOperations || closingDocuments) return
+    const generation = ++projectGeneration
+    const switching = active?.id !== project.id || active.path !== project.path
+    if (switching || options?.skipFile) {
+      const expanded = await treeExpandedGet(project.id)
+      if (
+        generation !== projectGeneration ||
+        secureOperations ||
+        closingDocuments
+      )
+        return
+      if (switching && active && !(await clearEncryptedTabs())) return
+      if (generation !== projectGeneration) return
+      const leaving = snapshotCurrentTab()
+      if (leaving) tabs = placeDocTab(tabs, leaving, 'pin')
+      if (active)
+        tabs = tabs.map((tab) =>
+          tab.projectId === active?.id && tab.preview
+            ? { ...tab, preview: false }
+            : tab,
+        )
+      clearCurrentDocument()
+      active = project
+      expandedSeed = expanded
+      watchDirs = []
+      watchStarting = watchStarting
+        .then(async () => {
+          if (active?.id === project.id) await watchStart(project.id)
+        })
+        .catch((cause) => showError(errorMessage(cause)))
     }
-    active = project
-    expandedSeed = await treeExpandedGet(project.id)
-    void watchStart(project.id).catch((cause) => {
-      showError(errorMessage(cause))
-    })
     const focus = options?.skipFile ? null : (openRelPath ?? project.last_file)
     if (focus) {
       revealRelPath = focus
-      await openDocument(focus)
-    } else {
-      selectedNode = null
-      selectedRelPaths = []
-      selectedNodes = []
-      revealRelPath = null
-      html = ''
-      docMeta = null
-      openMeta = null
-      docSourceMeta = null
-      draftText = ''
-      docMissing = false
+      await openDocument(focus, false, options?.mode, options?.viewMode)
     }
+  }
+
+  async function selectDocTab(tab: TabPath, mode: TabOpenMode = 'keep') {
+    if (secureOperations || closingDocuments) return
+    if (active?.id === tab.projectId) {
+      await openDocument(tab.relPath, false, mode)
+    } else {
+      const project =
+        projects.find((item) => item.id === tab.projectId) ??
+        (await projectsGet(tab.projectId))
+      await activateProject(project, tab.relPath, { mode })
+    }
+  }
+
+  function clearCurrentDocument(invalidateOpen = true) {
+    if (invalidateOpen) documentGeneration += 1
+    draftPreviewGen += 1
+    html = ''
+    docMeta = null
+    openMeta = null
+    docSourceMeta = null
+    draftText = ''
+    docMissing = false
+    externalPrompt = null
+    ignoredExternal = null
+    pendingReadingScroll = null
+    pendingAnchor = null
+    editorApi = null
+    findOpen = false
+    revealRelPath = null
+    setSelection([])
   }
 
   async function pickOpen(kind: 'file' | 'folder') {
@@ -1185,7 +1180,7 @@
   }
 
   async function applyOpened(project: Project, openRelPath: string | null) {
-    await loadProjects(project.id)
+    await loadProjects()
     projectsReload += 1
     await activateProject(project, openRelPath)
     error = ''
@@ -1207,7 +1202,7 @@
       }
       if (id === 'window-close' || id === 'app-quit') {
         closeEncryption()
-        if (await clearEncryptedTabs())
+        if (await clearEncryptedTabs(true))
           await finishWindowClose(id === 'app-quit')
         return
       }
@@ -1470,26 +1465,59 @@
   }
 
   async function trashNodes(nodes: TreeNode[]) {
-    if (!active || nodes.length === 0) {
-      return
-    }
+    if (!active || nodes.length === 0) return
+    const projectId = active.id
+    const paths = nodes.map((node) => node.relPath)
     try {
-      const paths = nodes.map((node) => node.relPath)
-      await fsTrash(active.id, paths)
+      await fsTrash(projectId, paths)
       trashConfirm = null
       treeReload += 1
-      if (paths.some((path) => selectedRelPaths.includes(path))) {
+      if (
+        active?.id === projectId &&
+        paths.some((path) => selectedRelPaths.includes(path))
+      ) {
         setSelection([])
       }
-      if (openMeta && paths.includes(openMeta.relPath)) {
-        html = ''
-        docMeta = null
-        openMeta = null
-        docMissing = true
-      }
+      await applyTrashed(projectId, paths)
     } catch (cause) {
       showError(errorMessage(cause))
     }
+  }
+
+  async function applyTrashed(projectId: string, paths: string[]) {
+    for (const tab of tabs) {
+      if (
+        tab.projectId !== projectId ||
+        !paths.some(
+          (path) => tab.relPath === path || tab.relPath.startsWith(`${path}/`),
+        )
+      )
+        continue
+      const current = findOpenTab(tab)
+      if (current && tabHasUnsavedDraft(current)) {
+        showError(
+          `“${tab.title}” was moved to Trash. Its unsaved edits are still open.`,
+        )
+      } else await closeTab(tab)
+    }
+  }
+
+  function allowProjectChange(projectId: string): boolean {
+    if (closingDocuments || secureOperations) return false
+    if (
+      tabs.some((tab) => {
+        if (tab.projectId !== projectId) return false
+        const current = findOpenTab(tab)
+        return (
+          pendingSaves.has(tabKey(tab)) ||
+          Boolean(current && tabHasUnsavedDraft(current))
+        )
+      })
+    ) {
+      showError('Save the project’s open files first.')
+      return false
+    }
+    return true
   }
 
   async function revealSelected() {
@@ -1549,7 +1577,7 @@
   }
 
   async function finishTransfer(
-    mode: 'copy' | 'move' | 'import',
+    mode: 'copy' | 'move',
     from: string[],
     toDir: string,
     conflict: ConflictStrategy,
@@ -1563,9 +1591,7 @@
       toProjectId ?? pendingTransfer?.toProjectId ?? active.id
     const sourceProjectId =
       fromProjectId ?? pendingTransfer?.fromProjectId ?? active.id
-    if (mode === 'import') {
-      await fsImport(active.id, from, toDir, conflict)
-    } else if (sourceProjectId !== destProjectId) {
+    if (sourceProjectId !== destProjectId) {
       await fsTransfer(
         sourceProjectId,
         from,
@@ -1582,7 +1608,7 @@
             (path) => openPath === path || openPath.startsWith(`${path}/`),
           )
         ) {
-          closeTab(openPath)
+          void closeTab({ projectId: sourceProjectId, relPath: openPath })
         }
       }
     } else if (mode === 'copy') {
@@ -1633,19 +1659,6 @@
       fromProjectId,
       toProject.id,
     )
-  }
-
-  async function importInto(toDir: string, sources: string[]) {
-    if (!active || sources.length === 0) {
-      return
-    }
-    const conflicts = await copyConflicts(active.id, sources, toDir)
-    if (conflicts.length > 0) {
-      pendingTransfer = { mode: 'import', from: sources, toDir }
-      conflictNames = conflicts
-      return
-    }
-    await finishTransfer('import', sources, toDir, 'keepBoth')
   }
 
   async function navigate(href: string, scrollAtClick: number) {
@@ -1761,7 +1774,7 @@
     }
     ignoredExternal = null
     if (prompt.missing) {
-      closeTab(prompt.relPath)
+      await closeTab({ projectId: active.id, relPath: prompt.relPath })
       return
     }
     if (
@@ -1797,15 +1810,14 @@
     externalPrompt = null
   }
 
-  async function loadProjects(preferredId?: string) {
+  async function loadProjects() {
     const listed = await projectsList({ query: null, limit: 200, offset: 0 })
     projects = listed.items
     const currentId = active?.id
     const preferred =
-      (preferredId && projects.find((project) => project.id === preferredId)) ||
       (currentId && projects.find((project) => project.id === currentId)) ||
       recentProjects(projects, 1)[0]
-    active = preferred ?? null
+    return preferred ?? null
   }
 
   async function loadSource(relPath: string) {
@@ -1852,9 +1864,8 @@
       editorOpened = true
     }
     if (openMeta) {
-      const relPath = openMeta.relPath
       tabs = tabs.map((tab) =>
-        tab.relPath === relPath ? { ...tab, viewMode: next } : tab,
+        sameTab(openMeta, tab) ? { ...tab, viewMode: next } : tab,
       )
     }
     if (next !== 'preview' && openMeta && !docSourceMeta) {
@@ -1979,39 +1990,63 @@
   }
 
   async function saveDocument() {
-    if (!active || !openMeta || !docSourceMeta) {
-      showError('Open a document in the editor first.')
+    const current = snapshotCurrentTab()
+    if (!current?.docSourceMeta)
+      throw new Error('Open a document in the editor first.')
+    await saveTab(current)
+  }
+
+  async function saveTab(tab: DocTab) {
+    const {
+      projectId,
+      relPath,
+      docMeta: base,
+      docSourceMeta: source,
+      draftText: text,
+    } = tab
+    if (!source?.writable || !base)
+      throw new Error(source?.readonlyReason ?? 'This file cannot be saved.')
+    const key = tabKey(tab)
+    const pending = pendingSaves.get(key)
+    if (pending) {
+      await pending
+      const current = findOpenTab(tab)
+      if (current && tabHasUnsavedDraft(current)) await saveTab(current)
       return
     }
-    if (!docSourceMeta.writable) {
-      showError(docSourceMeta.readonlyReason ?? 'This file cannot be saved.')
-      return
-    }
-    const projectId = active.id
-    const relPath = openMeta.relPath
-    const text = draftText
-    const protectedNote = docMeta?.security === 'unlocked'
+    const protectedNote = base.security === 'unlocked'
     if (protectedNote) secureOperations += 1
-    try {
-      const written = await docSave(
-        projectId,
-        relPath,
-        text,
-        docMeta?.hash ?? '',
-        {
-          eol: docSourceMeta.eol,
-          bom: docSourceMeta.bom,
-          trailingNewline: docSourceMeta.trailingNewline,
-        },
-      )
-      if (active?.id !== projectId || openMeta?.relPath !== relPath) return
-      if (docMeta) {
-        docMeta = { ...docMeta, hash: written.hash, size: written.size }
-      }
-      if (docSourceMeta) {
+    const saving = docSave(projectId, relPath, text, base.hash, {
+      eol: source.eol,
+      bom: source.bom,
+      trailingNewline: source.trailingNewline,
+    }).then((written) => {
+      const savedMeta = { hash: written.hash, size: written.size }
+      if (
+        sameTab(openMeta, tab) &&
+        docMeta?.hash === base.hash &&
+        docSourceMeta
+      ) {
+        docMeta = { ...docMeta, ...savedMeta }
         docSourceMeta = { ...docSourceMeta, text }
       }
+      tabs = tabs.map((item) =>
+        sameTab(item, tab) &&
+        item.docMeta?.hash === base.hash &&
+        item.docSourceMeta
+          ? {
+              ...item,
+              docMeta: { ...item.docMeta, ...savedMeta },
+              docSourceMeta: { ...item.docSourceMeta, text },
+            }
+          : item,
+      )
+    })
+    pendingSaves.set(key, saving)
+    try {
+      await saving
     } finally {
+      pendingSaves.delete(key)
       if (protectedNote) secureOperations -= 1
     }
   }
@@ -2044,7 +2079,13 @@
   }
 
   async function formatDocument() {
-    if (!(await ensureEditorSource()) || !openMeta || !docSourceMeta) {
+    const generation = documentGeneration
+    if (
+      !(await ensureEditorSource()) ||
+      generation !== documentGeneration ||
+      !openMeta ||
+      !docSourceMeta
+    ) {
       return
     }
     if (!docSourceMeta.writable) {
@@ -2053,8 +2094,10 @@
       )
       return
     }
-    const formatted = await textFormat(openMeta.relPath, draftText)
-    if (formatted === draftText) {
+    const text = draftText
+    const formatted = await textFormat(openMeta.relPath, text)
+    if (generation !== documentGeneration || draftText !== text) return
+    if (formatted === text) {
       showError('Already formatted.')
       return
     }
@@ -2096,100 +2139,94 @@
     scrollAtClick?: number,
     allowSecureOperation = false,
   ) {
-    if (!allowSecureOperation && (secureOperations || closePrompt)) return
+    if (
+      !active ||
+      (!allowSecureOperation && (secureOperations || closingDocuments))
+    )
+      return
     const generation = ++documentGeneration
-    if (!active) {
+    const target = { projectId: active.id, relPath }
+    const switching = !sameTab(openMeta, target)
+    workspacePage = 'document'
+    const cached = !forceReload ? findOpenTab(target) : null
+    if (cached?.docMeta) {
+      const shown = {
+        ...cached,
+        viewMode: viewForDocument(
+          relPath,
+          modeForTab(cached.viewMode, nextView, viewMode),
+        ),
+      }
+      if (switching) {
+        persistCurrentTab(scrollAtClick)
+        restoreTab(shown)
+      } else if (nextView && shown.viewMode !== viewMode) {
+        await setViewMode(shown.viewMode)
+      }
+      if (generation !== documentGeneration) return
+      tabs = placeDocTab(tabs, shown, mode)
+      if (shown.viewMode !== 'preview' && !docSourceMeta)
+        await loadSource(relPath)
+      if (generation === documentGeneration && anchor)
+        revealAnchor(relPath, anchor)
       return
     }
-    workspacePage = 'document'
-    const leaving = snapshotCurrentTab()
-    if (leaving && leaving.relPath !== relPath) {
-      if (scrollAtClick != null) {
-        leaving.scrollTop = scrollBeforeLink(scrollAtClick, leaving.scrollTop)
-      }
-      tabs = persistLeavingTab(tabs, leaving)
-      const cached = tabs.find((tab) => tab.relPath === relPath)
-      if (!forceReload && cached?.docMeta) {
-        const shown = {
-          ...cached,
-          viewMode: viewForDocument(
-            relPath,
-            modeForTab(cached.viewMode, nextView, viewMode),
-          ),
-        }
-        restoreTab(shown)
-        tabs = placeDocTab(tabs, shown, mode)
-        if (shown.viewMode !== 'preview' && !shown.docSourceMeta) {
-          await loadSource(shown.relPath)
-        }
-        if (anchor) {
-          revealAnchor(shown.relPath, anchor)
-        }
-        return
-      }
-    }
-    if (forceReload) {
-      ignoredExternal = null
-      externalPrompt = null
-    }
-    viewMode = viewForDocument(
-      relPath,
-      modeForTab(undefined, nextView, viewMode),
-    )
-    if (viewMode !== 'preview') {
-      editorOpened = true
-    }
-    setSelection([fileNode(relPath)])
-    const switching = leaving?.relPath !== relPath
+
     try {
-      const opened = await docOpen(active.id, relPath)
+      const opened = await docOpen(target.projectId, relPath)
       if (generation !== documentGeneration) return
-      if (opened.meta.security === 'locked') viewMode = 'preview'
-      if (opened.meta.security !== 'plain') mode = 'pin'
       const nextScroll = switching ? 0 : (previewScrollTop() ?? 0)
-      docSourceMeta = null
-      draftText = ''
-      docMissing = false
+      if (switching) persistCurrentTab(scrollAtClick)
+      const nextMode = modeForTab(undefined, nextView, viewMode)
+      clearCurrentDocument(false)
+      viewMode =
+        opened.meta.security === 'locked'
+          ? 'preview'
+          : viewForDocument(relPath, nextMode)
+      if (opened.meta.security !== 'plain') mode = 'pin'
+      if (viewMode !== 'preview') editorOpened = true
       docMeta = opened.meta
       openMeta = {
         projectId: opened.meta.projectId,
         relPath: opened.meta.relPath,
       }
       html = opened.firstChunk ?? ''
-      if (viewMode !== 'preview' && opened.meta.security !== 'locked') {
-        await loadSource(opened.meta.relPath)
-      } else {
-        docSourceMeta = null
-        draftText = ''
-      }
+      setSelection([fileNode(openMeta.relPath)])
+      revealRelPath = openMeta.relPath
       const snap = snapshotCurrentTab()
-      if (snap) {
+      if (snap)
         tabs = placeDocTab(tabs, { ...snap, scrollTop: nextScroll }, mode)
-      }
-      if (switching && anchor) {
-        revealAnchor(relPath, anchor)
-      } else {
-        restoreReadingScroll(relPath, nextScroll)
-      }
+      if (viewMode !== 'preview') await loadSource(openMeta.relPath)
+      if (generation !== documentGeneration) return
+      if (switching && anchor) revealAnchor(relPath, anchor)
+      else restoreReadingScroll(relPath, nextScroll)
     } catch (cause) {
       if (generation !== documentGeneration) return
-      html = ''
-      docMeta = null
-      openMeta = null
-      docSourceMeta = null
-      draftText = ''
-      docMissing = true
+      if (!openMeta) docMissing = true
       throw cause
     }
   }
 
-  function applyOpenRename(from: string, to: string) {
+  function persistCurrentTab(scrollAtClick?: number) {
+    const leaving = snapshotCurrentTab()
+    if (leaving && scrollAtClick != null) {
+      leaving.scrollTop = scrollBeforeLink(scrollAtClick, leaving.scrollTop)
+    }
+    tabs = persistLeavingTab(tabs, leaving)
+  }
+
+  function applyOpenRename(projectId: string, from: string, to: string) {
+    if (active?.id !== projectId) {
+      tabs = retitleTab(tabs, projectId, from, to)
+      return
+    }
     const snap = snapshotCurrentTab()
     if (snap) {
       tabs = placeDocTab(tabs, snap, 'keep')
     }
     const followed = followOpenRename(
       tabs,
+      active.id,
       openMeta?.relPath ?? null,
       docMeta,
       from,
@@ -2217,14 +2254,13 @@
       return null
     }
     return {
-      relPath: openMeta.relPath,
+      ...openMeta,
       title: tabTitle(openMeta.relPath),
       html,
       docMeta,
       docSourceMeta,
       draftText,
-      preview:
-        tabs.find((tab) => tab.relPath === openMeta?.relPath)?.preview ?? false,
+      preview: tabs.find((tab) => sameTab(openMeta, tab))?.preview ?? false,
       viewMode,
       scrollTop: previewScrollTop() ?? existingScroll(),
     }
@@ -2293,7 +2329,7 @@
   }
 
   function existingScroll(): number {
-    return tabs.find((tab) => tab.relPath === openMeta?.relPath)?.scrollTop ?? 0
+    return tabs.find((tab) => sameTab(openMeta, tab))?.scrollTop ?? 0
   }
 
   function previewScrollTop(): number | null {
@@ -2340,15 +2376,13 @@
   }
 
   function restoreTab(tab: DocTab) {
-    if (!active) {
-      return
-    }
+    clearCurrentDocument(false)
     workspacePage = 'document'
     viewMode = viewForDocument(tab.relPath, tab.viewMode)
     if (viewMode !== 'preview') {
       editorOpened = true
     }
-    openMeta = { projectId: active.id, relPath: tab.relPath }
+    openMeta = { projectId: tab.projectId, relPath: tab.relPath }
     html = tab.html
     docMeta = tab.docMeta
     docSourceMeta = tab.docSourceMeta
@@ -2359,70 +2393,35 @@
     restoreReadingScroll(tab.relPath, tab.scrollTop)
   }
 
-  function closeTab(relPath: string) {
-    if (secureOperations || closePrompt || closingDocuments) return
-    const tab =
-      openMeta?.relPath === relPath
-        ? snapshotCurrentTab()
-        : tabs.find((item) => item.relPath === relPath)
-    if (tab?.docMeta?.security === 'unlocked' && active) {
-      const projectId = active.id
-      closingDocuments = true
-      void (async () => {
-        try {
-          if (!(await confirmEncryptedClose(relPath))) return
-          await docLock(projectId, relPath)
-          documentGeneration += 1
-          closeTabNow(relPath)
-        } finally {
-          closingDocuments = false
-        }
-      })().catch((cause) => showError(errorMessage(cause)))
-    } else closeTabNow(relPath)
-  }
-
-  function closeTabNow(relPath: string) {
-    const next = nextAfterClose(tabs, relPath)
-    const wasActive = openMeta?.relPath === relPath
-    tabs = removeTab(tabs, relPath)
-    if (!wasActive) {
-      return
+  async function closeTab(target: TabPath) {
+    if (secureOperations || closingDocuments) return
+    const tab = findOpenTab(target)
+    if (!tab) return
+    closingDocuments = true
+    const protectedNote = tab.docMeta?.security === 'unlocked'
+    try {
+      if (!(await confirmClose(target))) return
+      if (protectedNote) await docLock(target.projectId, target.relPath)
+      const next = sameTab(openMeta, target)
+        ? nextAfterClose(tabs, target)
+        : null
+      tabs = removeTab(tabs, target)
+      if (sameTab(openMeta, target)) clearCurrentDocument()
+      closingDocuments = false
+      if (next) await selectDocTab(next)
+    } catch (cause) {
+      showError(errorMessage(cause))
+    } finally {
+      closingDocuments = false
     }
-    if (next) {
-      const cached = tabs.find((tab) => tab.relPath === next)
-      if (cached) {
-        restoreTab(cached)
-        if (cached.viewMode !== 'preview' && !cached.docSourceMeta) {
-          void loadSource(cached.relPath).catch((cause) => {
-            showError(errorMessage(cause))
-          })
-        }
-        return
-      }
-      void openDocument(next).catch((cause) => {
-        showError(errorMessage(cause))
-      })
-      return
-    }
-    html = ''
-    docMeta = null
-    openMeta = null
-    docSourceMeta = null
-    draftText = ''
-    docMissing = false
-    // A closed file must reopen on a single click, not enter Rename because
-    // its now-stale tree selection survived closing the last tab.
-    setSelection([])
   }
 
   function closeActiveTab() {
     const target = closeActiveTarget(workspacePage, openMeta?.relPath ?? null)
     if (target.kind === 'workspace') {
       closeWorkspacePage(target.page)
-      return
-    }
-    if (target.kind === 'document') {
-      closeTab(target.relPath)
+    } else if (openMeta && target.kind === 'document') {
+      void closeTab(openMeta)
     }
   }
 
@@ -2441,25 +2440,31 @@
     }
   }
 
-  async function handleDrop(
-    paths: string[],
-    position?: { x: number; y: number },
-  ) {
+  let openingDrop = false
+  async function handleDrop(paths: string[]) {
     dragging = false
     finderDropRel = null
     projectDropId = null
+    if (openingDrop || secureOperations || closingDocuments) return
+    openingDrop = true
     try {
-      const dest = active
-        ? dropDirAtPoint(position?.x ?? -1, position?.y ?? -1)
-        : null
-      if (active && dest !== null) {
-        await importInto(dest, paths)
-        return
+      const opened = await openFileDrop(paths)
+      if (opened.length === 0) return
+      await loadProjects()
+      projectsReload += 1
+      for (const item of opened) {
+        try {
+          await activateProject(item.project, item.openRelPath, {
+            mode: 'pin',
+          })
+        } catch (cause) {
+          showError(errorMessage(cause))
+        }
       }
-      const opened = await openDroppedPaths(paths)
-      await applyOpened(opened.project, opened.openRelPath)
     } catch (cause) {
       showError(errorMessage(cause))
+    } finally {
+      openingDrop = false
     }
   }
 
@@ -2570,7 +2575,7 @@
         if (viewMode !== 'preview') {
           editorOpened = true
         }
-        await loadProjects()
+        const preferred = await loadProjects()
         const restored = await sessionRestore()
         for (const notice of restored.notices) {
           noteQuietly(notice)
@@ -2590,19 +2595,26 @@
           )
           for (const tab of tabsToReopen(
             restored.tabs,
+            saved.id,
             restored.active_rel_path,
           )) {
             try {
-              await openDocument(
-                tab.rel_path,
-                false,
-                tab.preview ? 'preview' : 'pin',
-                savedViewMode(tab.view_mode) ??
+              const projectId = tab.project_id ?? saved.id
+              const owner =
+                projects.find((project) => project.id === projectId) ??
+                (await projectsGet(projectId))
+              await activateProject(owner, tab.rel_path, {
+                mode: tab.preview ? 'preview' : 'pin',
+                viewMode:
+                  savedViewMode(tab.view_mode) ??
                   savedViewMode(restored.view_mode),
-              )
+              })
             } catch (cause) {
               noteQuietly(errorMessage(cause))
             }
+          }
+          if (active?.id !== saved.id || !restored.active_rel_path) {
+            await activateProject(saved, null, { skipFile: true })
           }
           if (
             restored.page === 'assistant' &&
@@ -2630,8 +2642,8 @@
           ) {
             workspacePage = 'tags'
           }
-        } else if (active && active.available !== false) {
-          await activateProject(active)
+        } else if (preferred && preferred.available !== false) {
+          await activateProject(preferred)
         } else {
           const fallback = projects.find(
             (project) => project.available !== false,
@@ -2725,7 +2737,7 @@
               }
               dragging = true
               projectDropId = null
-              finderDropRel = active ? dropDirAtPoint(point.x, point.y) : null
+              finderDropRel = null
               break
             }
             case 'leave':
@@ -2745,7 +2757,7 @@
                 applyTreeDragAt(point.x, point.y, peekTreeDragCopy())
                 break
               }
-              void handleDrop(event.payload.paths, point)
+              void handleDrop(event.payload.paths)
               break
             }
             default:
@@ -2869,7 +2881,7 @@
       dragging = false
       return
     }
-    void handleDrop(paths, { x: event.clientX, y: event.clientY })
+    void handleDrop(paths)
   }}
 />
 
@@ -2919,7 +2931,7 @@
       canFormatDocument={Boolean(
         openMeta &&
         (docSourceMeta?.writable ?? docMeta?.writable) &&
-        (isMarkdownPath(openMeta.relPath) || isJsonPath(openMeta.relPath)),
+        (isMarkdownPath(openMeta.relPath) || isConfigPath(openMeta.relPath)),
       )}
       security={docMeta?.security ?? 'plain'}
       canProtect={Boolean(active) && !secureOperations}
@@ -2988,24 +3000,34 @@
               showError(errorMessage(cause))
             })
           }}
-          onremoved={() => {
-            const previous = active?.id
+          onchangefolder={allowProjectChange}
+          onrelocated={(project) => {
+            projects = projects.map((item) =>
+              item.id === project.id ? project : item,
+            )
+            tabs = tabs.filter((tab) => tab.projectId !== project.id)
+            if (active?.id === project.id) {
+              clearCurrentDocument()
+              void activateProject(project).catch((cause) =>
+                showError(errorMessage(cause)),
+              )
+            }
+          }}
+          onremoved={(id) => {
+            tabs = tabs.filter((tab) => tab.projectId !== id)
+            if (active?.id === id) {
+              clearCurrentDocument()
+              active = null
+            }
             projectsReload += 1
             void loadProjects()
-              .then(() => {
-                if (!active) {
-                  html = ''
-                  docMeta = null
-                  openMeta = null
-                  return
-                }
-                if (active.id !== previous) {
-                  return activateProject(active)
-                }
+              .then((preferred) => {
+                if (active) return
+                const next = tabs.at(-1)
+                if (next) return selectDocTab(next)
+                if (preferred) return activateProject(preferred)
               })
-              .catch((cause) => {
-                showError(errorMessage(cause))
-              })
+              .catch((cause) => showError(errorMessage(cause)))
           }}
         />
       </aside>
@@ -3052,11 +3074,8 @@
             onselect={(nodes) => {
               setSelection(nodes)
             }}
-            ontrashed={(relPaths) => {
-              for (const relPath of relPaths) {
-                closeTab(relPath)
-              }
-            }}
+            ontrashed={(projectId, paths) =>
+              void applyTrashed(projectId, paths)}
             onopen={(relPath, mode = 'preview') => {
               void openDocument(relPath, false, mode).catch((cause) => {
                 showError(errorMessage(cause))
@@ -3066,9 +3085,7 @@
               contentScope = relPath
               contentSearchOpen = true
             }}
-            onrenamed={(from, to) => {
-              applyOpenRename(from, to)
-            }}
+            onrenamed={applyOpenRename}
             onexpanded={(paths) => {
               if (!active) {
                 return
@@ -3088,8 +3105,7 @@
           />
         {:else}
           <p class="hint">
-            Select a project, or drop a Markdown file or a folder onto the
-            window.
+            Select a project, or drop files or folders onto the window.
           </p>
         {/if}
       </aside>
@@ -3110,7 +3126,8 @@
         {tabs}
         {workspaceTabs}
         page={workspacePage}
-        activeRelPath={openMeta?.relPath ?? null}
+        activeTab={openMeta}
+        {projects}
         onpage={(page) => {
           if (page === 'tags') {
             openTags()
@@ -3137,15 +3154,15 @@
           }
         }}
         onclosepage={closeWorkspacePage}
-        onselect={(relPath) => {
-          void openDocument(relPath).catch((cause) => {
-            showError(errorMessage(cause))
-          })
+        onselect={(tab) => {
+          void selectDocTab(tab).catch((cause) =>
+            showError(errorMessage(cause)),
+          )
         }}
-        onpin={(relPath) => {
-          void openDocument(relPath, false, 'pin').catch((cause) => {
-            showError(errorMessage(cause))
-          })
+        onpin={(tab) => {
+          void selectDocTab(tab, 'pin').catch((cause) =>
+            showError(errorMessage(cause)),
+          )
         }}
         onclose={closeTab}
       />
@@ -3567,7 +3584,7 @@
         oncheck={() => updatesCheck()}
         oninstall={() => updatesInstall()}
         onrelaunch={async () => {
-          if (await clearEncryptedTabs()) await updatesRelaunch()
+          if (await clearEncryptedTabs(true)) await updatesRelaunch()
         }}
       />
     {/key}
@@ -3615,7 +3632,7 @@
 
   {#if dragging && finderDropRel === null}
     <div class="drop-overlay" role="status">
-      Drop a Markdown file or a folder to open it
+      Drop files or folders to open them
     </div>
   {/if}
 
@@ -3653,6 +3670,7 @@
 {#if closePrompt}
   <SaveChangesDialog
     path={closePrompt.path}
+    protectedNote={closePrompt.protectedNote}
     onchoose={(choice) => closePrompt?.resolve(choice)}
   />
 {/if}

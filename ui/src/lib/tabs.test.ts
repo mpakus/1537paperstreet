@@ -25,6 +25,7 @@ import {
 
 function tab(relPath: string, preview = false): DocTab {
   return {
+    projectId: 'p',
     relPath,
     title: tabTitle(relPath),
     html: '',
@@ -84,9 +85,9 @@ describe('tabs', () => {
     const replaced = upsertTab(two, { ...tab('a.md'), html: '<p>x</p>' })
     expect(replaced.map((item) => item.relPath)).toEqual(['a.md', 'b.md'])
     expect(replaced[0]?.html).toBe('<p>x</p>')
-    expect(removeTab(replaced, 'a.md').map((item) => item.relPath)).toEqual([
-      'b.md',
-    ])
+    expect(
+      removeTab(replaced, tab('a.md')).map((item) => item.relPath),
+    ).toEqual(['b.md'])
   })
 
   it('closes the active workspace or document tab', () => {
@@ -107,9 +108,9 @@ describe('tabs', () => {
 
   it('activates a neighbor after close', () => {
     const tabs = [tab('a.md'), tab('b.md'), tab('c.md')]
-    expect(nextAfterClose(tabs, 'b.md')).toBe('c.md')
-    expect(nextAfterClose(tabs, 'c.md')).toBe('b.md')
-    expect(nextAfterClose([tab('a.md')], 'a.md')).toBeNull()
+    expect(nextAfterClose(tabs, tab('b.md'))?.relPath).toBe('c.md')
+    expect(nextAfterClose(tabs, tab('c.md'))?.relPath).toBe('b.md')
+    expect(nextAfterClose([tab('a.md')], tab('a.md'))).toBeNull()
   })
 
   it('does not put a just-closed tab back when leaving it', () => {
@@ -129,7 +130,7 @@ describe('tabs', () => {
   })
 
   it('renames a tab path', () => {
-    expect(retitleTab([tab('old.md')], 'old.md', 'notes/new.md')).toEqual([
+    expect(retitleTab([tab('old.md')], 'p', 'old.md', 'notes/new.md')).toEqual([
       {
         ...tab('notes/new.md'),
         title: 'new.md',
@@ -174,6 +175,7 @@ describe('tabs', () => {
     )
     const followed = followOpenRename(
       stale,
+      'p',
       'draft.md',
       meta,
       'draft.md',
@@ -195,6 +197,7 @@ describe('tabs', () => {
     const other = tab('readme.md')
     const followed = followOpenRename(
       [nested, other],
+      'p',
       'notes/chapter.md',
       null,
       'notes',
@@ -210,7 +213,7 @@ describe('tabs', () => {
   it('does not treat a prefix-sharing neighbor as the renamed file', () => {
     const tabs = [tab('notes.md'), tab('notes/extra.md')]
     expect(
-      retitleTab(tabs, 'notes', 'inbox').map((item) => item.relPath),
+      retitleTab(tabs, 'p', 'notes', 'inbox').map((item) => item.relPath),
     ).toEqual(['notes.md', 'inbox/extra.md'])
   })
 
@@ -316,15 +319,11 @@ describe('tabs', () => {
       { rel_path: 'b.md', preview: true },
       { rel_path: 'c.md', preview: false },
     ]
-    expect(tabsToReopen(saved, 'c.md').map((item) => item.rel_path)).toEqual([
-      'a.md',
-      'b.md',
-      'c.md',
-    ])
-    expect(tabsToReopen(saved, 'b.md').map((item) => item.rel_path)).toEqual([
-      'a.md',
-      'c.md',
-      'b.md',
-    ])
+    expect(
+      tabsToReopen(saved, 'p', 'c.md').map((item) => item.rel_path),
+    ).toEqual(['a.md', 'b.md', 'c.md'])
+    expect(
+      tabsToReopen(saved, 'p', 'b.md').map((item) => item.rel_path),
+    ).toEqual(['a.md', 'c.md', 'b.md'])
   })
 })

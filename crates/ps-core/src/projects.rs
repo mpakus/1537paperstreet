@@ -67,7 +67,7 @@ pub struct ProjectsListResult {
 pub struct OpenDropResult {
     /// Project that owns the dropped path, created if it was not registered.
     pub project: Project,
-    /// Project-relative path of a dropped Markdown file, when one was opened.
+    /// Project-relative path of the opened file, when the path was a file.
     #[ts(type = "string | null")]
     pub open_rel_path: Option<PathBuf>,
 }
@@ -350,7 +350,7 @@ fn now_rfc3339() -> Result<String> {
 
 /// Opens dropped filesystem paths as a project, optionally focusing a file.
 ///
-/// Folders are registered (or reused). Markdown and PDF files reuse a containing
+/// Folders are registered (or reused). Supported files reuse a containing
 /// project when one exists; otherwise the file's parent folder is registered and
 /// the file is opened.
 pub fn open_dropped_paths(store: &mut ProjectStore, paths: &[PathBuf]) -> Result<OpenDropResult> {
@@ -362,35 +362,112 @@ pub fn open_dropped_paths(store: &mut ProjectStore, paths: &[PathBuf]) -> Result
 }
 
 fn open_dropped_path(store: &mut ProjectStore, path: &Path) -> Result<OpenDropResult> {
-    let metadata =
-        fs::metadata(path).map_err(|source| Error::io("open the dropped path", path, source))?;
-    if metadata.is_dir() {
-        let project = store.ensure_folder(path.to_path_buf())?;
+    let (canonical, directory) = canonical_drop_path(path)?;
+    if !directory && !is_direct_open_file(path) {
+        return Err(Error::UnsupportedDrop {
+            path: path.to_path_buf(),
+        });
+    }
+    open_canonical_drop(store, canonical, directory)
+}
+
+/// Lists the unregistered folders that require confirmation before opening a file drop.
+pub fn file_drop_folders(store: &ProjectStore, paths: &[PathBuf]) -> Result<Vec<PathBuf>> {
+    let mut folders = Vec::new();
+    for path in paths {
+        let (canonical, directory) = canonical_drop_path(path)?;
+        if drop_project(store, &canonical, directory).is_none() {
+            let root = drop_root(&canonical, directory)?;
+            if !folders.iter().any(|folder| folder == root) {
+                folders.push(root.to_path_buf());
+            }
+        }
+    }
+    Ok(folders)
+}
+
+/// Opens dropped files in registered projects and registers only explicitly approved folders.
+pub fn open_file_drop(
+    store: &mut ProjectStore,
+    paths: &[PathBuf],
+    approved_folders: &[PathBuf],
+) -> Result<Vec<OpenDropResult>> {
+    let resolved = paths
+        .iter()
+        .map(|path| canonical_drop_path(path))
+        .collect::<Result<Vec<_>>>()?;
+    let mut opened = Vec::new();
+    for (canonical, directory) in resolved {
+        if drop_project(store, &canonical, directory).is_some()
+            || approved_folders
+                .iter()
+                .any(|folder| drop_root(&canonical, directory).is_ok_and(|root| folder == root))
+        {
+            opened.push(open_canonical_drop(store, canonical, directory)?);
+        }
+    }
+    Ok(opened)
+}
+
+fn canonical_drop_path(path: &Path) -> Result<(PathBuf, bool)> {
+    if !path.is_absolute() {
+        return Err(Error::UnsafePath {
+            path: path.to_path_buf(),
+            reason: "a dropped path must be absolute",
+        });
+    }
+    let canonical = path
+        .canonicalize()
+        .map_err(|source| Error::io("open the dropped path", path, source))?;
+    let metadata = fs::metadata(&canonical)
+        .map_err(|source| Error::io("open the dropped path", path, source))?;
+    if !metadata.is_dir() && !metadata.is_file() {
+        return Err(Error::UnsupportedDrop {
+            path: path.to_path_buf(),
+        });
+    }
+    Ok((canonical, metadata.is_dir()))
+}
+
+fn drop_project<'a>(
+    store: &'a ProjectStore,
+    canonical: &Path,
+    directory: bool,
+) -> Option<&'a Project> {
+    if directory {
+        store.find_by_path(canonical)
+    } else {
+        store.find_containing(canonical)
+    }
+}
+
+fn drop_root(canonical: &Path, directory: bool) -> Result<&Path> {
+    if directory {
+        return Ok(canonical);
+    }
+    canonical.parent().ok_or_else(|| Error::UnsafePath {
+        path: canonical.to_path_buf(),
+        reason: "the file does not have a parent folder",
+    })
+}
+
+fn open_canonical_drop(
+    store: &mut ProjectStore,
+    canonical: PathBuf,
+    directory: bool,
+) -> Result<OpenDropResult> {
+    let project = match drop_project(store, &canonical, directory) {
+        Some(project) => project.clone(),
+        None => store.ensure_folder(drop_root(&canonical, directory)?.to_path_buf())?,
+    };
+    if directory {
         store.touch_opened(&project.id, None)?;
         return Ok(OpenDropResult {
             project: store.get(&project.id)?.clone(),
             open_rel_path: None,
         });
     }
-    if !metadata.is_file() || !(is_markdown_path(path) || is_pdf_path(path)) {
-        return Err(Error::UnsupportedDrop {
-            path: path.to_path_buf(),
-        });
-    }
-
-    let canonical_file = path
-        .canonicalize()
-        .map_err(|source| Error::io("open the dropped file", path, source))?;
-    let project = if let Some(existing) = store.find_containing(&canonical_file) {
-        existing.clone()
-    } else {
-        let parent = canonical_file.parent().ok_or_else(|| Error::UnsafePath {
-            path: canonical_file.clone(),
-            reason: "the file does not have a parent folder",
-        })?;
-        store.ensure_folder(parent.to_path_buf())?
-    };
-    let node = tree::node_at(&project.path, &canonical_file)?;
+    let node = tree::node_at(&project.path, &canonical)?;
     let last_file = node.rel_path.to_string_lossy().into_owned();
     store.touch_opened(&project.id, Some(last_file))?;
     Ok(OpenDropResult {
@@ -421,6 +498,19 @@ pub fn is_markdown_path(path: &Path) -> bool {
                 "md" | "markdown" | "mdown" | "mdwn"
             )
         })
+}
+
+pub(crate) fn config_language(path: &Path) -> Option<&'static str> {
+    let extension = path.extension()?.to_str()?;
+    if extension.eq_ignore_ascii_case("json") {
+        Some("json")
+    } else if extension.eq_ignore_ascii_case("yaml") || extension.eq_ignore_ascii_case("yml") {
+        Some("yaml")
+    } else if extension.eq_ignore_ascii_case("toml") {
+        Some("toml")
+    } else {
+        None
+    }
 }
 
 /// Language hint used to highlight a non-Markdown file in the preview.
@@ -528,7 +618,7 @@ pub fn is_pdf_path(path: &Path) -> bool {
 
 /// Returns whether Finder, Explorer, or a file manager may open `path`.
 ///
-/// Folders, Markdown files, and PDFs are accepted. The path must exist.
+/// Folders, Markdown, PDF, and configuration files are accepted. The path must exist.
 pub fn is_external_open_path(path: &Path) -> bool {
     let Ok(metadata) = fs::metadata(path) else {
         return false;
@@ -536,7 +626,11 @@ pub fn is_external_open_path(path: &Path) -> bool {
     if metadata.is_dir() {
         return true;
     }
-    metadata.is_file() && (is_markdown_path(path) || is_pdf_path(path))
+    metadata.is_file() && is_direct_open_file(path)
+}
+
+fn is_direct_open_file(path: &Path) -> bool {
+    is_markdown_path(path) || is_pdf_path(path) || config_language(path).is_some()
 }
 
 /// Turns launch arguments and `file://` URLs into filesystem paths.

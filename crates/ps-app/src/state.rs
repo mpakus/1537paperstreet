@@ -329,6 +329,35 @@ impl AppState {
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         let result = projects::open_dropped_paths(&mut projects, &paths)?;
+        self.save_opened_projects(&mut projects)?;
+        Ok(result)
+    }
+
+    pub(crate) fn file_drop_folders(&self, paths: &[PathBuf]) -> Result<Vec<PathBuf>> {
+        let projects = self
+            .projects
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        projects::file_drop_folders(&projects, paths)
+    }
+
+    pub(crate) fn open_file_drop(
+        &self,
+        paths: &[PathBuf],
+        approved_folders: &[PathBuf],
+    ) -> Result<Vec<OpenDropResult>> {
+        let mut projects = self
+            .projects
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let opened = projects::open_file_drop(&mut projects, paths, approved_folders)?;
+        if !opened.is_empty() {
+            self.save_opened_projects(&mut projects)?;
+        }
+        Ok(opened)
+    }
+
+    fn save_opened_projects(&self, projects: &mut ProjectStore) -> Result<()> {
         let mut search = self
             .search
             .lock()
@@ -336,11 +365,10 @@ impl AppState {
         for project in projects.list() {
             search.upsert(project.clone());
         }
-        projects.flush()?;
-        Ok(result)
+        projects.flush().map(|_| ())
     }
 
-    /// Queues folders, Markdown files, and PDFs the operating system asked to open.
+    /// Queues supported files and folders the operating system asked to open.
     ///
     /// Other paths are ignored. The same canonical path is stored once.
     pub(crate) fn enqueue_external_paths(&self, paths: Vec<PathBuf>) -> bool {
@@ -469,60 +497,33 @@ impl AppState {
     }
 
     pub(crate) fn session_restore(&self) -> Result<RestoredSession> {
-        let project_id = {
-            let store = self
-                .ui_state
-                .lock()
-                .unwrap_or_else(|error| error.into_inner());
-            match store.value().session.as_ref() {
-                Some(session) => session.project_id.clone(),
-                None => return Ok(RestoredSession::empty()),
-            }
-        };
-        let (probe, root) = self.session_probe(&project_id);
+        let projects = self
+            .projects
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
         let mut store = self
             .ui_state
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         let mut state = store.value().clone();
-        if state
-            .session
-            .as_ref()
-            .is_none_or(|session| session.project_id != project_id)
-        {
+        let Some(session) = state.session.as_ref() else {
             return Ok(RestoredSession::empty());
-        }
-        let restored = state.restore_session(&probe, |rel| disk_kind(root.as_deref(), rel));
+        };
+        let project = projects.get(&session.project_id).ok();
+        let probe = SessionProbe {
+            project_listed: project.is_some(),
+            project_name: project.map_or_else(String::new, |item| item.name.clone()),
+            root_is_dir: project.is_some_and(|item| item.path.is_dir()),
+        };
+        let restored = state.restore_session(&probe, |owner, rel| {
+            let root = projects.get(owner).ok().map(|item| item.path.as_path());
+            disk_kind(root, rel)
+        });
         if state != *store.value() {
             store.replace(state);
             store.flush()?;
         }
         Ok(restored)
-    }
-
-    fn session_probe(&self, project_id: &str) -> (SessionProbe, Option<PathBuf>) {
-        let projects = self
-            .projects
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        match projects.get(project_id).ok() {
-            Some(project) => {
-                let probe = SessionProbe {
-                    project_listed: true,
-                    project_name: project.name.clone(),
-                    root_is_dir: project.path.is_dir(),
-                };
-                (probe, Some(project.path.clone()))
-            }
-            None => (
-                SessionProbe {
-                    project_listed: false,
-                    project_name: String::new(),
-                    root_is_dir: false,
-                },
-                None,
-            ),
-        }
     }
 
     pub(crate) fn fs_mkdir(&self, project_id: String, rel_path: PathBuf) -> Result<TreeNode> {
@@ -1828,11 +1829,13 @@ mod tests {
                 project_id: project.id.clone(),
                 tabs: vec![
                     SessionTab {
+                        project_id: None,
                         rel_path: PathBuf::from("keep.md"),
                         preview: false,
                         view_mode: "preview".into(),
                     },
                     SessionTab {
+                        project_id: None,
                         rel_path: PathBuf::from("gone.md"),
                         preview: true,
                         view_mode: "editor".into(),

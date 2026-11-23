@@ -5,6 +5,21 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Edit YAML, JSON, and TOML with syntax highlighting, inline syntax diagnostics,
+  and Format. YAML and TOML formatting preserves comments.
+- Drop files from Finder, Explorer, or another app to open them in tabs. The app
+  asks before adding a folder to Projects.
+
+### Fixed
+
+- Switching project folders keeps open tabs, view modes, and unsaved buffers.
+  Tabs with the same relative path stay independent and reopen across projects
+  when the app starts again.
+- Closing a file with unsaved edits asks whether to save. Cancel or a failed
+  save keeps the file and its edits open.
+
 ## [0.13.1] - 2026-11-07
 
 ### Fixed
