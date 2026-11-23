@@ -5,6 +5,8 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-23
+
 ### Added
 
 - Edit YAML, JSON, and TOML with syntax highlighting, inline syntax diagnostics,
