@@ -25,6 +25,8 @@ ignore = true
 
 [advisories]
 yanked = "deny"
+# Keep checking transitive maintenance advisories across cargo-deny versions.
+unmaintained = "all"
 ignore = [
   { id = "RUSTSEC-2026-0374", reason = "Build-time i18n-config 0.4.8 required by age uses basic-toml; no fixed upstream release is available and this advisory describes unmaintained status, not a vulnerability" },
   { id = "RUSTSEC-2026-0173", reason = "Build-only proc-macro-error2 2.0.1 required by age 0.11.5's i18n-embed-fl 0.9.4 has no patched release; maintenance advisory reports no vulnerability. Review by 2026-11-29; remove when a published age release avoids both this macro and affected crypto-bigint. See docs/SECURITY_DEPENDENCIES_2026-10.md" },

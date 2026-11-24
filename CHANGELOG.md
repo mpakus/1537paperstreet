@@ -5,6 +5,11 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- Updated the HTML sanitizer, URL parser, and cookie library to address
+  RUSTSEC-2026-0533, RUSTSEC-2026-0592, and RUSTSEC-2026-0594.
+
 ## [0.14.0] - 2026-11-23
 
 ### Added
